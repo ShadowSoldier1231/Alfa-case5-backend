@@ -106,3 +106,47 @@ curl  --request GET  http://localhost:8080/api/text/v1/getChatSequence/1
 ["запрос2", "ответ2"]
 ]
 
+
+**Примеры текстов ошибок:*
+
+{"success":true,"errorText":""}
+
+{"success":false,"errorText":"Incorrect password"}
+
+{"success":false,"errorText":"Password cannot be empty"}
+
+{"success":false,"errorText":"Password cannot be longer than 30 characters"}
+
+{"success":false,"errorText":"Password cannot be shorter than 8 characters"}
+
+{"success":false,"errorText":"Password must contain at least 1 digit"}
+
+{"success":false,"errorText":"Password must contain at least 1 special character"}
+
+{"success":false,"errorText":"Username cannot be longer than 20 characters"}
+
+{"success":false,"errorText":"Username cannot be shorter than 3 characters"}
+
+{"success":false,"errorText":"Username cannot contain spaces"}
+
+{"success":false,"errorText":"Username cannot be empty"}
+
+{"success":false,"errorText":"This email address is already taken"}
+
+{"success":false,"errorText":"This username is already taken"}
+
+{"success":false,"errorText":"This email address is invalid"}
+
+{"success":false,"errorText":"Invalid user status code"}
+
+{"success":false,"errorText":"You are already logged in"}
+
+{"success":false,"errorText":"You are not logged in"}
+
+{"success":false,"errorText":"Please login first"}
+
+{"success":false,"errorText":"Session expired"}
+
+{"success":false,"errorText":"User does not exist"}
+
+{"success":false,"errorText":"Email cannot be blank"}
