@@ -60,11 +60,19 @@ public class UserService {
         this.userRepository.save(user);
     }
 
+
     public boolean loginUser(UserSetup user) {
-        if (passwordEncoder.matches(user.getPassword(), userRepository.findByUsername(user.getUsername()).get().getPassword())) {
-            return true;
-        } else return false;
+
+        if (user == null || user.getUsername() == null || user.getPassword() == null) {
+            return false;
+        }
+        UserSetup realUser = userRepository.findByUsername(user.getUsername()).orElse(null);
+        if (realUser == null) return  false;
+
+        return passwordEncoder.matches(user.getPassword(), realUser.getPassword());
     }
+
+
     public boolean passwordValidator(Long id, String password) {
 
         return (passwordEncoder.matches(password, userRepository.findById(id).get().getPassword()));
