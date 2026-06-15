@@ -1,6 +1,7 @@
 package com.project.main.model;
 
 
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 
 
@@ -15,8 +16,11 @@ public class Solution {
     private Long userId;
     private Long rating;
 
+    @JsonView(Views.ChatView.class)
     @Column(columnDefinition = "TEXT")
     private String solutionText;
+
+    @JsonView(Views.ChatView.class)
     @Column(columnDefinition = "TEXT")
     private String solutionResponse;
 

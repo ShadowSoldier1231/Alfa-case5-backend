@@ -1,10 +1,12 @@
 package com.project.main.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.RegisterResult;
 import com.project.main.model.LeaderboardUser;
 
 import com.project.main.model.Solution;
 import com.project.main.model.UserSession;
+import com.project.main.model.Views;
 import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.SolutionRepository;
 import com.project.main.repository.UserSessionRepository;
@@ -117,9 +119,9 @@ public class TextAnalysisIntegrationController  {
 
     }
 
-
+    @JsonView(Views.ChatView.class)
     @GetMapping("/getChatSequence/{caseId}")
-    public ResponseEntity<List<String[]>> getChatSequence(@CookieValue(value = "token", required = false) String token,
+    public ResponseEntity<List<Solution>> getChatSequence(@CookieValue(value = "token", required = false) String token,
                                           @PathVariable Long caseId) {
 
         if (token == null) return ResponseEntity.ok(Collections.emptyList());
@@ -129,10 +131,7 @@ public class TextAnalysisIntegrationController  {
             return  ResponseEntity.ok(Collections.emptyList());
         }
 
-        return ResponseEntity.ok(solutionRepository.findByCaseIdAndUserIdOrderBySolutionIdAsc(caseId, session.getUserId())
-                .stream()
-                .map(s -> new String[]{s.getSolutionText(), s.getSolutionResponse()})
-                .collect(Collectors.toList()));
+        return ResponseEntity.ok(solutionRepository.findByCaseIdAndUserIdOrderBySolutionIdAsc(caseId, session.getUserId()));
     }
 
 
