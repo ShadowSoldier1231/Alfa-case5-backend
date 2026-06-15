@@ -97,7 +97,7 @@ curl  --request GET  http://localhost:8080/api/text/v1/checkCookie
 ---
 GET  /api/text/v1/getChatSequence/{caseId}
 
-Возвращает чат с ИИ-ассистентом в виде списка пар строк
+Возвращает чат с ИИ-ассистентом в виде массивом объектов, содержащих запросы и ответы
 
 curl  --request GET  http://localhost:8080/api/text/v1/getChatSequence/1
 
