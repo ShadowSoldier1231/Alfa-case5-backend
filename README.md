@@ -104,6 +104,7 @@ curl  --request GET  http://localhost:8080/api/text/v1/getChatSequence/1
 [{"solutionResponse": "ответ1", "solutionText": "запрос1"}, 
 
 {"solutionResponse": "ответ2", "solutionText": "запрос2"}]
+
 ---
 
 **Примеры текстов ошибок:*
