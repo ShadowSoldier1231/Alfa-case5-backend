@@ -8,6 +8,7 @@ import com.project.main.model.LeaderboardUser;
 import com.project.main.model.UserSetup;
 import com.project.main.repository.*;
 
+import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,10 +40,15 @@ public class UserService {
         this.leaderboardRepository = leaderboardRepository;
     }
 
-    public void save(UserSetup user) {
+    public String  save(UserSetup user) {
         user.setCurrentTime();
         user.setPassword(this.passwordEncoder.encode(user.getPassword()));
+
+        String token = UUID.randomUUID().toString();
+        user.setTelegramVerificationToken(token);
+
         this.userRepository.save(user);
+        return "https://t.me/alfa_auth_verification_bot?start=" + token;
     }
 
     @Transactional

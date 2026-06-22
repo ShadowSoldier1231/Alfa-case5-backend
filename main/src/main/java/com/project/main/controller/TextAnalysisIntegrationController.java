@@ -41,7 +41,7 @@ public class TextAnalysisIntegrationController  {
     }
 
 
-
+    @JsonView(Views.RegisterResultPartial.class)
     @GetMapping("/checkCookie")
     public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token){
         if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
@@ -55,6 +55,7 @@ public class TextAnalysisIntegrationController  {
 
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/processViolation")
     public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
                                            HttpServletResponse response){
@@ -93,6 +94,7 @@ public class TextAnalysisIntegrationController  {
     }
 
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
     public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token, @RequestBody Solution solution){
         if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));

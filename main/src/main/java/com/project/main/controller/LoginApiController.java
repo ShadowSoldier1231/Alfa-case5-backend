@@ -3,15 +3,13 @@ package com.project.main.controller;
 
 
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.InputUser;
 import com.project.main.dto.RegisterResult;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
 import com.project.main.enums.UserStatus;
-import com.project.main.model.LeaderboardUser;
-import com.project.main.model.UserData;
-import com.project.main.model.UserSession;
-import com.project.main.model.UserSetup;
+import com.project.main.model.*;
 import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.UserDataRepository;
 import com.project.main.repository.UserRepository;
@@ -59,7 +57,7 @@ public class LoginApiController {
 // RegisterResult 200
 //  ResponseEntity<RegisterResult> -> code: int
 
-
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeemail")
     public ResponseEntity<RegisterResult> changeEmail(@RequestBody InputUser user, @CookieValue(value = "token", required = false) String token){
         if (token == null) return ResponseEntity.ok( new RegisterResult(false, "Please login first"));
@@ -83,7 +81,7 @@ public class LoginApiController {
         }
 
     }
-
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
     public ResponseEntity<RegisterResult> changeParams(@RequestBody InputUser user, @CookieValue(value = "token", required = false) String token){
         if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
@@ -150,7 +148,7 @@ public class LoginApiController {
         return ResponseEntity.ok(new RegisterResult(true, ""));
 
     }
-
+    @JsonView(Views.RegisterResultPartial.class)
     @Transactional
     @PostMapping("/resetpassword")
     ResponseEntity<RegisterResult> resetPassword( @RequestBody InputUser user, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
@@ -205,10 +203,10 @@ public class LoginApiController {
     }
 
 
-
+    @JsonView(Views.RegisterResultFull.class)
     @PostMapping("/register")
     public ResponseEntity<RegisterResult> registerUser(@RequestBody InputUser user){
-
+        String botUrl = "";
         switch (userService.checkPassword(user.getPassword())){
 
             case EMPTY:
@@ -247,7 +245,7 @@ public class LoginApiController {
 
                     UserSetup validUser = new UserSetup(user.getPassword(),
                             user.getUsername(), user.getEmail(), UserRole.USER, null);
-                    userService.save(validUser);
+                    botUrl = userService.save(validUser);
 
                     if (validUser.getId() != null) {
 
@@ -273,10 +271,11 @@ public class LoginApiController {
                 }
             }
         }
-        return ResponseEntity.ok( new RegisterResult(true, ""));
+        return ResponseEntity.ok( new RegisterResult(true, "", botUrl));
 
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/login")
     public ResponseEntity<RegisterResult> loginUser(@RequestBody UserSetup user,
                                     @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
@@ -333,6 +332,7 @@ public class LoginApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @Transactional
     @GetMapping("/logout")
     public ResponseEntity<RegisterResult> logout(

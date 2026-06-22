@@ -15,7 +15,10 @@ public class UserSetup {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(name = "telegram_id", unique = true)
+    private Long telegramId;
+    @Column(name = "telegram_verification_token", length = 64, unique = true)
+    private String telegramVerificationToken;
     private  String password;
     private  String username;
     private  String email;
@@ -73,6 +76,21 @@ public class UserSetup {
 
     public String getPassword(){
         return password;
+    }
+    public Long getTelegramId() {
+        return telegramId;
+    }
+
+    public void setTelegramId(Long telegramId) {
+        this.telegramId = telegramId;
+    }
+
+    public String getTelegramVerificationToken() {
+        return telegramVerificationToken;
+    }
+
+    public void setTelegramVerificationToken(String telegramVerificationToken) {
+        this.telegramVerificationToken = telegramVerificationToken;
     }
 
     public Long getId() {

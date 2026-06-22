@@ -1,22 +1,48 @@
 package com.project.main.dto;
 
+import com.project.main.model.Views;
+import com.fasterxml.jackson.annotation.JsonView;
+
+
+
 public class RegisterResult{
+    @JsonView(Views.RegisterResultPartial.class)
     private boolean success;
-    private String ErrorText;
+    @JsonView(Views.RegisterResultPartial.class)
+    private String errorText;
+    @JsonView(Views.RegisterResultFull.class)
+    private String telegramUrl;
 
     public RegisterResult(boolean success, String ErrorText){
         this.success = success;
-        this.ErrorText = ErrorText;
+        this.errorText = ErrorText;
     }
+
+    public RegisterResult(boolean success, String ErrorText, String telegramUrl){
+        this.success = success;
+        this.errorText = ErrorText;
+        this.telegramUrl = telegramUrl;
+    }
+
+
     public RegisterResult (){
     }
 
+    public String getTelegramUrl() {
+        return telegramUrl;
+    }
+
+    public void setTelegramUrl(String telegramUrl) {
+        this.telegramUrl = telegramUrl;
+    }
+
+
     public void setErrorText(String errorText) {
-        ErrorText = errorText;
+        this.errorText = errorText;
     }
 
     public String getErrorText(){
-        return ErrorText;
+        return errorText;
     }
     public void setSuccess(boolean success){
         this.success = success;
