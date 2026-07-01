@@ -14,8 +14,10 @@ import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.UserDataRepository;
 import com.project.main.repository.UserRepository;
 import com.project.main.repository.UserSessionRepository;
+import com.project.main.service.SessionService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.util.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpHeaders;
@@ -38,34 +40,36 @@ public class LoginApiController {
 
 
     private final UserService userService;
+    private final SessionService sessionService;
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
     private final UserSessionRepository sessionRepository;
     private final LeaderboardRepository leaderboardRepository;
 
     public LoginApiController(UserRepository userRepository, UserService userService, UserSessionRepository userSessionRepository,
-                              UserDataRepository userDataRepository, LeaderboardRepository leaderboardRepository) {
+                              UserDataRepository userDataRepository, SessionService sessionService,
+                              LeaderboardRepository leaderboardRepository) {
         this.userDataRepository = userDataRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.sessionRepository = userSessionRepository;
+        this.sessionService = sessionService;
         this.leaderboardRepository = leaderboardRepository;
+
     }
 
 
 
-// RegisterResult 200
-//  ResponseEntity<RegisterResult> -> code: int
-
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeemail")
-    public ResponseEntity<RegisterResult> changeEmail(@RequestBody InputUser user, @CookieValue(value = "token", required = false) String token){
-        if (token == null) return ResponseEntity.ok( new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+    public ResponseEntity<RegisterResult> changeEmail(@RequestBody InputUser user,
+                                                      @CookieValue(value = "token", required = false) String token){
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
+        UserSession session = sessionPair.getSecond();
         if(user.getEmail() == null){
             return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
         }
@@ -84,12 +88,12 @@ public class LoginApiController {
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
     public ResponseEntity<RegisterResult> changeParams(@RequestBody InputUser user, @CookieValue(value = "token", required = false) String token){
-        if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
+        UserSession session = sessionPair.getSecond();
 
         UserData realUser = userDataRepository.findById(session.getUserId())
                 .orElse(null);
@@ -152,13 +156,13 @@ public class LoginApiController {
     @Transactional
     @PostMapping("/resetpassword")
     ResponseEntity<RegisterResult> resetPassword( @RequestBody InputUser user, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
-        if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
 
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
+        UserSession session = sessionPair.getSecond();
 
         if(userService.passwordValidator(session.getUserId(), user.getOldPassword() )) {
 

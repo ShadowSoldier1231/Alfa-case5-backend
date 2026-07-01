@@ -10,8 +10,10 @@ import com.project.main.model.Views;
 import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.SolutionRepository;
 import com.project.main.repository.UserSessionRepository;
+import com.project.main.service.SessionService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -30,27 +32,29 @@ public class TextAnalysisIntegrationController  {
     private final LeaderboardRepository leaderboardRepository;
     private final UserService userService;
     private final SolutionRepository solutionRepository;
+    private final SessionService sessionService;
 
     public TextAnalysisIntegrationController (UserSessionRepository userSessionRepository,
-                           LeaderboardRepository leaderboardRepository, UserService userService, SolutionRepository solutionRepository){
+                           LeaderboardRepository leaderboardRepository, SessionService sessionService,
+                                              UserService userService, SolutionRepository solutionRepository){
 
         this.sessionRepository = userSessionRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.userService = userService;
         this.solutionRepository = solutionRepository;
+        this.sessionService = sessionService;
     }
 
 
     @JsonView(Views.RegisterResultPartial.class)
     @GetMapping("/checkCookie")
     public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token){
-        if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
-        return ResponseEntity.ok(new RegisterResult(true, ""));
+        return ResponseEntity.ok(cookieCheck);
 
 
     }
@@ -59,12 +63,13 @@ public class TextAnalysisIntegrationController  {
     @PostMapping("/processViolation")
     public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
                                            HttpServletResponse response){
-        if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
+        UserSession session = sessionPair.getSecond();
+
         LeaderboardUser user = leaderboardRepository.findById(session.getUserId())
                 .orElse(null);
         if (user == null){
@@ -97,12 +102,12 @@ public class TextAnalysisIntegrationController  {
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
     public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token, @RequestBody Solution solution){
-        if (token == null) return ResponseEntity.ok(new RegisterResult(false, "Please login first"));
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.ok(new RegisterResult(false, "Session expired"));
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
         }
+        UserSession session = sessionPair.getSecond();
 
         LeaderboardUser user = leaderboardRepository.findById(session.getUserId())
                 .orElse(null);

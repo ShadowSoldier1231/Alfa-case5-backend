@@ -23,24 +23,22 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CityRepository cityRepository;
-    private final UserSessionRepository sessionRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
 
 
     public UserService(UserRepository userRepository, CityRepository cityRepository,
-                       UserSessionRepository sessionRepository, LeaderboardRepository leaderboardRepository,
+                        LeaderboardRepository leaderboardRepository,
                        UserDataRepository userDataRepository) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.cityRepository = cityRepository;
-        this.sessionRepository = sessionRepository;
         this.userDataRepository = userDataRepository;
         this.leaderboardRepository = leaderboardRepository;
     }
 
-    public String  save(UserSetup user) {
+    public String save(UserSetup user) {
         user.setCurrentTime();
         user.setPassword(this.passwordEncoder.encode(user.getPassword()));
 
@@ -89,7 +87,6 @@ public class UserService {
         userRepository.deleteById(id);
         userDataRepository.deleteById(id);
         leaderboardRepository.deleteById(id);
-        sessionRepository.deleteByUserId(id);
     }
 
     @Transactional
@@ -172,12 +169,7 @@ public class UserService {
         return ValidUsernameStatus.OK;
     }
 
-    @Scheduled(fixedRate = 3600000)
-    @Transactional
-    public void clearExpiredSessions() {
-        LocalDateTime now = LocalDateTime.now();
-        sessionRepository.deleteByExpiryDateBefore(now);
-    }
+
 
 
     @Scheduled(fixedRate = 60000)
