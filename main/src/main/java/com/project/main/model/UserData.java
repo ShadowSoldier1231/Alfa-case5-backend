@@ -18,6 +18,7 @@ public class UserData {
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
     private  String firstName;
+    private String middleName;
     private String lastName;
     private Long profilePictureId;
     private GenderCode gender;
@@ -27,16 +28,26 @@ public class UserData {
     }
 
     public UserData(Long id, String firstName, String lastName,
-                    LocalDate birthdate, UserStatus status,  Long cityId, Long profilePictureId, GenderCode gender){
+                    LocalDate birthdate, UserStatus status,  Long cityId, String middleName,
+                    Long profilePictureId, GenderCode gender){
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.birthdate = birthdate;
         this.status = status;
         this.cityId = cityId;
+        this.middleName = middleName;
         this.profilePictureId = profilePictureId;
         this.gender = gender;
 
+    }
+
+    public String getMiddleName() {
+        return middleName;
+    }
+
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
     }
 
     public String getLastName() {

@@ -254,21 +254,21 @@ public class LoginApiController {
                     if (validUser.getId() != null) {
 
                         userDataRepository.save(new UserData(validUser.getId(), user.getFirstName(), user.getLastName(),
-                                user.getBirthdate(), user.getStatus(), user.getCityId(), (long) 0,
+                                user.getBirthdate(), user.getStatus(), user.getCityId(), user.getMiddleName(), 0L,
                                 (user.getGender() != null) ? user.getGender() : GenderCode.NOT_STATED)
                         );
-                        leaderboardRepository.save( new LeaderboardUser(validUser.getId(), (long) 0,
-                                (long) 0, (long) 0, new ArrayList<Long>(), 0L)
+                        leaderboardRepository.save( new LeaderboardUser(validUser.getId(), 0L,
+                                0L, 0L, new ArrayList<Long>(), 0L)
                         );
                     }else {
 
                         userDataRepository.save(new UserData(userRepository.findByUsername(validUser.getUsername()).get().getId(),
                                 user.getFirstName(), user.getLastName(),
-                                user.getBirthdate(), user.getStatus(), user.getCityId(), (long) 0,
+                                user.getBirthdate(), user.getStatus(), user.getCityId(), user.getMiddleName(), 0L,
                                 (user.getGender() != null) ? user.getGender() : GenderCode.NOT_STATED)
                         );
                         leaderboardRepository.save( new LeaderboardUser(userRepository.findByUsername(validUser.getUsername()).get().getId(),
-                                (long) 0, (long) 0, (long) 0, new ArrayList<Long>(), 0L)
+                                0L, 0L, 0L, new ArrayList<Long>(), 0L)
                         );
                     }
 

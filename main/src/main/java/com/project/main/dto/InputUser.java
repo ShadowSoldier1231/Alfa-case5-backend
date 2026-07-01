@@ -16,6 +16,7 @@ public class InputUser{
     private String password;
     private LocalDateTime creationDate;
     private Long cityId;
+    private String middleName;
     private UserStatus status;
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
@@ -27,6 +28,14 @@ public class InputUser{
 
     public InputUser(){
 
+    }
+
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
+    }
+
+    public String getMiddleName() {
+        return middleName;
     }
 
     public GenderCode getGender() {
