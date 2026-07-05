@@ -20,7 +20,7 @@ public class UserData {
     private  String firstName;
     private String middleName;
     private String lastName;
-    private Long profilePictureId;
+
     private GenderCode gender;
 
     public UserData(){
@@ -29,7 +29,7 @@ public class UserData {
 
     public UserData(Long id, String firstName, String lastName,
                     LocalDate birthdate, UserStatus status,  Long cityId, String middleName,
-                    Long profilePictureId, GenderCode gender){
+                     GenderCode gender){
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -37,7 +37,6 @@ public class UserData {
         this.status = status;
         this.cityId = cityId;
         this.middleName = middleName;
-        this.profilePictureId = profilePictureId;
         this.gender = gender;
 
     }
@@ -95,13 +94,6 @@ public class UserData {
         this.birthdate = birthdate;
     }
 
-    public Long getProfilePictureId() {
-        return profilePictureId;
-    }
-
-    public void setProfilePictureId(Long profilePictureId) {
-        this.profilePictureId = profilePictureId;
-    }
 
     public GenderCode getGender() {
         return gender;

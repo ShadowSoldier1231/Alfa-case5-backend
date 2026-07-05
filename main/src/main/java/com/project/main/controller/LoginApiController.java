@@ -4,16 +4,15 @@ package com.project.main.controller;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.InputUser;
+import com.project.main.dto.*;
 import com.project.main.dto.RegisterResult;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
 import com.project.main.enums.UserStatus;
+import com.project.main.enums.UserStatus.*;
 import com.project.main.model.*;
-import com.project.main.repository.LeaderboardRepository;
-import com.project.main.repository.UserDataRepository;
-import com.project.main.repository.UserRepository;
-import com.project.main.repository.UserSessionRepository;
+import com.project.main.repository.*;
+import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,13 +23,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.apache.commons.validator.routines.EmailValidator;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
-
-
+import static com.project.main.enums.UserStatus.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -40,21 +38,26 @@ public class LoginApiController {
 
 
     private final UserService userService;
+    private final FetchingService fetchingService;
     private final SessionService sessionService;
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
     private final UserSessionRepository sessionRepository;
     private final LeaderboardRepository leaderboardRepository;
+    private final  UserAvatarRepository userAvatarRepository;
 
     public LoginApiController(UserRepository userRepository, UserService userService, UserSessionRepository userSessionRepository,
                               UserDataRepository userDataRepository, SessionService sessionService,
-                              LeaderboardRepository leaderboardRepository) {
+                              LeaderboardRepository leaderboardRepository, UserAvatarRepository userAvatarRepository,
+                              FetchingService fetchingService) {
         this.userDataRepository = userDataRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.sessionRepository = userSessionRepository;
         this.sessionService = sessionService;
         this.leaderboardRepository = leaderboardRepository;
+        this.userAvatarRepository = userAvatarRepository;
+        this.fetchingService = fetchingService;
 
     }
 
@@ -62,7 +65,7 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeemail")
-    public ResponseEntity<RegisterResult> changeEmail(@RequestBody InputUser user,
+    public ResponseEntity<RegisterResult> changeEmail(@RequestBody ChangeRequest changeRequest,
                                                       @CookieValue(value = "token", required = false) String token){
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
@@ -70,24 +73,27 @@ public class LoginApiController {
             return ResponseEntity.ok(cookieCheck);
         }
         UserSession session = sessionPair.getSecond();
-        if(user.getEmail() == null){
+        if(changeRequest.getEmail() == null){
             return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
         }
-        if(user.getEmail().isBlank()){
+        if(changeRequest.getEmail().isBlank()){
             return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
         }
-        if(userRepository.existsByEmail(user.getEmail())) return ResponseEntity.ok(new RegisterResult(false, "This email address is already taken"));
-        if(EmailValidator.getInstance(true).isValid(user.getEmail())) {
-            userService.updateEmail(session.getUserId(), user.getEmail());
+        if(userRepository.existsByEmail(changeRequest.getEmail())) return ResponseEntity.ok(new RegisterResult(false, "This email address is already taken"));
+        if(EmailValidator.getInstance(true).isValid(changeRequest.getEmail())) {
+            userService.updateEmail(session.getUserId(), changeRequest.getEmail());
             return ResponseEntity.ok(new RegisterResult(true, ""));
         }else {
             return ResponseEntity.ok( new RegisterResult(false, "This email address is invalid"));
         }
 
     }
+
+
+    @Transactional
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
-    public ResponseEntity<RegisterResult> changeParams(@RequestBody InputUser user, @CookieValue(value = "token", required = false) String token){
+    public ResponseEntity<RegisterResult> changeParams(@RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token){
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
         if(!cookieCheck.getSuccess()){
@@ -101,16 +107,21 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
         }
 
-        if(user.getCityId() != null){
-            realUser.setCityId(user.getCityId());
+        if(changeRequest.getCity() != null){
+            Long cityId = fetchingService.GetCityIdByName(changeRequest.getCity());
+            if(cityId != -1) {
+                realUser.setCityId(cityId);
+            }else {
+                return ResponseEntity.ok(new RegisterResult(false, "Invalid city name"));
+            }
         }
-        if(user.getBirthdate() != null){
-            realUser.setBirthdate(user.getBirthdate());
+        if(changeRequest.getBirthdate() != null){
+            realUser.setBirthdate(changeRequest.getBirthdate());
         }
-        if(user.getStatus() != null){
-            switch (user.getStatus()){
+        if(changeRequest.getStatus() != null){
+            switch (changeRequest.getStatus()){
                 case WORKER:
-                    realUser.setStatus(UserStatus.WORKER);
+                    realUser.setStatus(WORKER);
                     break;
                 case STUDENT5:
                     realUser.setStatus(UserStatus.STUDENT5);
@@ -134,28 +145,27 @@ public class LoginApiController {
                     return ResponseEntity.ok(new RegisterResult(false, "Invalid user status code"));
             }
         }
-        if (user.getFirstName() != null){
-            if (!user.getFirstName().isEmpty()) {
-                realUser.setFirstName(user.getFirstName());
+        if (changeRequest.getFirstName() != null){
+            if (!changeRequest.getFirstName().isEmpty()) {
+                realUser.setFirstName(changeRequest.getFirstName());
             }
         }
-        if(user.getLastName() != null){
-            if (!user.getLastName().isEmpty()){
-                realUser.setLastName(user.getLastName());
+        if(changeRequest.getLastName() != null){
+            if (!changeRequest.getLastName().isEmpty()){
+                realUser.setLastName(changeRequest.getLastName());
             }
-        }
-        if(user.getProfilePictureId() != null){
-            realUser.setProfilePictureId(user.getProfilePictureId());
         }
 
         userDataRepository.save(realUser);
         return ResponseEntity.ok(new RegisterResult(true, ""));
 
     }
+
+
     @JsonView(Views.RegisterResultPartial.class)
     @Transactional
     @PostMapping("/resetpassword")
-    ResponseEntity<RegisterResult> resetPassword( @RequestBody InputUser user, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
+    public ResponseEntity<RegisterResult> resetPassword( @RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
@@ -164,9 +174,9 @@ public class LoginApiController {
         }
         UserSession session = sessionPair.getSecond();
 
-        if(userService.passwordValidator(session.getUserId(), user.getOldPassword() )) {
+        if(userService.passwordValidator(session.getUserId(), changeRequest.getOldPassword() )) {
 
-            switch (userService.checkPassword(user.getNewPassword())){
+            switch (userService.checkPassword(changeRequest.getNewPassword())){
 
                 case EMPTY:
                     return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
@@ -179,18 +189,11 @@ public class LoginApiController {
                 case NO_SPECIAL_SYMBOL:
                     return ResponseEntity.ok(new RegisterResult(false, "Password must contain at least 1 special character"));
                 default:
-                    userService.updatePassword(session.getUserId(), user.getNewPassword());
+
+                    userService.updatePassword(session.getUserId(), changeRequest.getNewPassword());
                     sessionRepository.deleteByUserId(session.getUserId());
 
-                    sessionRepository.deleteByToken(token);
-
-                    ResponseCookie cookie = ResponseCookie.from("token", "")
-                            .httpOnly(true)
-                            .secure(true)
-                            .path("/")
-                            .maxAge(0)
-                            .sameSite("Lax")
-                            .build();
+                    ResponseCookie cookie = sessionService.deleteCookie(token, false);
 
                     response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
@@ -203,15 +206,56 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "Incorrect password"));
         }
 
-
     }
+
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @PostMapping("/setProfilePicture")
+    @Transactional
+    public ResponseEntity<RegisterResult> setProfilePicture(
+            @RequestParam("file") MultipartFile file,
+            @CookieValue(value = "token", required = false) String token) {
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.ok(cookieCheck);
+        }
+        UserSession session = sessionPair.getSecond();
+
+
+        if (file.isEmpty()) {
+            return ResponseEntity.ok(new RegisterResult(false, "File cannot be empty"));
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/jpg"))) {
+            return ResponseEntity.ok(new RegisterResult(false, "Only JPEG/JPG images are allowed"));
+        }
+
+        if (file.getSize() > 5242880) {
+            return ResponseEntity.ok(new RegisterResult(false, "File size cannot exceed 5MB"));
+        }
+
+        try {
+
+            UserAvatar avatar = new UserAvatar(session.getUserId(), file.getBytes());
+            userAvatarRepository.save(avatar);
+
+            return ResponseEntity.ok(new RegisterResult(true, ""));
+
+        } catch (IOException e) {
+            return ResponseEntity.ok(new RegisterResult(false, "Failed to process image file"));
+        }
+    }
+
 
 
     @JsonView(Views.RegisterResultFull.class)
     @PostMapping("/register")
-    public ResponseEntity<RegisterResult> registerUser(@RequestBody InputUser user){
+    public ResponseEntity<RegisterResult> registerUser(@RequestBody RegisterRequest registerRequest){
         String botUrl = "";
-        switch (userService.checkPassword(user.getPassword())){
+        switch (userService.checkPassword(registerRequest.getPassword())){
 
             case EMPTY:
                 return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
@@ -226,7 +270,7 @@ public class LoginApiController {
             default:
                 break;
         }
-        switch (userService.checkUsername(user.getUsername())){
+        switch (userService.checkUsername(registerRequest.getUsername())){
             case TOO_LONG:
                 return ResponseEntity.ok(new RegisterResult(false, "Username cannot be longer than 20 characters"));
             case TOO_SHORT:
@@ -237,40 +281,29 @@ public class LoginApiController {
                 return  ResponseEntity.ok(new RegisterResult(false, "Username cannot contain spaces"));
             case OK: {
 
-                if (userRepository.existsByEmail(user.getEmail())){
+                if (userRepository.existsByEmail(registerRequest.getEmail())){
                     return  ResponseEntity.ok(new RegisterResult(false, "This email address is already taken"));
-                }else if (userRepository.existsByUsername(user.getUsername())){
+                }else if (userRepository.existsByUsername(registerRequest.getUsername())){
                     return  ResponseEntity.ok(new RegisterResult(false, "This username is already taken"));
                 }else {
-                    if(! EmailValidator.getInstance(true).isValid(user.getEmail())) {
+                    if(! EmailValidator.getInstance(true).isValid(registerRequest.getEmail())) {
                         return  ResponseEntity.ok(new RegisterResult(false, "This email address is invalid"));
                     }
 
 
-                    UserSetup validUser = new UserSetup(user.getPassword(),
-                            user.getUsername(), user.getEmail(), UserRole.USER, null);
+                    UserSetup validUser = new UserSetup(registerRequest.getPassword(),
+                            registerRequest.getUsername(), registerRequest.getEmail(), UserRole.USER, null);
                     botUrl = userService.save(validUser);
 
-                    if (validUser.getId() != null) {
 
-                        userDataRepository.save(new UserData(validUser.getId(), user.getFirstName(), user.getLastName(),
-                                user.getBirthdate(), user.getStatus(), user.getCityId(), user.getMiddleName(), 0L,
-                                (user.getGender() != null) ? user.getGender() : GenderCode.NOT_STATED)
-                        );
-                        leaderboardRepository.save( new LeaderboardUser(validUser.getId(), 0L,
-                                0L, 0L, new ArrayList<Long>(), 0L)
-                        );
-                    }else {
 
-                        userDataRepository.save(new UserData(userRepository.findByUsername(validUser.getUsername()).get().getId(),
-                                user.getFirstName(), user.getLastName(),
-                                user.getBirthdate(), user.getStatus(), user.getCityId(), user.getMiddleName(), 0L,
-                                (user.getGender() != null) ? user.getGender() : GenderCode.NOT_STATED)
+                    userDataRepository.save(new UserData(validUser.getId(), registerRequest.getFirstName(), registerRequest.getLastName(),
+                            registerRequest.getBirthdate(), registerRequest.getStatus(), fetchingService.GetCityIdByName(registerRequest.getCity()), registerRequest.getMiddleName(),
+                                (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED)
                         );
-                        leaderboardRepository.save( new LeaderboardUser(userRepository.findByUsername(validUser.getUsername()).get().getId(),
-                                0L, 0L, 0L, new ArrayList<Long>(), 0L)
+                    leaderboardRepository.save( new LeaderboardUser(validUser.getId(), 0L,
+                                0L, 0L, 0L)
                         );
-                    }
 
                 }
             }
@@ -281,58 +314,45 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/login")
-    public ResponseEntity<RegisterResult> loginUser(@RequestBody UserSetup user,
+    public ResponseEntity<RegisterResult> loginUser(@RequestBody LoginRequest loginRequest,
                                     @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
 
         if (token != null) {
             return ResponseEntity.ok(new RegisterResult(false, "You are already logged in"));
         }
 
-        if(user.getPassword().isBlank()){
+        if(loginRequest.getPassword().isBlank()){
             return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
-        }else if(user.getUsername().isBlank()){
+        }else if(loginRequest.getUsername().isBlank()){
             return ResponseEntity.ok(new RegisterResult(false, "Username cannot be empty"));
         }
         else{
 
-            if ( userRepository.existsByUsername(user.getUsername()) ) {
-                if (userService.loginUser(user)) {
+            UserSetup realUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
 
-                    if(user.getBannedUntil() != null){
-                        if(user.getBannedUntil().isAfter(LocalDateTime.now())){
+            if ( realUser != null ) {
+                if (userService.loginUser(loginRequest, realUser)) {
+
+
+                    if(realUser.getBannedUntil() != null){
+                        if(realUser.getBannedUntil().isAfter(LocalDateTime.now())){
                             return ResponseEntity.ok(new RegisterResult(false, "User is still banned"));
                         }
-                        user.setBannedUntil(null);
-                        userRepository.save(user);
+                        realUser.setBannedUntil(null);
+                        userRepository.save(realUser);
                     }
 
+                    ResponseCookie cookie = sessionService.generateCookie();
+                    sessionService.createSession(cookie.getValue(), realUser.getId());
 
-
-                    byte[] randomBytes = new byte[32];
-                    new SecureRandom().nextBytes(randomBytes);
-                    String secureValue = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-
-                    ResponseCookie cookie = ResponseCookie.from("token", secureValue)
-                            .httpOnly(true)
-                            .secure(true)
-                            .path("/")
-                            .maxAge(7200)
-                            .sameSite("Lax")
-                            .build();
-                    UserSession session = new UserSession();
-                    session.setToken(secureValue);
-                    session.setUserId(userRepository.findByUsername(user.getUsername()).get().getId());
-                    session.setExpiryDate(LocalDateTime.now().plusHours(2));
-                    sessionRepository.save(session);
                     response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
                     return ResponseEntity.ok(new RegisterResult(true, ""));
-                } else {
-                    return ResponseEntity.ok(new RegisterResult(false, "Incorrect password"));
                 }
-            } else {
-                return ResponseEntity.ok(new RegisterResult(false, "Account does not exist"));
             }
+
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid username or password"));
+
         }
     }
 
@@ -347,16 +367,7 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "You are not logged in"));
         }
 
-
-        sessionRepository.deleteByToken(token);
-
-        ResponseCookie cookie = ResponseCookie.from("token", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
+        ResponseCookie cookie = sessionService.deleteCookie(token);
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 

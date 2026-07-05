@@ -6,18 +6,37 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.time.LocalDateTime;
+
 
 @Entity
-public class Achievement {
+public class UserAchievement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private String achievementText;
+    private Long userId;
     private Long scoreValue;
+    private LocalDateTime ObtainedAt;
 
-    public  Achievement(){
 
+    public  UserAchievement(){
+
+    }
+
+    public LocalDateTime getObtainedAt() {
+        return ObtainedAt;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public void setObtainedAt(LocalDateTime obtainedAt) {
+        ObtainedAt = obtainedAt;
     }
 
     public Long getId() {
@@ -36,11 +55,4 @@ public class Achievement {
         this.scoreValue = scoreValue;
     }
 
-    public String getAchievementText() {
-        return achievementText;
-    }
-
-    public void setAchievementText(String achievementText) {
-        this.achievementText = achievementText;
-    }
 }

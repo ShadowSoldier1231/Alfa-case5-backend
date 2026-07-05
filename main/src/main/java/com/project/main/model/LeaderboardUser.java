@@ -13,7 +13,6 @@ public class LeaderboardUser {
     @Id
     private Long userId;
     private Long score;
-    private List<Long> achievements;
     private Long warningsCount;
     private Long placement;
     private Long banCount;
@@ -22,12 +21,12 @@ public class LeaderboardUser {
     public LeaderboardUser(){
 
     }
-    public LeaderboardUser(Long userId, Long score, Long warningsCount, Long placement, List<Long> achievements, Long banCount){
+    public LeaderboardUser(Long userId, Long score, Long warningsCount, Long placement,  Long banCount){
+
         this.userId = userId;
         this.score = score;
         this.warningsCount = warningsCount;
         this.placement = placement;
-        this.achievements = achievements;
         this.banCount = banCount;
     }
 
@@ -61,14 +60,6 @@ public class LeaderboardUser {
 
     public void setPlacement(Long placement) {
         this.placement = placement;
-    }
-
-    public List<Long> getAchievements() {
-        return achievements;
-    }
-
-    public void setAchievements(List<Long> achievements) {
-        this.achievements = achievements;
     }
 
     public Long getWarningsCount() {

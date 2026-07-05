@@ -51,9 +51,6 @@ public class TextAnalysisIntegrationController  {
     public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token){
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
-        if(!cookieCheck.getSuccess()){
-            return ResponseEntity.ok(cookieCheck);
-        }
         return ResponseEntity.ok(cookieCheck);
 
 
@@ -81,14 +78,9 @@ public class TextAnalysisIntegrationController  {
 
         if(user.getWarningsCount() > 2){
 
-            String errorText =  userService.banUser(user.getUserId());
-            ResponseCookie cookie = ResponseCookie.from("token", "")
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .maxAge(0)
-                    .sameSite("Lax")
-                    .build();
+            String errorText =  userService.banUser(user);
+            ResponseCookie cookie = sessionService.deleteCookie(token, false);
+            sessionService.deleteAllSessions(session.getUserId());
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
@@ -114,6 +106,7 @@ public class TextAnalysisIntegrationController  {
         if (user == null){
             return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
         }
+
         solution.setUserId(session.getUserId());
         solutionRepository.save(solution);
 

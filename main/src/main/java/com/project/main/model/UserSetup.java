@@ -20,7 +20,9 @@ public class UserSetup {
     @Column(name = "telegram_verification_token", length = 64, unique = true)
     private String telegramVerificationToken;
     private  String password;
+    @Column(unique = true)
     private  String username;
+    @Column(unique = true)
     private  String email;
     private LocalDateTime creationDate;
     private LocalDateTime bannedUntil;

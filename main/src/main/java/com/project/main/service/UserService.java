@@ -1,41 +1,48 @@
 package com.project.main.service;
 
 import com.project.main.*;
+import com.project.main.dto.LoginRequest;
+import com.project.main.dto.UserDeletedEvent;
 import com.project.main.enums.ValidPasswordStatus;
 import com.project.main.enums.ValidUsernameStatus;
-import com.project.main.model.City;
+
 import com.project.main.model.LeaderboardUser;
+import com.project.main.model.Solution;
 import com.project.main.model.UserSetup;
 import com.project.main.repository.*;
 
 import java.util.UUID;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+
 
 import java.time.LocalDateTime;
 
 
-@Component
+
+@Service
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final CityRepository cityRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
 
 
-    public UserService(UserRepository userRepository, CityRepository cityRepository,
+    public UserService(UserRepository userRepository,
                         LeaderboardRepository leaderboardRepository,
-                       UserDataRepository userDataRepository) {
+                       UserDataRepository userDataRepository, ApplicationEventPublisher eventPublisher) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
-        this.cityRepository = cityRepository;
         this.userDataRepository = userDataRepository;
         this.leaderboardRepository = leaderboardRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public String save(UserSetup user) {
@@ -65,21 +72,28 @@ public class UserService {
     }
 
 
-    public boolean loginUser(UserSetup user) {
+    public boolean loginUser(LoginRequest loginRequest, UserSetup realUser) {
 
-        if (user == null || user.getUsername() == null || user.getPassword() == null) {
+        if (loginRequest == null || loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
+            boolean check = passwordEncoder.matches("!@#$%^^&*()word","##just##key##mash");
             return false;
         }
-        UserSetup realUser = userRepository.findByUsername(user.getUsername()).orElse(null);
-        if (realUser == null) return  false;
 
-        return passwordEncoder.matches(user.getPassword(), realUser.getPassword());
+
+        return passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword());
     }
+
 
 
     public boolean passwordValidator(Long id, String password) {
 
-        return (passwordEncoder.matches(password, userRepository.findById(id).get().getPassword()));
+        UserSetup user = userRepository.findById(id).orElse(null);
+        if(user == null){
+            boolean check = passwordEncoder.matches("!@#$%^^&*()word","##just##key##mash");
+            return false;
+        }
+
+        return passwordEncoder.matches(password, user.getPassword());
     }
 
     @Transactional
@@ -87,20 +101,20 @@ public class UserService {
         userRepository.deleteById(id);
         userDataRepository.deleteById(id);
         leaderboardRepository.deleteById(id);
+        eventPublisher.publishEvent(new UserDeletedEvent(id));
     }
 
     @Transactional
-    public String banUser(Long userId){
+    public String banUser(LeaderboardUser leaderboardUser){
 
-        LeaderboardUser leaderboardUser = leaderboardRepository.findById(userId).orElse(null);
 
         if(leaderboardUser == null) return  "User does not exist";
 
         if (leaderboardUser.getBanCount() > 3){
-            deleteUser(userId);
+            deleteUser(leaderboardUser.getUserId());
             return  "User no longer exists";
         }
-        UserSetup user = userRepository.findById(userId).orElse(null);
+        UserSetup user = userRepository.findById(leaderboardUser.getUserId()).orElse(null);
         if(user == null){
             return  "User does not exist";
         }
@@ -113,13 +127,6 @@ public class UserService {
         return "User is now banned";
     }
 
-
-    Long getCityId(String cityName){
-        if(cityName == null) return (long) -1;
-        City city = cityRepository.findByCityName(cityName).orElse(null);
-        if (city == null) return -1L;
-        return city.getId();
-    }
 
     public ValidPasswordStatus checkPassword(String password)
     {
@@ -156,6 +163,7 @@ public class UserService {
         }
         return ValidPasswordStatus.OK;
     }
+
     public ValidUsernameStatus checkUsername(String username){
         if(username.length() < 3){
             return  ValidUsernameStatus.TOO_SHORT;
@@ -168,9 +176,6 @@ public class UserService {
         }
         return ValidUsernameStatus.OK;
     }
-
-
-
 
     @Scheduled(fixedRate = 60000)
     @Transactional
