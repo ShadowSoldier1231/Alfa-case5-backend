@@ -1,5 +1,6 @@
 package com.project.main.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.main.enums.UserStatus;
 
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ public class ChangeRequest {
     private String firstName;
     private String lastName;
     private String middleName;
+    @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
     private String city;
     private UserStatus status;

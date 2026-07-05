@@ -321,6 +321,14 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "You are already logged in"));
         }
 
+        if(loginRequest.getPassword() == null){
+            return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
+        }
+        if(loginRequest.getUsername() == null){
+            return ResponseEntity.ok(new RegisterResult(false, "Username cannot be empty"));
+        }
+
+
         if(loginRequest.getPassword().isBlank()){
             return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
         }else if(loginRequest.getUsername().isBlank()){

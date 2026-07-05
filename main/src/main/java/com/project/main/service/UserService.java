@@ -130,6 +130,7 @@ public class UserService {
 
     public ValidPasswordStatus checkPassword(String password)
     {
+        if(password ==null) return ValidPasswordStatus.EMPTY;
 
         if(password.isBlank()) {
             return ValidPasswordStatus.EMPTY;
@@ -165,6 +166,9 @@ public class UserService {
     }
 
     public ValidUsernameStatus checkUsername(String username){
+
+        if(username == null) return  ValidUsernameStatus.EMPTY;
+
         if(username.length() < 3){
             return  ValidUsernameStatus.TOO_SHORT;
         }else if(username.length() > 20){
