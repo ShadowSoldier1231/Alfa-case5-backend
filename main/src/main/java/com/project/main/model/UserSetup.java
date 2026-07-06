@@ -2,6 +2,7 @@ package com.project.main.model;
 
 import com.project.main.enums.UserRole;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public class UserSetup {
     @Column(unique = true)
     private  String username;
     @Column(unique = true)
+    @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
     private  String email;
     private LocalDateTime creationDate;
     private LocalDateTime bannedUntil;

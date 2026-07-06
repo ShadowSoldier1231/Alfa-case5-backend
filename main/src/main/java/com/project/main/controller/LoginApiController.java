@@ -16,17 +16,24 @@ import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 import org.springframework.data.util.Pair;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.apache.commons.validator.routines.EmailValidator;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.project.main.enums.UserStatus.*;
 
@@ -65,27 +72,57 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeemail")
-    public ResponseEntity<RegisterResult> changeEmail(@RequestBody ChangeRequest changeRequest,
+    public ResponseEntity<RegisterResult> changeEmail(@Valid @RequestBody ChangeRequest changeRequest, BindingResult bindingResult,
                                                       @CookieValue(value = "token", required = false) String token){
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
-        if(!cookieCheck.getSuccess()){
-            return ResponseEntity.ok(cookieCheck);
+        if (bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getFieldError("email") != null
+                    ? bindingResult.getFieldError("email").getDefaultMessage()
+                    : "Invalid input data";
+            return ResponseEntity.ok(new RegisterResult(false, errorMsg));
         }
-        UserSession session = sessionPair.getSecond();
-        if(changeRequest.getEmail() == null){
-            return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
+
+        try {
+            Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+            RegisterResult cookieCheck = sessionPair.getFirst();
+            if (!cookieCheck.getSuccess()) {
+                return ResponseEntity.ok(cookieCheck);
+            }
+            UserSession session = sessionPair.getSecond();
+            if (changeRequest.getEmail() == null) {
+                return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
+            }
+            if (changeRequest.getEmail().isBlank()) {
+                return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
+            }
+            if (userRepository.existsByEmail(changeRequest.getEmail()))
+                return ResponseEntity.ok(new RegisterResult(false, "This email address is already taken"));
+            if (EmailValidator.getInstance(true).isValid(changeRequest.getEmail())) {
+                userService.updateEmail(session.getUserId(), changeRequest.getEmail());
+                return ResponseEntity.ok(new RegisterResult(true, ""));
+            } else {
+                return ResponseEntity.ok(new RegisterResult(false, "This email address is invalid"));
+            }
+        }  catch (TransactionSystemException e) {
+            Throwable rootCause = e.getRootCause();
+
+            if (rootCause instanceof ConstraintViolationException constraintEx) {
+                StringBuilder errorMessage = new StringBuilder("Ошибка валидации: ");
+                constraintEx.getConstraintViolations().forEach(violation -> {
+                    errorMessage.append("[")
+                            .append(violation.getPropertyPath())
+                            .append(": ")
+                            .append(violation.getMessage())
+                            .append("] ");
+                });
+
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RegisterResult(false, errorMessage.toString().trim()));
+            }
+
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RegisterResult(false, "Internal server error"));
         }
-        if(changeRequest.getEmail().isBlank()){
-            return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
-        }
-        if(userRepository.existsByEmail(changeRequest.getEmail())) return ResponseEntity.ok(new RegisterResult(false, "This email address is already taken"));
-        if(EmailValidator.getInstance(true).isValid(changeRequest.getEmail())) {
-            userService.updateEmail(session.getUserId(), changeRequest.getEmail());
-            return ResponseEntity.ok(new RegisterResult(true, ""));
-        }else {
-            return ResponseEntity.ok( new RegisterResult(false, "This email address is invalid"));
-        }
+
 
     }
 
@@ -93,7 +130,7 @@ public class LoginApiController {
     @Transactional
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
-    public ResponseEntity<RegisterResult> changeParams(@RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token){
+    public ResponseEntity<RegisterResult> changeParams(@Valid @RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token){
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
         if(!cookieCheck.getSuccess()){

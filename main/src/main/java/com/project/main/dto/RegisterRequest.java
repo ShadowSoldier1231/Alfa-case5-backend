@@ -3,10 +3,13 @@ package com.project.main.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserStatus;
+import jakarta.validation.constraints.Email;
+
 import java.time.LocalDate;
 
 public class RegisterRequest{
     private Long id;
+    @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
     private String email;
     private String username;
     private String password;

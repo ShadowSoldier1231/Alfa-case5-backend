@@ -1,10 +1,9 @@
 package com.project.main.controller;
 
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.WebUser;
+
 import com.project.main.model.City;
-import com.project.main.model.Views;
+
 import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +25,8 @@ public class WebApiController {
 
 
 
-    @JsonView(Views.CityView.class)
     @GetMapping("/user/{id}/city")
-    public ResponseEntity<WebUser>  getCityName(@PathVariable long id){
+    public ResponseEntity<City>  getCityName(@PathVariable long id){
         return ResponseEntity.ok(fetchingService.getCityByUserId(id));
 
     }

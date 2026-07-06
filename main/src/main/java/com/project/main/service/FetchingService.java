@@ -1,19 +1,13 @@
 package com.project.main.service;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.WebUser;
+
 import com.project.main.model.City;
 import com.project.main.model.UserData;
-import com.project.main.model.Views;
 import com.project.main.repository.CityRepository;
 import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.UserDataRepository;
 import com.project.main.repository.UserRepository;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
 
 @Service
@@ -43,31 +37,30 @@ public class FetchingService {
 
     }
 
-    public WebUser getCityByUserId(long id){
+    public City getCityByUserId(long id){
 
         UserData realUser = userDataRepository.findById(id).orElse(null);
         if(realUser == null){
             return null;
         }
-        WebUser webUser = new WebUser();
 
         if (realUser.getCityId() == (long)-1){
-            webUser.setCityName("not_set");
-            webUser.setRegionName("not_set");
-            return webUser;
+            City city = new City();
+            city.setCityName("not_set");
+            city.setRegionName("not_set");
+            return city;
         }
 
         City city = cityRepository.findById(realUser.getCityId()).orElse(null);
 
         if (city == null){
-            webUser.setCityName("error");
-            webUser.setRegionName("error");
-            return webUser;
+            city = new City();
+            city.setCityName("error");
+            city.setRegionName("error");
+            return city;
         }
 
-        webUser.setCityName(city.getCityName());
-        webUser.setRegionName(city.getRegionName());
-        return webUser;
+        return city;
 
     }
 
