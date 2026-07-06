@@ -106,7 +106,12 @@ public class TextAnalysisIntegrationController  {
         if (user == null){
             return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
         }
-
+        if(solution.getCaseId() ==null || solution.getSolutionText() ==null || solution.getSolutionResponse() == null || solution.getRating() == null){
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
+        }
+        if(solution.getSolutionText().isBlank() || solution.getSolutionResponse().isBlank()){
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
+        }
         solution.setUserId(session.getUserId());
         solutionRepository.save(solution);
 

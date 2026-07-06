@@ -290,8 +290,16 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultFull.class)
     @PostMapping("/register")
-    public ResponseEntity<RegisterResult> registerUser(@RequestBody RegisterRequest registerRequest){
+    public ResponseEntity<RegisterResult> registerUser(@RequestBody RegisterRequest registerRequest, BindingResult bindingResult){
         String botUrl = "";
+
+        if (bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getFieldError("email") != null
+                    ? bindingResult.getFieldError("email").getDefaultMessage()
+                    : "Invalid input data";
+            return ResponseEntity.ok(new RegisterResult(false, errorMsg));
+        }
+
         switch (userService.checkPassword(registerRequest.getPassword())){
 
             case EMPTY:
