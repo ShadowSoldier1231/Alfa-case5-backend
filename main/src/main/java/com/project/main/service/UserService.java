@@ -7,7 +7,7 @@ import com.project.main.enums.ValidPasswordStatus;
 import com.project.main.enums.ValidUsernameStatus;
 
 import com.project.main.model.LeaderboardUser;
-import com.project.main.model.Solution;
+
 import com.project.main.model.UserSetup;
 import com.project.main.repository.*;
 

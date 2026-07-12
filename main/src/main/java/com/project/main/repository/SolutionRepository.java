@@ -5,10 +5,11 @@ import com.project.main.model.Solution;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-
+@Repository
 public interface SolutionRepository extends JpaRepository<Solution, Long> {
 
     @Query(value = "SELECT SUM(max_rating) FROM (" +

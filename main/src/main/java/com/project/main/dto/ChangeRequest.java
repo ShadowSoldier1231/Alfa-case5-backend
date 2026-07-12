@@ -16,7 +16,7 @@ public class ChangeRequest {
     private String middleName;
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
-    private String city;
+    private Long cityId;
     private UserStatus status;
 
     public ChangeRequest(){
@@ -31,12 +31,13 @@ public class ChangeRequest {
         this.status = status;
     }
 
-    public String getCity() {
-        return city;
+
+    public Long getCityId() {
+        return cityId;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public void setCityId(Long cityId) {
+        this.cityId = cityId;
     }
 
     public String getFirstName() {

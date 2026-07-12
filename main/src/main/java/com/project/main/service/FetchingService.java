@@ -64,4 +64,11 @@ public class FetchingService {
 
     }
 
+    public boolean cityExistsById(Long cityId){
+        if(cityId == -1){
+            return false;
+        }
+        return cityRepository.existsById(cityId);
+    }
+
 }

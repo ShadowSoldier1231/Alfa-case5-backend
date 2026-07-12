@@ -17,7 +17,7 @@ public class RegisterRequest{
     private UserStatus status;
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
-    private String city;
+    private Long cityId;
     private String firstName;
     private String lastName;
     private GenderCode gender;
@@ -57,14 +57,12 @@ public class RegisterRequest{
         return firstName;
     }
 
-
-
-    public String getCity() {
-        return city;
+    public void setCityId(Long cityId) {
+        this.cityId = cityId;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public Long getCityId() {
+        return cityId;
     }
 
     public void setBirthdate(LocalDate birthdate) {

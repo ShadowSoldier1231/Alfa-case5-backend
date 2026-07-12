@@ -29,11 +29,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.apache.commons.validator.routines.EmailValidator;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.project.main.enums.UserStatus.*;
 
@@ -144,12 +141,12 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
         }
 
-        if(changeRequest.getCity() != null){
-            Long cityId = fetchingService.GetCityIdByName(changeRequest.getCity());
-            if(cityId != -1) {
-                realUser.setCityId(cityId);
+        if(changeRequest.getCityId() != null){
+
+            if(fetchingService.cityExistsById(changeRequest.getCityId())) {
+                realUser.setCityId(changeRequest.getCityId());
             }else {
-                return ResponseEntity.ok(new RegisterResult(false, "Invalid city name"));
+                return ResponseEntity.ok(new RegisterResult(false, "Invalid city id"));
             }
         }
         if(changeRequest.getBirthdate() != null){
@@ -335,6 +332,10 @@ public class LoginApiController {
                         return  ResponseEntity.ok(new RegisterResult(false, "This email address is invalid"));
                     }
 
+                    if(!fetchingService.cityExistsById(registerRequest.getCityId())) {
+                        return ResponseEntity.ok(new RegisterResult(false, "Invalid city id"));
+                    }
+
 
                     UserSetup validUser = new UserSetup(registerRequest.getPassword(),
                             registerRequest.getUsername(), registerRequest.getEmail(), UserRole.USER, null);
@@ -343,7 +344,7 @@ public class LoginApiController {
 
 
                     userDataRepository.save(new UserData(validUser.getId(), registerRequest.getFirstName(), registerRequest.getLastName(),
-                            registerRequest.getBirthdate(), registerRequest.getStatus(), fetchingService.GetCityIdByName(registerRequest.getCity()), registerRequest.getMiddleName(),
+                            registerRequest.getBirthdate(), registerRequest.getStatus(), registerRequest.getCityId(), registerRequest.getMiddleName(),
                                 (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED)
                         );
                     leaderboardRepository.save( new LeaderboardUser(validUser.getId(), 0L,

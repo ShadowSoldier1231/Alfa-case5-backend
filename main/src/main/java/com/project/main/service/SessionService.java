@@ -8,7 +8,7 @@ import com.project.main.repository.UserSessionRepository;
 import org.springframework.data.util.Pair;
 import org.springframework.http.ResponseCookie;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 
 
-@Component
+@Service
 public class SessionService {
 
 
