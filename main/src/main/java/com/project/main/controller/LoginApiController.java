@@ -69,7 +69,7 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeemail")
-    public ResponseEntity<RegisterResult> changeEmail(@Valid @RequestBody ChangeRequest changeRequest, BindingResult bindingResult,
+    public ResponseEntity<RegisterResult> changeEmail(@Valid @RequestBody ChangeEmailRequest changeRequest, BindingResult bindingResult,
                                                       @CookieValue(value = "token", required = false) String token){
         if (bindingResult.hasErrors()) {
             String errorMsg = bindingResult.getFieldError("email") != null
@@ -127,7 +127,7 @@ public class LoginApiController {
     @Transactional
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
-    public ResponseEntity<RegisterResult> changeParams(@Valid @RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token){
+    public ResponseEntity<RegisterResult> changeParams(@Valid @RequestBody ChangeParamsRequest changeRequest, @CookieValue(value = "token", required = false) String token){
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
         if(!cookieCheck.getSuccess()){
@@ -199,7 +199,7 @@ public class LoginApiController {
     @JsonView(Views.RegisterResultPartial.class)
     @Transactional
     @PostMapping("/resetpassword")
-    public ResponseEntity<RegisterResult> resetPassword( @RequestBody ChangeRequest changeRequest, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
+    public ResponseEntity<RegisterResult> resetPassword( @RequestBody ResetPasswordRequest resetPasswordRequest, @CookieValue(value = "token", required = false) String token, HttpServletResponse response){
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
@@ -208,9 +208,9 @@ public class LoginApiController {
         }
         UserSession session = sessionPair.getSecond();
 
-        if(userService.passwordValidator(session.getUserId(), changeRequest.getOldPassword() )) {
+        if(userService.passwordValidator(session.getUserId(), resetPasswordRequest.getOldPassword() )) {
 
-            switch (userService.checkPassword(changeRequest.getNewPassword())){
+            switch (userService.checkPassword(resetPasswordRequest.getNewPassword())){
 
                 case EMPTY:
                     return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
@@ -224,7 +224,11 @@ public class LoginApiController {
                     return ResponseEntity.ok(new RegisterResult(false, "Password must contain at least 1 special character"));
                 default:
 
-                    userService.updatePassword(session.getUserId(), changeRequest.getNewPassword());
+                    try {
+                        userService.updatePassword(session.getUserId(), resetPasswordRequest.getNewPassword());
+                    } catch (Exception e) {
+                        ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
+                    }
                     sessionRepository.deleteByUserId(session.getUserId());
 
                     ResponseCookie cookie = sessionService.deleteCookie(token, false);

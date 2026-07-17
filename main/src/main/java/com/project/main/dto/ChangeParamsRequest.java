@@ -5,12 +5,10 @@ import com.project.main.enums.UserStatus;
 import jakarta.validation.constraints.Email;
 import java.time.LocalDate;
 
-public class ChangeRequest {
+public class ChangeParamsRequest {
 
-    @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
-    private String email;
-    private String oldPassword;
-    private  String newPassword;
+
+
     private String firstName;
     private String lastName;
     private String middleName;
@@ -19,7 +17,7 @@ public class ChangeRequest {
     private Long cityId;
     private UserStatus status;
 
-    public ChangeRequest(){
+    public ChangeParamsRequest(){
 
     }
 
@@ -44,13 +42,7 @@ public class ChangeRequest {
         return firstName;
     }
 
-    public String getEmail() {
-        return email;
-    }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
     public LocalDate getBirthdate() {
         return birthdate;
@@ -64,13 +56,7 @@ public class ChangeRequest {
         return middleName;
     }
 
-    public String getNewPassword() {
-        return newPassword;
-    }
 
-    public String getOldPassword() {
-        return oldPassword;
-    }
 
     public void setBirthdate(LocalDate birthdate) {
         this.birthdate = birthdate;
@@ -88,12 +74,6 @@ public class ChangeRequest {
         this.middleName = middleName;
     }
 
-    public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
-    }
 
-    public void setOldPassword(String oldPassword) {
-        this.oldPassword = oldPassword;
-    }
 
 }

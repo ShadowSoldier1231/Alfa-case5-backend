@@ -57,9 +57,12 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(Long id, String newPassword) {
+    public void updatePassword(Long id, String newPassword) throws Exception {
 
-        UserSetup user = userRepository.findById(id).get();
+        UserSetup user = userRepository.findById(id).orElse(null);
+        if(user== null){
+            throw new Exception("user is null");
+        }
         user.setPassword(this.passwordEncoder.encode(newPassword));
         userRepository.saveAndFlush(user);
     }
@@ -94,6 +97,20 @@ public class UserService {
         }
 
         return passwordEncoder.matches(password, user.getPassword());
+    }
+
+
+    @Transactional
+    public boolean verifyUser(String token, Long chatId) {
+        UserSetup user = userRepository.findByTelegramVerificationToken(token).orElse(null);
+
+        if (user != null) {
+            user.setTelegramId(chatId);
+            user.setTelegramVerificationToken(null);
+            userRepository.save(user);
+            return true;
+        }
+        return false;
     }
 
     @Transactional

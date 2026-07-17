@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Email;
 import java.time.LocalDate;
 
 public class RegisterRequest{
-    private Long id;
+
     @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
     private String email;
     private String username;
@@ -88,17 +88,13 @@ public class RegisterRequest{
         return email;
     }
 
-    public Long getId() {
-        return id;
-    }
+
 
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+
 
     public void setUsername(String username){
         this.username = username;
