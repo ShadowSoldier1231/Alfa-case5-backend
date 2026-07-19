@@ -6,8 +6,7 @@ import com.project.main.enums.UserStatus;
 import com.project.main.model.City;
 import com.project.main.model.LeaderboardUser;
 import com.project.main.model.UserData;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+
 
 import java.time.LocalDate;
 
@@ -17,7 +16,6 @@ public class UserProfile {
 
     private String cityName;
     private String regionName;
-    @Enumerated(EnumType.STRING)
     private UserStatus status;
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
@@ -25,7 +23,6 @@ public class UserProfile {
     private String middleName;
     private String lastName;
     private String nickName;
-    @Enumerated(EnumType.STRING)
     private GenderCode gender;
     private Long score;
     private Long placement;
@@ -56,6 +53,7 @@ public class UserProfile {
         private String cityName;
         private String regionName;
         private UserStatus status;
+        @JsonFormat(pattern = "dd.MM.yyyy")
         private LocalDate birthdate;
         private String firstName;
         private String middleName;
