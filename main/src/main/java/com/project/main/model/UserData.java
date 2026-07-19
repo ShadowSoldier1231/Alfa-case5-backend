@@ -20,7 +20,8 @@ public class UserData {
     private  String firstName;
     private String middleName;
     private String lastName;
-
+    private String nickName;
+    @Enumerated(EnumType.STRING)
     private GenderCode gender;
 
     public UserData(){
@@ -29,7 +30,7 @@ public class UserData {
 
     public UserData(Long id, String firstName, String lastName,
                     LocalDate birthdate, UserStatus status,  Long cityId, String middleName,
-                     GenderCode gender){
+                     GenderCode gender, String nickName){
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -38,7 +39,16 @@ public class UserData {
         this.cityId = cityId;
         this.middleName = middleName;
         this.gender = gender;
+        this.nickName = nickName;
 
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
+    }
+
+    public String getNickName() {
+        return nickName;
     }
 
     public String getMiddleName() {

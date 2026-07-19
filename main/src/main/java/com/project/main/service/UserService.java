@@ -198,7 +198,7 @@ public class UserService {
         return ValidUsernameStatus.OK;
     }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 12 * 60 * 60 * 1000, initialDelay = 50000)
     @Transactional
     public void updateLeaderboard() {
         leaderboardRepository.updateAllPlacements();

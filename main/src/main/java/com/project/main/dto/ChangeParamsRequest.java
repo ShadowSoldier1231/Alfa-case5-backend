@@ -16,9 +16,18 @@ public class ChangeParamsRequest {
     private LocalDate birthdate;
     private Long cityId;
     private UserStatus status;
+    private String nickName;
 
     public ChangeParamsRequest(){
 
+    }
+
+    public String getNickName() {
+        return nickName;
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
     }
 
     public UserStatus getStatus() {

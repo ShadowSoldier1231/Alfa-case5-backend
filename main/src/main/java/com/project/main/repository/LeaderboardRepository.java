@@ -7,8 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Long> {
+
+
+    List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
+
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE leaderboard_user u " +

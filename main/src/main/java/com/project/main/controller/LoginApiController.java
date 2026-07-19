@@ -179,6 +179,22 @@ public class LoginApiController {
                     return ResponseEntity.ok(new RegisterResult(false, "Invalid user status code"));
             }
         }
+        if(changeRequest.getNickName()!= null){
+            switch (userService.checkUsername(changeRequest.getNickName())){
+                case TOO_LONG:
+                    return ResponseEntity.ok(new RegisterResult(false, "Username cannot be longer than 20 characters"));
+                case TOO_SHORT:
+                    return ResponseEntity.ok(new RegisterResult(false, "Username cannot be shorter than 3 characters"));
+                case EMPTY:
+                    return ResponseEntity.ok(new RegisterResult(false, "Username cannot be empty"));
+                case SPACE:
+                    return  ResponseEntity.ok(new RegisterResult(false, "Username cannot contain spaces"));
+                case OK: {
+                    realUser.setNickName(changeRequest.getNickName());
+                }
+            }
+        }
+
         if (changeRequest.getFirstName() != null){
             if (!changeRequest.getFirstName().isEmpty()) {
                 realUser.setFirstName(changeRequest.getFirstName());
@@ -349,7 +365,8 @@ public class LoginApiController {
 
                     userDataRepository.save(new UserData(validUser.getId(), registerRequest.getFirstName(), registerRequest.getLastName(),
                             registerRequest.getBirthdate(), registerRequest.getStatus(), registerRequest.getCityId(), registerRequest.getMiddleName(),
-                                (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED)
+                                (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED,
+                            registerRequest.getUsername())
                         );
                     leaderboardRepository.save( new LeaderboardUser(validUser.getId(), 0L,
                                 0L, 0L, 0L)
