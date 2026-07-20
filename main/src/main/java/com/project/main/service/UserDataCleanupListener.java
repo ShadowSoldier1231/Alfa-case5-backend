@@ -27,8 +27,8 @@ public class UserDataCleanupListener {
         this.achievementRepository = achievementRepository;
     }
 
-
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onUserDeleted(UserDeletedEvent event) {
         Long userId = event.userId();
 
