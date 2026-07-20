@@ -1,36 +1,51 @@
 package com.project.main.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserStatus;
 import com.project.main.model.City;
 import com.project.main.model.LeaderboardUser;
 import com.project.main.model.UserData;
+import com.project.main.model.Views;
 
 
 import java.time.LocalDate;
 
 
 public class UserProfile {
-
-
+    @JsonView(Views.PublicProfile.class)
+    private Long id;
+    @JsonView(Views.PublicProfile.class)
     private String cityName;
+    @JsonView(Views.PublicProfile.class)
     private String regionName;
+    @JsonView(Views.PublicProfile.class)
     private UserStatus status;
+    @JsonView(Views.PublicProfile.class)
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
+    @JsonView(Views.PublicProfile.class)
     private  String firstName;
+    @JsonView(Views.PublicProfile.class)
     private String middleName;
     private String lastName;
+    @JsonView(Views.PublicProfile.class)
     private String nickName;
+    @JsonView(Views.PublicProfile.class)
     private GenderCode gender;
+    @JsonView(Views.PublicProfile.class)
     private Long score;
+    @JsonView(Views.PublicProfile.class)
     private Long placement;
+    @JsonView(Views.MyProfile.class)
+    private String email;
 
     public UserProfile() {
     }
 
     private UserProfile(Builder builder) {
+        this.id = builder.id;
         this.cityName = builder.cityName;
         this.regionName = builder.regionName;
         this.status = builder.status;
@@ -42,6 +57,7 @@ public class UserProfile {
         this.gender = builder.gender;
         this.score = builder.score;
         this.placement = builder.placement;
+        this.email = builder.email;
     }
 
     public static Builder builder() {
@@ -50,6 +66,7 @@ public class UserProfile {
 
 
     public static class Builder {
+        private Long id;
         private String cityName;
         private String regionName;
         private UserStatus status;
@@ -62,11 +79,13 @@ public class UserProfile {
         private GenderCode gender;
         private Long score;
         private Long placement;
+        private String email;
 
 
 
         public Builder include(UserData userData) {
             if (userData != null) {
+                this.id = userData.getId();
                 this.status = userData.getStatus();
                 this.birthdate = userData.getBirthdate();
                 this.firstName = userData.getFirstName();
@@ -104,6 +123,10 @@ public class UserProfile {
             return this;
         }
 
+        public Builder email(String email){
+            this.email = email;
+            return this;
+        }
         public Builder status(UserStatus status) {
             this.status = status;
             return this;
@@ -201,7 +224,21 @@ public class UserProfile {
         return gender;
     }
 
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public LocalDate getBirthdate() {
         return birthdate;

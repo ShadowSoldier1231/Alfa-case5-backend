@@ -2,14 +2,12 @@ package com.project.main.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.RegisterResult;
-import com.project.main.model.LeaderboardUser;
+
 
 import com.project.main.model.Solution;
 import com.project.main.model.UserSession;
 import com.project.main.model.Views;
-import com.project.main.repository.LeaderboardRepository;
-import com.project.main.repository.SolutionRepository;
-import com.project.main.repository.UserSessionRepository;
+
 import com.project.main.service.SessionService;
 import com.project.main.service.SolutionService;
 import com.project.main.service.UserModerationService;
@@ -20,7 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -75,13 +73,13 @@ public class TextAnalysisIntegrationController  {
                 ResponseCookie cookie = sessionService.deleteCookie(token, false);
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-                return ResponseEntity.ok(new RegisterResult(false, banReason));
+                return ResponseEntity.ok(new RegisterResult(false, banReason, session.getUserId()));
             }
 
-            return ResponseEntity.ok(new RegisterResult(true, ""));
+            return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
+            return ResponseEntity.ok(new RegisterResult(false, e.getMessage(), session.getUserId()));
         }
     }
 
@@ -99,18 +97,18 @@ public class TextAnalysisIntegrationController  {
 
         if (solution.getCaseId() == null || solution.getSolutionText() == null ||
                 solution.getSolutionResponse() == null || solution.getRating() == null) {
-            return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid request", session.getUserId()));
         }
         if (solution.getSolutionText().isBlank() || solution.getSolutionResponse().isBlank()) {
-            return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid request", session.getUserId()));
         }
 
         try {
 
             solutionService.submitSolution(session.getUserId(), solution);
-            return ResponseEntity.ok(new RegisterResult(true, ""));
+            return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
+            return ResponseEntity.ok(new RegisterResult(false, e.getMessage(), session.getUserId()));
         }
     }
 

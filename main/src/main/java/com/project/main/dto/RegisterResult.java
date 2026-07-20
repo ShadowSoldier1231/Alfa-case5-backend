@@ -12,16 +12,27 @@ public class RegisterResult{
     private String errorText;
     @JsonView(Views.RegisterResultFull.class)
     private String telegramUrl;
+    @JsonView(Views.RegisterResultId.class)
+    private Long id;
 
+    public RegisterResult(boolean success, String ErrorText, Long id){
+        this.success = success;
+        this.errorText = ErrorText;
+        this.id = id;
+    }
+    public RegisterResult(Long id){
+        this.id = id;
+    }
     public RegisterResult(boolean success, String ErrorText){
         this.success = success;
         this.errorText = ErrorText;
     }
 
-    public RegisterResult(boolean success, String ErrorText, String telegramUrl){
+    public RegisterResult(boolean success, String ErrorText, String telegramUrl, Long id){
         this.success = success;
         this.errorText = ErrorText;
         this.telegramUrl = telegramUrl;
+        this.id = id;
     }
 
 

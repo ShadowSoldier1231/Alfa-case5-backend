@@ -2,10 +2,7 @@ package com.project.main.service;
 
 
 import com.project.main.dto.LeaderboardTopUser;
-import com.project.main.model.City;
-import com.project.main.model.LeaderboardUser;
-import com.project.main.model.UserAvatar;
-import com.project.main.model.UserData;
+import com.project.main.model.*;
 import com.project.main.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -71,6 +68,12 @@ public class FetchingService {
             return false;
         }
         return cityRepository.existsById(cityId);
+    }
+
+    public String getEmailById(Long userId){
+        return userRepository.findById(userId)
+                .map(UserSetup::getEmail)
+                .orElse(null);
     }
 
     public UserData getUserData(Long userId){

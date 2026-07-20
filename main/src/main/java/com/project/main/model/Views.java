@@ -4,7 +4,10 @@ public class Views {
 
     public interface ChatView {}
 
-    public interface RegisterResultPartial {}
+    public interface RegisterResultId {}
+    public interface RegisterResultPartial extends RegisterResultId {}
     public interface RegisterResultFull extends RegisterResultPartial {}
 
+    public interface PublicProfile {}
+    public interface MyProfile extends PublicProfile {}
 }

@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class LoginApiController {
@@ -88,7 +89,7 @@ public class LoginApiController {
                 } catch (Exception e) {
                     ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
                 }
-                return ResponseEntity.ok(new RegisterResult(true, ""));
+                return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
             } else {
                 return ResponseEntity.ok(new RegisterResult(false, "This email address is invalid"));
             }
@@ -144,7 +145,7 @@ public class LoginApiController {
             }
 
             userService.updateUserParams(session.getUserId(), changeRequest);
-            return ResponseEntity.ok(new RegisterResult(true, ""));
+            return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
@@ -195,7 +196,7 @@ public class LoginApiController {
                 ResponseCookie cookie = sessionService.deleteCookie(token, false);
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-                return ResponseEntity.ok(new RegisterResult(true, ""));
+                return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
         }
     }
 
@@ -228,7 +229,7 @@ public class LoginApiController {
         try {
 
             userService.saveProfilePicture(session.getUserId(), file.getBytes());
-            return ResponseEntity.ok(new RegisterResult(true, ""));
+            return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
         } catch (IOException e) {
             return ResponseEntity.ok(new RegisterResult(false, "Failed to process image file"));
         }
@@ -290,9 +291,9 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "Invalid city id"));
         }
 
-        String botUrl = userService.registerNewUser(registerRequest);
+        Pair<String, Long> authResult = userService.registerNewUser(registerRequest);
 
-        return ResponseEntity.ok(new RegisterResult(true, "", botUrl));
+        return ResponseEntity.ok(new RegisterResult(true, "", authResult.getFirst(), authResult.getSecond()));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -319,7 +320,7 @@ public class LoginApiController {
             sessionService.createSession(cookie.getValue(), userId);
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-            return ResponseEntity.ok(new RegisterResult(true, ""));
+            return ResponseEntity.ok(new RegisterResult(true, "", userId));
 
         } catch (BadCredentialsException e) {
             return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
@@ -342,6 +343,50 @@ public class LoginApiController {
     }
 
 
+    @JsonView(Views.MyProfile.class)
+    @GetMapping("/me")
+    public ResponseEntity<UserProfile> getProfile(@CookieValue(value = "token", required = false) String token) {
+
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Long userId = sessionPair.getSecond().getUserId();
+
+        if (userId == null || userId <= 0L) {
+            return ResponseEntity.badRequest().build();
+        }
+        UserData data = fetchingService.getUserData(userId);
+        if (data == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(
+                UserProfile.builder()
+                        .email(fetchingService.getEmailById(userId))
+                        .include(data)
+                        .include(fetchingService.getLeaderboardUser(userId))
+                        .include(fetchingService.getCityByCityId(data.getCityId()))
+                        .build()
+        );
+
+    }
+
+    @JsonView(Views.RegisterResultId.class)
+    @GetMapping("/getId")
+    public ResponseEntity<RegisterResult> getUserId(@CookieValue(value = "token", required = false) String token){
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+        if(!cookieCheck.getSuccess()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(cookieCheck);
+        }
+        Long userId = sessionPair.getSecond().getUserId();
+
+        return ResponseEntity.ok(new RegisterResult(userId));
+    }
 
 
 

@@ -2,11 +2,13 @@ package com.project.main.controller;
 
 
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.UserProfile;
 import com.project.main.model.City;
 
 import com.project.main.model.UserData;
+import com.project.main.model.Views;
 import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
 import org.springframework.http.MediaType;
@@ -48,12 +50,13 @@ public class WebApiController {
 
     }
 
+    @JsonView(Views.PublicProfile.class)
     @GetMapping("/user/{id}/profile")
     public ResponseEntity<UserProfile> getUserProfile(@PathVariable("id") Long userId) {
         if (userId == null || userId <= 0L) {
             return ResponseEntity.badRequest().build();
         }
-        UserData data  =fetchingService.getUserData(userId);
+        UserData data = fetchingService.getUserData(userId);
         if (data == null) {
             return ResponseEntity.notFound().build();
         }

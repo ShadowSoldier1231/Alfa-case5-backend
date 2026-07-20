@@ -7,7 +7,7 @@ import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
 import com.project.main.model.*;
 import com.project.main.repository.*;
-
+import org.springframework.data.util.Pair;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -111,7 +111,7 @@ public class UserService {
     }
 
     @Transactional
-    public String registerNewUser(RegisterRequest registerRequest) {
+    public Pair<String, Long> registerNewUser(RegisterRequest registerRequest) {
 
         UserSetup validUser = new UserSetup(
                 registerRequest.getPassword(),
@@ -143,7 +143,7 @@ public class UserService {
         LeaderboardUser leaderboardUser = new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L);
         leaderboardRepository.save(leaderboardUser);
 
-        return botUrl;
+        return Pair.of(botUrl, validUser.getId());
     }
 
 
