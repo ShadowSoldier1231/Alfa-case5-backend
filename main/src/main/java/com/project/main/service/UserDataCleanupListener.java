@@ -6,8 +6,11 @@ import com.project.main.repository.AchievementRepository;
 import com.project.main.repository.SolutionRepository;
 import com.project.main.repository.UserAvatarRepository;
 import com.project.main.repository.UserDataRepository;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class UserDataCleanupListener {
