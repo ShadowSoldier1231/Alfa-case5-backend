@@ -3,9 +3,11 @@ package com.project.main.repository;
 
 import com.project.main.model.Solution;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,6 +24,11 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
     Long getSumOfMaxRatingsByUserId(@Param("userId") Long userId);
 
     List<Solution> findByCaseIdAndUserIdOrderBySolutionIdAsc(Long caseId, Long userId);
+
+    @Transactional
+    void deleteAllByUserId( Long userId);
+
+
 
 }
 

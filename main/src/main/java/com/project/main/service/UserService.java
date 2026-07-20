@@ -1,48 +1,45 @@
 package com.project.main.service;
 
-import com.project.main.*;
+import com.project.main.dto.ChangeParamsRequest;
 import com.project.main.dto.LoginRequest;
-import com.project.main.dto.UserDeletedEvent;
-import com.project.main.enums.ValidPasswordStatus;
-import com.project.main.enums.ValidUsernameStatus;
-
-import com.project.main.model.LeaderboardUser;
-
-import com.project.main.model.UserSetup;
+import com.project.main.dto.RegisterRequest;
+import com.project.main.enums.GenderCode;
+import com.project.main.enums.UserRole;
+import com.project.main.model.*;
 import com.project.main.repository.*;
 
+import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-
-import java.time.LocalDateTime;
 
 
 
 @Service
 public class UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
-    private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
-
+    private final UserAvatarRepository userAvatarRepository;
+    private final LeaderboardRepository leaderboardRepository;
 
     public UserService(UserRepository userRepository,
-                        LeaderboardRepository leaderboardRepository,
-                       UserDataRepository userDataRepository, ApplicationEventPublisher eventPublisher) {
-
+                       UserDataRepository userDataRepository, UserAvatarRepository userAvatarRepository,
+                        LeaderboardRepository leaderboardRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.userDataRepository = userDataRepository;
+        this.userAvatarRepository = userAvatarRepository;
+
         this.leaderboardRepository = leaderboardRepository;
-        this.eventPublisher = eventPublisher;
+
     }
 
     public String save(UserSetup user) {
@@ -58,150 +55,150 @@ public class UserService {
 
     @Transactional
     public void updatePassword(Long id, String newPassword) throws Exception {
-
-        UserSetup user = userRepository.findById(id).orElse(null);
-        if(user== null){
-            throw new Exception("user is null");
-        }
+        UserSetup user = userRepository.findById(id)
+                .orElseThrow(() -> new Exception("user is null"));
         user.setPassword(this.passwordEncoder.encode(newPassword));
         userRepository.saveAndFlush(user);
     }
 
-    public void updateEmail(Long id, String email) {
-
-        UserSetup user = userRepository.findById(id).get();
-        user.setEmail(email);
-        this.userRepository.save(user);
-    }
-
-
-    public boolean loginUser(LoginRequest loginRequest, UserSetup realUser) {
-
-        if (loginRequest == null || loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
-            boolean check = passwordEncoder.matches("!@#$%^^&*()word","##just##key##mash");
-            return false;
-        }
-
-
-        return passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword());
-    }
-
-
-
-    public boolean passwordValidator(Long id, String password) {
-
-        UserSetup user = userRepository.findById(id).orElse(null);
-        if(user == null){
-            boolean check = passwordEncoder.matches("!@#$%^^&*()word","##just##key##mash");
-            return false;
-        }
-
-        return passwordEncoder.matches(password, user.getPassword());
+    @Transactional
+    public void saveProfilePicture(Long userId, byte[] imageBytes) {
+        UserAvatar avatar = new UserAvatar(userId, imageBytes);
+        this.userAvatarRepository.save(avatar);
     }
 
 
     @Transactional
+    public void updateEmail(Long id, String email) {
+        UserSetup user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        user.setEmail(email);
+    }
+
+    public boolean loginUser(LoginRequest loginRequest, UserSetup realUser) {
+        if (loginRequest == null || loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
+            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+            return false;
+        }
+        return passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword());
+    }
+
+    public boolean passwordValidator(Long id, String password) {
+        UserSetup user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+            return false;
+        }
+        return passwordEncoder.matches(password, user.getPassword());
+    }
+
+    @Transactional
     public boolean verifyUser(String token, Long chatId) {
         UserSetup user = userRepository.findByTelegramVerificationToken(token).orElse(null);
-
         if (user != null) {
             user.setTelegramId(chatId);
             user.setTelegramVerificationToken(null);
-            userRepository.save(user);
             return true;
         }
         return false;
     }
 
-    @Transactional
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
-        userDataRepository.deleteById(id);
-        leaderboardRepository.deleteById(id);
-        eventPublisher.publishEvent(new UserDeletedEvent(id));
+    public boolean userExistsByEmail(String email){
+        return userRepository.existsByEmail(email);
+    }
+    public boolean userExistsByUsername(String username) {
+        return userRepository.existsByUsername(username);
     }
 
     @Transactional
-    public String banUser(LeaderboardUser leaderboardUser){
+    public String registerNewUser(RegisterRequest registerRequest) {
+
+        UserSetup validUser = new UserSetup(
+                registerRequest.getPassword(),
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                UserRole.USER,
+                null
+        );
 
 
-        if(leaderboardUser == null) return  "User does not exist";
+        String botUrl = this.save(validUser);
 
-        if (leaderboardUser.getBanCount() > 3){
-            deleteUser(leaderboardUser.getUserId());
-            return  "User no longer exists";
-        }
-        UserSetup user = userRepository.findById(leaderboardUser.getUserId()).orElse(null);
-        if(user == null){
-            return  "User does not exist";
-        }
-        leaderboardUser.setBanCount(leaderboardUser.getBanCount() + 1L);
-        leaderboardUser.setWarningsCount(0L);
-        user.setBannedUntil(LocalDateTime.now().plusMonths(2));
+
+        GenderCode gender = (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED;
+        UserData userData = new UserData(
+                validUser.getId(),
+                registerRequest.getFirstName(),
+                registerRequest.getLastName(),
+                registerRequest.getBirthdate(),
+                registerRequest.getStatus(),
+                registerRequest.getCityId(),
+                registerRequest.getMiddleName(),
+                gender,
+                registerRequest.getUsername()
+        );
+        userDataRepository.save(userData);
+
+
+        LeaderboardUser leaderboardUser = new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L);
         leaderboardRepository.save(leaderboardUser);
-        userRepository.save(user);
 
-        return "User is now banned";
+        return botUrl;
     }
 
 
-    public ValidPasswordStatus checkPassword(String password)
-    {
-        if(password ==null) return ValidPasswordStatus.EMPTY;
-
-        if(password.isBlank()) {
-            return ValidPasswordStatus.EMPTY;
-        }else if(password.length() < 8){
-            return ValidPasswordStatus.TOO_SHORT;
-        }else if(password.length() > 30){
-            return ValidPasswordStatus.TOO_LONG;
-        }else{
-            String spec = "!@#$%^&*()_-+=;:/?|\\<>{}[]";
-            boolean found = false;
-            for (int i = 0; i < spec.length(); i++){
-                if (password.indexOf(spec.charAt(i)) >= 0){
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return ValidPasswordStatus.NO_SPECIAL_SYMBOL;
-            }
-
-            found = false;
-            for (int i = 0; i < password.length(); i++){
-                char temp = password.charAt(i);
-                if (Character.isDigit(temp)) {
-                    found = true;
-                }
-            }
-            if (!found) {
-                return ValidPasswordStatus.NO_DIGITS;
-            }
-        }
-        return ValidPasswordStatus.OK;
-    }
-
-    public ValidUsernameStatus checkUsername(String username){
-
-        if(username == null) return  ValidUsernameStatus.EMPTY;
-
-        if(username.length() < 3){
-            return  ValidUsernameStatus.TOO_SHORT;
-        }else if(username.length() > 20){
-            return  ValidUsernameStatus.TOO_LONG;
-        }else if(username.isBlank()){
-            return  ValidUsernameStatus.EMPTY;
-        }else if (username.indexOf(' ') >= 0){
-            return ValidUsernameStatus.SPACE;
-        }
-        return ValidUsernameStatus.OK;
-    }
-
-    @Scheduled(fixedRate = 12 * 60 * 60 * 1000, initialDelay = 50000)
     @Transactional
-    public void updateLeaderboard() {
-        leaderboardRepository.updateAllPlacements();
+    public void updateUserParams(Long userId, ChangeParamsRequest changeRequest) {
+
+        UserData realUser = userDataRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+
+        if (changeRequest.getCityId() != null) {
+            realUser.setCityId(changeRequest.getCityId());
+        }
+        if (changeRequest.getBirthdate() != null) {
+            realUser.setBirthdate(changeRequest.getBirthdate());
+        }
+        if (changeRequest.getStatus() != null) {
+            realUser.setStatus(changeRequest.getStatus());
+        }
+        if (changeRequest.getNickName() != null) {
+            realUser.setNickName(changeRequest.getNickName());
+        }
+        if (changeRequest.getFirstName() != null && !changeRequest.getFirstName().isEmpty()) {
+            realUser.setFirstName(changeRequest.getFirstName());
+        }
+        if (changeRequest.getLastName() != null && !changeRequest.getLastName().isEmpty()) {
+            realUser.setLastName(changeRequest.getLastName());
+        }
+
+        userDataRepository.save(realUser);
     }
+
+    @Transactional
+    public Long authenticateUser(LoginRequest loginRequest) {
+        UserSetup realUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+
+        if (realUser == null) {
+            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+            throw new BadCredentialsException("Invalid username or password");
+        }
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword())) {
+            throw new BadCredentialsException("Invalid username or password");
+        }
+
+        if (realUser.getBannedUntil() != null) {
+            if (realUser.getBannedUntil().isAfter(LocalDateTime.now())) {
+                throw new BadCredentialsException("User is still banned");
+            }
+            realUser.setBannedUntil(null);
+            userRepository.save(realUser);
+        }
+
+        return realUser.getId();
+    }
+
+
 
 }

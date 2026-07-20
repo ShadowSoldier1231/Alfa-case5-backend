@@ -11,6 +11,8 @@ import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.SolutionRepository;
 import com.project.main.repository.UserSessionRepository;
 import com.project.main.service.SessionService;
+import com.project.main.service.SolutionService;
+import com.project.main.service.UserModerationService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.util.Pair;
@@ -21,122 +23,117 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 
 @RestController
 @RequestMapping("/api/text/v1")
 public class TextAnalysisIntegrationController  {
 
-    private final UserSessionRepository sessionRepository;
-    private final LeaderboardRepository leaderboardRepository;
+
+    private final UserModerationService moderationService;
     private final UserService userService;
-    private final SolutionRepository solutionRepository;
     private final SessionService sessionService;
+    private final SolutionService solutionService;
 
-    public TextAnalysisIntegrationController (UserSessionRepository userSessionRepository,
-                           LeaderboardRepository leaderboardRepository, SessionService sessionService,
-                                              UserService userService, SolutionRepository solutionRepository){
-
-        this.sessionRepository = userSessionRepository;
-        this.leaderboardRepository = leaderboardRepository;
+    public TextAnalysisIntegrationController(UserModerationService moderationService,
+                                             UserService userService, SolutionService solutionService,
+                                             SessionService sessionService) {
+        this.moderationService = moderationService;
+        this.solutionService = solutionService;
         this.userService = userService;
-        this.solutionRepository = solutionRepository;
         this.sessionService = sessionService;
     }
 
 
     @JsonView(Views.RegisterResultPartial.class)
     @GetMapping("/checkCookie")
-    public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token){
+    public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
-        return ResponseEntity.ok(cookieCheck);
-
-
+        return ResponseEntity.ok(sessionPair.getFirst());
     }
+
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/processViolation")
     public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
-                                           HttpServletResponse response){
+                                                           HttpServletResponse response) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
-        if(!cookieCheck.getSuccess()){
+        if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
         UserSession session = sessionPair.getSecond();
 
-        LeaderboardUser user = leaderboardRepository.findById(session.getUserId())
-                .orElse(null);
-        if (user == null){
-            return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
+        try {
+
+            String banReason = moderationService.addWarning(session.getUserId());
+
+            if (banReason != null) {
+
+                sessionService.deleteAllSessions(session.getUserId());
+                ResponseCookie cookie = sessionService.deleteCookie(token, false);
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+                return ResponseEntity.ok(new RegisterResult(false, banReason));
+            }
+
+            return ResponseEntity.ok(new RegisterResult(true, ""));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
         }
-
-        user.setWarningsCount(user.getWarningsCount()+1);
-        leaderboardRepository.save(user);
-
-        if(user.getWarningsCount() > 2){
-
-            String errorText =  userService.banUser(user);
-            ResponseCookie cookie = sessionService.deleteCookie(token, false);
-            sessionService.deleteAllSessions(session.getUserId());
-
-            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-            return ResponseEntity.ok(new RegisterResult(false, errorText));
-        }
-        return ResponseEntity.ok(new RegisterResult(true, ""));
-
     }
 
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
-    public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token, @RequestBody Solution solution){
+    public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token,
+                                                   @RequestBody Solution solution) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getFirst();
-        if(!cookieCheck.getSuccess()){
+        if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
         UserSession session = sessionPair.getSecond();
 
-        LeaderboardUser user = leaderboardRepository.findById(session.getUserId())
-                .orElse(null);
-        if (user == null){
-            return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
-        }
-        if(solution.getCaseId() ==null || solution.getSolutionText() ==null || solution.getSolutionResponse() == null || solution.getRating() == null){
+        if (solution.getCaseId() == null || solution.getSolutionText() == null ||
+                solution.getSolutionResponse() == null || solution.getRating() == null) {
             return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
         }
-        if(solution.getSolutionText().isBlank() || solution.getSolutionResponse().isBlank()){
+        if (solution.getSolutionText().isBlank() || solution.getSolutionResponse().isBlank()) {
             return ResponseEntity.ok(new RegisterResult(false, "Invalid request"));
         }
-        solution.setUserId(session.getUserId());
-        solutionRepository.save(solution);
 
-        Long totalScore = solutionRepository.getSumOfMaxRatingsByUserId(user.getUserId());
-        user.setScore(totalScore != null ? totalScore : 0L);
+        try {
 
-        leaderboardRepository.save(user);
-        return ResponseEntity.ok(new RegisterResult(true, ""));
-
-
+            solutionService.submitSolution(session.getUserId(), solution);
+            return ResponseEntity.ok(new RegisterResult(true, ""));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
+        }
     }
 
     @JsonView(Views.ChatView.class)
     @GetMapping("/getChatSequence/{caseId}")
     public ResponseEntity<List<Solution>> getChatSequence(@CookieValue(value = "token", required = false) String token,
-                                          @PathVariable Long caseId) {
-
-        if (token == null) return ResponseEntity.ok(Collections.emptyList());
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return  ResponseEntity.ok(Collections.emptyList());
+                                                          @PathVariable Long caseId) {
+        if (token == null) {
+            return ResponseEntity.ok(Collections.emptyList());
         }
 
-        return ResponseEntity.ok(solutionRepository.findByCaseIdAndUserIdOrderBySolutionIdAsc(caseId, session.getUserId()));
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getFirst();
+
+        if (!cookieCheck.getSuccess()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        UserSession session = sessionPair.getSecond();
+
+        List<Solution> chatSequence = solutionService.getChatSequence(caseId, session.getUserId());
+        return ResponseEntity.ok(chatSequence);
     }
 
 

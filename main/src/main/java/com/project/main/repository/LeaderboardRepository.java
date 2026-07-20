@@ -4,6 +4,7 @@ import com.project.main.model.LeaderboardUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,10 @@ import java.util.List;
 
 @Repository
 public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Long> {
+
+    @Modifying
+    @Query("UPDATE LeaderboardUser l SET l.score = :score WHERE l.userId = :userId")
+    void updateScore(@Param("userId") Long userId, @Param("score") Long score);
 
 
     List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();

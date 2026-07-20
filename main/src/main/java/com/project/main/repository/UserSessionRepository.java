@@ -29,9 +29,7 @@ public interface UserSessionRepository extends JpaRepository<UserSession, String
     @Transactional
     void deleteByToken(String token);
 
-    @Modifying
     @Transactional
-    @Query(value = "DELETE FROM user_session WHERE user_id = :userId", nativeQuery = true)
-    void deleteAllByUserId(@Param("userId") Long userId);
+    void deleteAllByUserId( Long userId);
 
 }
