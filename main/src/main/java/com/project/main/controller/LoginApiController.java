@@ -16,7 +16,7 @@ import com.project.main.service.UserValidationService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
-import org.springframework.data.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -68,12 +68,12 @@ public class LoginApiController {
 
         try {
             Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-            RegisterResult cookieCheck = sessionPair.getFirst();
+            RegisterResult cookieCheck = sessionPair.getLeft();
             if (!cookieCheck.getSuccess()) {
                 return ResponseEntity.ok(cookieCheck);
             }
 
-            UserSession session = sessionPair.getSecond();
+            UserSession session = sessionPair.getRight();
             if (changeRequest.getEmail() == null || changeRequest.getEmail().isBlank()) {
                 return ResponseEntity.ok(new RegisterResult(false, "Email cannot be blank"));
             }
@@ -116,11 +116,11 @@ public class LoginApiController {
     public ResponseEntity<RegisterResult> changeParams(@Valid @RequestBody ChangeParamsRequest changeRequest,
                                                        @CookieValue(value = "token", required = false) String token) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         try {
 
@@ -159,11 +159,11 @@ public class LoginApiController {
                                                         HttpServletResponse response) {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         if (!userService.passwordValidator(session.getUserId(), resetPasswordRequest.getOldPassword())) {
             return ResponseEntity.ok(new RegisterResult(false, "Incorrect password"));
@@ -207,11 +207,11 @@ public class LoginApiController {
                                                             @CookieValue(value = "token", required = false) String token) {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         if (file.isEmpty()) {
             return ResponseEntity.ok(new RegisterResult(false, "File cannot be empty"));
@@ -294,7 +294,7 @@ public class LoginApiController {
 
         Pair<String, Long> authResult = userService.registerNewUser(registerRequest);
 
-        return ResponseEntity.ok(new RegisterResult(true, "", authResult.getFirst(), authResult.getSecond()));
+        return ResponseEntity.ok(new RegisterResult(true, "", authResult.getLeft(), authResult.getRight()));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -350,11 +350,11 @@ public class LoginApiController {
 
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if(!cookieCheck.getSuccess()){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Long userId = sessionPair.getSecond().getUserId();
+        Long userId = sessionPair.getRight().getUserId();
 
         if (userId == null || userId <= 0L) {
             return ResponseEntity.badRequest().build();
@@ -380,11 +380,11 @@ public class LoginApiController {
     public ResponseEntity<RegisterResult> getUserId(@CookieValue(value = "token", required = false) String token){
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if(!cookieCheck.getSuccess()){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(cookieCheck);
         }
-        Long userId = sessionPair.getSecond().getUserId();
+        Long userId = sessionPair.getRight().getUserId();
 
         return ResponseEntity.ok(new RegisterResult(userId));
     }

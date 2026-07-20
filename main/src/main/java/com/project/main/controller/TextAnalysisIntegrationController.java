@@ -13,7 +13,7 @@ import com.project.main.service.SolutionService;
 import com.project.main.service.UserModerationService;
 import com.project.main.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +48,7 @@ public class TextAnalysisIntegrationController  {
     @GetMapping("/checkCookie")
     public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        return ResponseEntity.ok(sessionPair.getFirst());
+        return ResponseEntity.ok(sessionPair.getLeft());
     }
 
 
@@ -57,11 +57,11 @@ public class TextAnalysisIntegrationController  {
     public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
                                                            HttpServletResponse response) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         try {
 
@@ -89,11 +89,11 @@ public class TextAnalysisIntegrationController  {
     public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token,
                                                    @RequestBody Solution solution) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(cookieCheck);
         }
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         if (solution.getCaseId() == null || solution.getSolutionText() == null ||
                 solution.getSolutionResponse() == null || solution.getRating() == null) {
@@ -122,13 +122,13 @@ public class TextAnalysisIntegrationController  {
 
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getFirst();
+        RegisterResult cookieCheck = sessionPair.getLeft();
 
         if (!cookieCheck.getSuccess()) {
             return ResponseEntity.ok(Collections.emptyList());
         }
 
-        UserSession session = sessionPair.getSecond();
+        UserSession session = sessionPair.getRight();
 
         List<Solution> chatSequence = solutionService.getChatSequence(caseId, session.getUserId());
         return ResponseEntity.ok(chatSequence);

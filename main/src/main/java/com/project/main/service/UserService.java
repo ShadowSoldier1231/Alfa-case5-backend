@@ -5,10 +5,9 @@ import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
 import com.project.main.model.*;
 import com.project.main.repository.*;
-import org.springframework.data.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;

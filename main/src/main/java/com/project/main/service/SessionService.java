@@ -5,7 +5,8 @@ import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserDeletedEvent;
 import com.project.main.model.UserSession;
 import com.project.main.repository.UserSessionRepository;
-import org.springframework.data.util.Pair;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseCookie;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
