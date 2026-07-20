@@ -29,6 +29,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.telegram:telegrambots-springboot-longpolling-starter:7.11.0'
 	implementation 'org.telegram:telegrambots-client:7.11.0'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

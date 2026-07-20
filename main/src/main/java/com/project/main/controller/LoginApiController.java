@@ -248,6 +248,7 @@ public class LoginApiController {
         }
 
 
+
         switch (validationService.checkPassword(registerRequest.getPassword())) {
             case EMPTY:
                 return ResponseEntity.ok(new RegisterResult(false, "Password cannot be empty"));
@@ -388,7 +389,11 @@ public class LoginApiController {
         return ResponseEntity.ok(new RegisterResult(userId));
     }
 
-
+    @JsonView(Views.RegisterResultPartial.class)
+    @PostMapping("/verify")
+    public  ResponseEntity<RegisterResult> verifyUser(@RequestBody VerificationRequest verificationRequest){
+        return  ResponseEntity.ok(userService.verifyUser(verificationRequest));
+    }
 
 }
 

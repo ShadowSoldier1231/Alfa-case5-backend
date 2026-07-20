@@ -18,8 +18,7 @@ public class UserSetup {
     private Long id;
     @Column(name = "telegram_id", unique = true)
     private Long telegramId;
-    @Column(name = "telegram_verification_token", length = 64, unique = true)
-    private String telegramVerificationToken;
+    private boolean isVerified;
     private  String password;
     @Column(unique = true)
     private  String username;
@@ -34,7 +33,7 @@ public class UserSetup {
 
 
 
-    public UserSetup(String password, String username, String email,  UserRole role, LocalDateTime bannedUntil){
+    public UserSetup(String password, String username, String email,  UserRole role, LocalDateTime bannedUntil, boolean isVerified){
         this.username = username;
         this.password = password;
         this.creationDate = LocalDateTime.now();
@@ -51,6 +50,14 @@ public class UserSetup {
     public UserSetup(String password, String username){
         this.password = password;
         this.username = username;
+    }
+
+    public boolean isVerified() {
+        return isVerified;
+    }
+
+    public void setVerified(boolean verified) {
+        isVerified = verified;
     }
 
     public LocalDateTime getBannedUntil() {
@@ -89,13 +96,7 @@ public class UserSetup {
         this.telegramId = telegramId;
     }
 
-    public String getTelegramVerificationToken() {
-        return telegramVerificationToken;
-    }
 
-    public void setTelegramVerificationToken(String telegramVerificationToken) {
-        this.telegramVerificationToken = telegramVerificationToken;
-    }
 
     public Long getId() {
         return id;

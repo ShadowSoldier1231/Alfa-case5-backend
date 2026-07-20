@@ -1,8 +1,6 @@
 package com.project.main.service;
 
-import com.project.main.dto.ChangeParamsRequest;
-import com.project.main.dto.LoginRequest;
-import com.project.main.dto.RegisterRequest;
+import com.project.main.dto.*;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
 import com.project.main.model.*;
@@ -29,34 +27,30 @@ public class UserService {
     private final UserDataRepository userDataRepository;
     private final UserAvatarRepository userAvatarRepository;
     private final LeaderboardRepository leaderboardRepository;
+    private final  VerificationService verificationService;
 
     public UserService(UserRepository userRepository,
                        UserDataRepository userDataRepository, UserAvatarRepository userAvatarRepository,
-                        LeaderboardRepository leaderboardRepository) {
+                        LeaderboardRepository leaderboardRepository, VerificationService verificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.userDataRepository = userDataRepository;
         this.userAvatarRepository = userAvatarRepository;
-
+        this.verificationService = verificationService;
         this.leaderboardRepository = leaderboardRepository;
 
     }
 
-    public String save(UserSetup user) {
+    public void save(UserSetup user) {
         user.setCurrentTime();
         user.setPassword(this.passwordEncoder.encode(user.getPassword()));
-
-        String token = UUID.randomUUID().toString();
-        user.setTelegramVerificationToken(token);
-
         this.userRepository.save(user);
-        return "https://t.me/alfa_auth_verification_bot?start=" + token;
     }
 
     @Transactional
     public void updatePassword(Long id, String newPassword) throws Exception {
         UserSetup user = userRepository.findById(id)
-                .orElseThrow(() -> new Exception("user is null"));
+                .orElseThrow(() -> new Exception("User is null"));
         user.setPassword(this.passwordEncoder.encode(newPassword));
         userRepository.saveAndFlush(user);
     }
@@ -65,6 +59,26 @@ public class UserService {
     public void saveProfilePicture(Long userId, byte[] imageBytes) {
         UserAvatar avatar = new UserAvatar(userId, imageBytes);
         this.userAvatarRepository.save(avatar);
+    }
+
+    public RegisterResult verifyUser(VerificationRequest request){
+        if(request == null){
+            return new RegisterResult(false, "Invalid request");
+        }
+        if(!userRepository.existsById(request.getUserId())){
+            return new RegisterResult(false, "User does not exist");
+        }
+        if (request.getVerification() == null) {
+            return new RegisterResult(false, "Verification code is required");
+        }
+        String errorMsg = verificationService.verifyUser(request);
+
+        if (!errorMsg.isEmpty()) {
+            return new RegisterResult(false, errorMsg);
+        }
+
+        return new RegisterResult(true, "", null, request.getUserId());
+
     }
 
 
@@ -92,16 +106,7 @@ public class UserService {
         return passwordEncoder.matches(password, user.getPassword());
     }
 
-    @Transactional
-    public boolean verifyUser(String token, Long chatId) {
-        UserSetup user = userRepository.findByTelegramVerificationToken(token).orElse(null);
-        if (user != null) {
-            user.setTelegramId(chatId);
-            user.setTelegramVerificationToken(null);
-            return true;
-        }
-        return false;
-    }
+
 
     public boolean userExistsByEmail(String email){
         return userRepository.existsByEmail(email);
@@ -118,12 +123,17 @@ public class UserService {
                 registerRequest.getUsername(),
                 registerRequest.getEmail(),
                 UserRole.USER,
-                null
+                null,
+                false
         );
 
+        this.save(validUser);
 
-        String botUrl = this.save(validUser);
-
+        String verification = verificationService.generateVerification(
+                validUser.getId(),
+                registerRequest.getValidationMethod(),
+                registerRequest.getEmail()
+        );
 
         GenderCode gender = (registerRequest.getGender() != null) ? registerRequest.getGender() : GenderCode.NOT_STATED;
         UserData userData = new UserData(
@@ -143,7 +153,7 @@ public class UserService {
         LeaderboardUser leaderboardUser = new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L);
         leaderboardRepository.save(leaderboardUser);
 
-        return Pair.of(botUrl, validUser.getId());
+        return Pair.of(verification, validUser.getId());
     }
 
 
@@ -186,6 +196,9 @@ public class UserService {
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword())) {
             throw new BadCredentialsException("Invalid username or password");
+        }
+        if(!realUser.isVerified()){
+            throw new BadCredentialsException("Account is not verified");
         }
 
         if (realUser.getBannedUntil() != null) {

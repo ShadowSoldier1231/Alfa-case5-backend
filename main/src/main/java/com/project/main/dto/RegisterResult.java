@@ -11,7 +11,7 @@ public class RegisterResult{
     @JsonView(Views.RegisterResultPartial.class)
     private String errorText;
     @JsonView(Views.RegisterResultFull.class)
-    private String telegramUrl;
+    private String verification;
     @JsonView(Views.RegisterResultId.class)
     private Long id;
 
@@ -28,10 +28,10 @@ public class RegisterResult{
         this.errorText = ErrorText;
     }
 
-    public RegisterResult(boolean success, String ErrorText, String telegramUrl, Long id){
+    public RegisterResult(boolean success, String ErrorText, String verification, Long id){
         this.success = success;
         this.errorText = ErrorText;
-        this.telegramUrl = telegramUrl;
+        this.verification = verification;
         this.id = id;
     }
 
@@ -39,12 +39,12 @@ public class RegisterResult{
     public RegisterResult (){
     }
 
-    public String getTelegramUrl() {
-        return telegramUrl;
+    public String getVerification() {
+        return verification;
     }
 
-    public void setTelegramUrl(String telegramUrl) {
-        this.telegramUrl = telegramUrl;
+    public void setVerification(String verification) {
+        this.verification = verification;
     }
 
 
@@ -55,6 +55,15 @@ public class RegisterResult{
     public String getErrorText(){
         return errorText;
     }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
     public void setSuccess(boolean success){
         this.success = success;
     }

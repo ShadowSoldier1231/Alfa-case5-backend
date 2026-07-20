@@ -3,7 +3,10 @@ package com.project.main.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserStatus;
+import com.project.main.enums.ValidationMethod;
+
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
@@ -21,9 +24,19 @@ public class RegisterRequest{
     private String firstName;
     private String lastName;
     private GenderCode gender;
+    @NotNull(message = "Validation method is required")
+    private ValidationMethod validationMethod;
 
     public RegisterRequest(){
 
+    }
+
+    public ValidationMethod getValidationMethod() {
+        return validationMethod;
+    }
+
+    public void setValidationMethod(ValidationMethod validationMethod) {
+        this.validationMethod = validationMethod;
     }
 
     public void setMiddleName(String middleName) {

@@ -27,14 +27,14 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
     private static final Logger logger = LoggerFactory.getLogger(TelegramAuthBot.class);
     private final TelegramClient telegramClient;
     private final String botToken;
-    private final UserService userService;
+    private final VerificationService verificationService;
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     public TelegramAuthBot(@Value("${telegram.bot.token}") String botToken,
-                           UserService userService) {
+                           VerificationService verificationService) {
         this.botToken = botToken;
         this.telegramClient = new OkHttpTelegramClient(botToken);
-        this.userService = userService;
+        this.verificationService = verificationService;
     }
 
     @Override
@@ -70,7 +70,12 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
             if (messageText.startsWith("/start ")) {
                 String token = messageText.substring(7).trim();
 
-                boolean isSuccess = userService.verifyUser(token, chatId);
+                if (token.isEmpty()) {
+                    sendText(chatId, "❌ Ошибка: Токен верификации отсутствует.");
+                    return;
+                }
+
+                boolean isSuccess = verificationService.verifyTelegramUser(token, chatId);
 
                 if (isSuccess) {
                     sendText(chatId, "✅ Ваш аккаунт успешно подтвержден! Теперь вы можете вернуться на сайт.");
