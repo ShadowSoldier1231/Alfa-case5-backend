@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./main  # ← Все команды будут выполняться в папке main
     
     steps:
     - uses: actions/checkout@v4
