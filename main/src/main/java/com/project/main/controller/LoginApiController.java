@@ -293,8 +293,13 @@ public class LoginApiController {
         }
 
         Pair<String, Long> authResult = userService.registerNewUser(registerRequest);
+        Long userId = authResult.getRight();
+        ResponseCookie preAuthCookie = sessionService.createPreAuthSession(userId);
 
-        return ResponseEntity.ok(new RegisterResult(true, "", authResult.getLeft(), authResult.getRight()));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, preAuthCookie.toString())
+                .body(new RegisterResult(true, "", authResult.getLeft(), authResult.getRight()));
+
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -390,10 +395,33 @@ public class LoginApiController {
     }
 
     @JsonView(Views.RegisterResultPartial.class)
-    @PostMapping("/verify")
-    public  ResponseEntity<RegisterResult> verifyUser(@RequestBody VerificationRequest verificationRequest){
-        return  ResponseEntity.ok(userService.verifyUser(verificationRequest));
+    @PostMapping("/verify/{code}")
+    public ResponseEntity<RegisterResult> verifyUser(
+            @PathVariable("code") Long verificationCode,
+            @CookieValue(value = "token", required = false) String token,
+            HttpServletResponse response) {
+
+        if (token == null) {
+            return ResponseEntity.ok(new RegisterResult(false, "Verification session expired."));
+        }
+
+
+        Long tokenUserId = sessionService.getUserIdFromPreAuthCookie(token);
+        if (tokenUserId == null) {
+            return ResponseEntity.ok(new RegisterResult(false, "Invalid or expired verification session."));
+        }
+
+
+        RegisterResult result = userService.verifyUser(tokenUserId, verificationCode);
+
+        if (result.getSuccess()) {
+            ResponseCookie clearCookie = sessionService.deleteCookie(token, false);
+            response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
+        }
+
+        return ResponseEntity.ok(result);
     }
+
 
 }
 

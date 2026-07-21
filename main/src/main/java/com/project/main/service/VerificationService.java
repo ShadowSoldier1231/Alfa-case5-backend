@@ -1,6 +1,6 @@
 package com.project.main.service;
 
-import com.project.main.dto.VerificationRequest;
+
 import com.project.main.enums.ValidationMethod;
 import com.project.main.model.UserSetup;
 import com.project.main.model.UserVerification;
@@ -78,11 +78,11 @@ public class VerificationService {
     }
 
     @Transactional
-    public String verifyUser(VerificationRequest request) {
+    public String verifyUser(Long userId, Long verificationCode) {
 
         UserVerification verification = verificationRepository.findByUserIdAndEmailVerificationCode(
-                request.getUserId(),
-                request.getVerification()
+                userId,
+                verificationCode
         ).orElse(null);
 
         if (verification == null) {

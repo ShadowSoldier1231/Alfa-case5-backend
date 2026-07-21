@@ -1,5 +1,3 @@
-# Alfa-case5-backend
-
 # Документация API
 
 Спецификация серверных эндпоинтов приложения.
@@ -28,12 +26,12 @@ curl -X POST -H "Content-Type: application/json" \
 > **Примечание:** Поле `validationMethod` обязательно и принимает значения `EMAIL` или `TELEGRAM`.
 
 ### Верификация аккаунта (`POST`)
-Подтверждение регистрации. При `EMAIL` в поле `verification` передается 6-значный код. При `TELEGRAM` верификация проходит автоматически по ссылке из бота, но этот метод также возвращает статус.
+Подтверждение регистрации. Код подтверждения передается прямо в URL (Path Variable). При методе `EMAIL` это 6-значное число. Идентификация пользователя (`userId`) происходит автоматически на стороне бэкенда через временную куку `token`, выданную при регистрации.
 
 ```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"userId":"8", "verification":"818018"}' \
-  http://localhost:8080/api/v1/auth/verify
+curl --request POST \
+  --cookie "token=your_jwt_pre_auth_token_here" \
+  http://localhost:8080/api/v1/auth/verify/818018
 ```
 
 **Ответ (JSON):**
@@ -44,7 +42,7 @@ curl -X POST -H "Content-Type: application/json" \
   "userId": 8
 }
 ```
-*(При логической ошибке возвращается HTTP 200, но `"success": false` и текст ошибки в `errorText`)*.
+*(При логической ошибке или истечении сессии верификации возвращается HTTP 200, но `"success": false` и текст ошибки в `errorText`)*.
 
 ### Вход (`POST`)
 Авторизация пользователя. При успехе сервер возвращает сессионную Cookie.
@@ -261,8 +259,11 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Please login first` | Требуется предварительный вход в систему. |
 | &nbsp; | `You are already logged in` | Сессия уже активна для этого пользователя. |
 | &nbsp; | `Session expired` | Срок действия текущей сессии истек. |
-| **Верификация** | `Verification code is required` | Не передан код или токен для верификации. |
-| &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек. |
+| **Верификация** | `Verification session expired.` | Временная кука `token` (JWT) отсутствует в запросе. |
+| &nbsp; | `Invalid or expired verification session.` | Временный JWT-токен в куке просрочен (прошел 1 час) или подделан. |
+| &nbsp; | `Security violation: User ID mismatch.` | ID пользователя из куки-JWT не совпадает с переданным в системе ID. |
+| &nbsp; | `Verification code is required` | Не передан код для верификации. |
+| &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек в БД. |
 | **Статус, Модерация и Баны** | `User does not exist` | Пользователь не найден в системе (или в таблице лидеров). |
 | &nbsp; | `User is now banned` | Пользователь получил бан (на 2 месяца) после накопления >2 предупреждений. |
 | &nbsp; | `User no longer exists` | Аккаунт окончательно удален, так как количество банов достигло 3 и более. |

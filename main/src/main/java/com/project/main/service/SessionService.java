@@ -1,12 +1,15 @@
 package com.project.main.service;
 
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserDeletedEvent;
 import com.project.main.model.UserSession;
 import com.project.main.repository.UserSessionRepository;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,12 +19,21 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Base64;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+
 
 
 @Service
 public class SessionService {
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
 
     private final UserSessionRepository sessionRepository;
@@ -52,6 +64,34 @@ public class SessionService {
             return Pair.of(new RegisterResult(false, "Session expired"), null);
         }
         return Pair.of(new RegisterResult(true, ""), session);
+    }
+
+    public ResponseCookie createPreAuthSession(Long userId) {
+        String token = JWT.create()
+                .withClaim("userId", userId)
+                .withClaim("status", "PRE_AUTH")
+                .withExpiresAt(Instant.now().plus(Duration.ofMinutes(60)))
+                .sign(Algorithm.HMAC256(jwtSecret));
+
+        return ResponseCookie.from("token", token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(3600)
+                .sameSite("Lax")
+                .build();
+    }
+
+    public Long getUserIdFromPreAuthCookie(String token) {
+        try {
+            DecodedJWT jwt = JWT.require(Algorithm.HMAC256(jwtSecret)).build().verify(token);
+            if (!"PRE_AUTH".equals(jwt.getClaim("status").asString())) {
+                return null;
+            }
+            return jwt.getClaim("userId").asLong();
+        } catch (JWTVerificationException e) {
+            return null;
+        }
     }
 
     public ResponseCookie generateCookie(){

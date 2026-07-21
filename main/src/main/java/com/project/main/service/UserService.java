@@ -60,23 +60,23 @@ public class UserService {
         this.userAvatarRepository.save(avatar);
     }
 
-    public RegisterResult verifyUser(VerificationRequest request){
-        if(request == null){
-            return new RegisterResult(false, "Invalid request");
-        }
-        if(!userRepository.existsById(request.getUserId())){
+    public RegisterResult verifyUser(Long userId, Long verificationCode) {
+
+        if (!userRepository.existsById(userId)) {
             return new RegisterResult(false, "User does not exist");
         }
-        if (request.getVerification() == null) {
+
+        if (verificationCode == null) {
             return new RegisterResult(false, "Verification code is required");
         }
-        String errorMsg = verificationService.verifyUser(request);
+
+        String errorMsg = verificationService.verifyUser(userId, verificationCode);
 
         if (!errorMsg.isEmpty()) {
             return new RegisterResult(false, errorMsg);
         }
 
-        return new RegisterResult(true, "", null, request.getUserId());
+        return new RegisterResult(true, "", null, userId);
 
     }
 
