@@ -7,7 +7,6 @@ import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.UserProfile;
 import com.project.main.model.City;
 
-import com.project.main.model.UserData;
 import com.project.main.model.Views;
 import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
