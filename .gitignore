@@ -38,3 +38,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+
+*.log
+logs/
+
+.DS_Store
+Thumbs.db
+
+docker-compose.override.yml
