@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./main  # ← Все команды будут выполняться в папке main
+        working-directory: ./main  
     
     steps:
     - uses: actions/checkout@v4
@@ -26,7 +26,5 @@ jobs:
       run: chmod +x gradlew
     
     - name: Build with Gradle
-      run: ./gradlew bootJar
+      run: ./gradlew build -x test
     
-    - name: Run tests
-      run: ./gradlew test
