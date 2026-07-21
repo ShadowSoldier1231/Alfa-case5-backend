@@ -18,6 +18,14 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
     void updateScore(@Param("userId") Long userId, @Param("score") Long score);
 
 
+    @Query("SELECT l.userId, l.score, u.firstName, u.nickName, c.cityName " +
+            "FROM LeaderboardUser l " +
+            "JOIN UserData u ON l.userId = u.id " +
+            "LEFT JOIN City c ON u.cityId = c.id " +
+            "ORDER BY l.score DESC, l.userId ASC")
+    List<Object[]> findTop5LeaderboardData();
+
+
     List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
 
 

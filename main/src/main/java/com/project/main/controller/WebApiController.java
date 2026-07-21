@@ -56,19 +56,13 @@ public class WebApiController {
         if (userId == null || userId <= 0L) {
             return ResponseEntity.badRequest().build();
         }
-        UserData data = fetchingService.getUserData(userId);
-        if (data == null) {
+
+        UserProfile profile = fetchingService.getBaseProfile(userId);
+        if (profile == null) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(
-          UserProfile.builder()
-                  .include(data)
-                  .include(fetchingService.getLeaderboardUser(userId))
-                  .include(fetchingService.getCityByCityId(data.getCityId()))
-                  .build()
-        );
-
+        return ResponseEntity.ok(profile);
     }
 
     @GetMapping("/user/{id}/avatar")

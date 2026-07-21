@@ -2,10 +2,14 @@ package com.project.main.service;
 
 
 import com.project.main.dto.LeaderboardTopUser;
+import com.project.main.dto.UserProfile;
+import com.project.main.enums.GenderCode;
+import com.project.main.enums.UserStatus;
 import com.project.main.model.*;
 import com.project.main.repository.*;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,35 +97,60 @@ public class FetchingService {
     }
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {
-
-        List<LeaderboardUser> topRows = leaderboardRepository.findTop5ByOrderByScoreDescUserIdAsc();
+        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardData();
 
         List<LeaderboardTopUser> result = new ArrayList<>();
         long currentPlacement = 1;
 
-        for (LeaderboardUser row : topRows) {
-            Long uId = row.getUserId();
-
-            UserData uData = getUserData(uId);
-            String firstName = (uData != null) ? uData.getFirstName() : "Unknown";
-            String nickName = (uData != null) ? uData.getNickName() : "Unknown";
-
-            Long cityId = (uData != null) ? uData.getCityId() : -1L;
-            City city = getCityByCityId(cityId);
-            String cityName = (city != null) ? city.getCityName() : "not_set";
+        for (Object[] row : rows) {
+            Long uId = ((Number) row[0]).longValue();
+            Long score = ((Number) row[1]).longValue();
+            String firstName = (String) row[2];
+            String nickName = (String) row[3];
+            String cityName = (String) row[4];
 
             result.add(new LeaderboardTopUser(
                     uId,
                     currentPlacement++,
-                    row.getScore(),
-                    firstName,
-                    nickName,
-                    cityName
+                    score,
+                    firstName != null ? firstName : "Unknown",
+                    nickName != null ? nickName : "Unknown",
+                    cityName != null ? cityName : "not_set"
             ));
         }
-
         return result;
     }
 
+    public UserProfile getBaseProfile(Long userId) {
+        return userDataRepository.findFullProfileData(userId)
+                .map(row -> {
+                    String firstName = (String) row[0];
+                    String lastName = (String) row[1];
+                    String middleName = (String) row[2];
+                    LocalDate birthdate = (LocalDate) row[3];
+                    UserStatus status = (UserStatus) row[4];
+                    String nickName = (String) row[5];
+                    GenderCode gender = (GenderCode) row[6];
+                    Long score = ((Number) row[7]).longValue();
+                    Long placement = ((Number) row[8]).longValue();
+                    String cityName = (String) row[9];
+                    String regionName = (String) row[10];
+
+                    return UserProfile.builder()
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .middleName(middleName)
+                            .birthdate(birthdate)
+                            .status(status)
+                            .nickName(nickName)
+                            .gender(gender)
+                            .score(score)
+                            .placement(placement)
+                            .cityName(cityName != null ? cityName : "not_set")
+                            .regionName(regionName != null ? regionName : "not_set")
+                            .build();
+                })
+                .orElse(null);
+    }
 
 }

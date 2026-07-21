@@ -356,11 +356,9 @@ public class LoginApiController {
     @JsonView(Views.MyProfile.class)
     @GetMapping("/me")
     public ResponseEntity<UserProfile> getProfile(@CookieValue(value = "token", required = false) String token) {
-
-
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getLeft();
-        if(!cookieCheck.getSuccess()){
+        if (!cookieCheck.getSuccess()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Long userId = sessionPair.getRight().getUserId();
@@ -368,20 +366,15 @@ public class LoginApiController {
         if (userId == null || userId <= 0L) {
             return ResponseEntity.badRequest().build();
         }
-        UserData data = fetchingService.getUserData(userId);
-        if (data == null) {
+
+        UserProfile profile = fetchingService.getBaseProfile(userId);
+        if (profile == null) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(
-                UserProfile.builder()
-                        .email(fetchingService.getEmailById(userId))
-                        .include(data)
-                        .include(fetchingService.getLeaderboardUser(userId))
-                        .include(fetchingService.getCityByCityId(data.getCityId()))
-                        .build()
-        );
+        profile.setEmail(fetchingService.getEmailById(userId));
 
+        return ResponseEntity.ok(profile);
     }
 
     @JsonView(Views.RegisterResultId.class)
