@@ -367,12 +367,11 @@ public class LoginApiController {
             return ResponseEntity.badRequest().build();
         }
 
-        UserProfile profile = fetchingService.getBaseProfile(userId);
+        UserProfile profile = fetchingService.getMyProfile(userId);
         if (profile == null) {
             return ResponseEntity.notFound().build();
         }
 
-        profile.setEmail(fetchingService.getEmailById(userId));
 
         return ResponseEntity.ok(profile);
     }

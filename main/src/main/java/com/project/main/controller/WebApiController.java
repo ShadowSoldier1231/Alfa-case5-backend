@@ -50,6 +50,7 @@ public class WebApiController {
 
     }
 
+
     @JsonView(Views.PublicProfile.class)
     @GetMapping("/user/{id}/profile")
     public ResponseEntity<UserProfile> getUserProfile(@PathVariable("id") Long userId) {

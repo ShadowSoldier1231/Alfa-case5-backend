@@ -34,14 +34,7 @@ public class FetchingService {
         this.avatarRepository = avatarRepository;
     }
 
-    public Long GetCityIdByName(String cityName){
-        City city = cityRepository.findByCityName(cityName).orElse(null);
-        if(city == null){
-            return -1L;
-        }
-        else return city.getId();
 
-    }
 
     public City getCityByUserId(long id) {
         UserData realUser = userDataRepository.findById(id).orElse(null);
@@ -74,19 +67,9 @@ public class FetchingService {
         return cityRepository.existsById(cityId);
     }
 
-    public String getEmailById(Long userId){
-        return userRepository.findById(userId)
-                .map(UserSetup::getEmail)
-                .orElse(null);
-    }
 
-    public UserData getUserData(Long userId){
-        return userDataRepository.findById(userId).orElse(null);
-    }
 
-    public LeaderboardUser getLeaderboardUser(Long userId){
-        return leaderboardRepository.findById(userId).orElse(null);
-    }
+
 
     public byte[] getPictureById(Long id){
         UserAvatar data = avatarRepository.findById(id).orElse(null);
@@ -122,7 +105,7 @@ public class FetchingService {
     }
 
     public UserProfile getBaseProfile(Long userId) {
-        return userDataRepository.findFullProfileData(userId)
+        return userDataRepository.findProfileData(userId)
                 .map(row -> {
                     String firstName = (String) row[0];
                     String lastName = (String) row[1];
@@ -153,4 +136,38 @@ public class FetchingService {
                 .orElse(null);
     }
 
+
+    public UserProfile getMyProfile(Long userId) {
+        return userDataRepository.findFullProfileData(userId)
+                .map(row -> {
+                    String firstName = (String) row[0];
+                    String lastName = (String) row[1];
+                    String middleName = (String) row[2];
+                    LocalDate birthdate = (LocalDate) row[3];
+                    UserStatus status = (UserStatus) row[4];
+                    String nickName = (String) row[5];
+                    GenderCode gender = (GenderCode) row[6];
+                    Long score = ((Number) row[7]).longValue();
+                    Long placement = ((Number) row[8]).longValue();
+                    String cityName = (String) row[9];
+                    String regionName = (String) row[10];
+                    String email = (String) row[11];
+
+                    return UserProfile.builder()
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .middleName(middleName)
+                            .birthdate(birthdate)
+                            .status(status)
+                            .nickName(nickName)
+                            .gender(gender)
+                            .score(score)
+                            .placement(placement)
+                            .cityName(cityName != null ? cityName : "not_set")
+                            .regionName(regionName != null ? regionName : "not_set")
+                            .email(email)
+                            .build();
+                })
+                .orElse(null);
+    }
 }
