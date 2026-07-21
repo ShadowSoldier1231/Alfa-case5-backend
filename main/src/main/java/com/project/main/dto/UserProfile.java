@@ -123,6 +123,11 @@ public class UserProfile {
             return this;
         }
 
+        public Builder id(Long id){
+            this.id = id;
+            return this;
+        }
+
         public Builder email(String email){
             this.email = email;
             return this;

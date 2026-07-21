@@ -16,18 +16,17 @@ import java.util.List;
 
 @Service
 public class FetchingService {
-    private final UserRepository userRepository;
+
     private final CityRepository cityRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
     private final  UserAvatarRepository avatarRepository;
 
-    public FetchingService(UserRepository userRepository,
-                           LeaderboardRepository leaderboardRepository,
+    public FetchingService(LeaderboardRepository leaderboardRepository,
                            UserDataRepository userDataRepository, CityRepository cityRepository,
                            UserAvatarRepository avatarRepository) {
 
-        this.userRepository = userRepository;
+
         this.userDataRepository = userDataRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.cityRepository = cityRepository;
@@ -36,29 +35,6 @@ public class FetchingService {
 
 
 
-    public City getCityByUserId(long id) {
-        UserData realUser = userDataRepository.findById(id).orElse(null);
-        if (realUser == null) {
-            return null;
-        }
-        return getCityByCityId(realUser.getCityId());
-    }
-
-    public City getCityByCityId(Long cityId) {
-        if (cityId == null || cityId == -1L) {
-            return createStubCity("not_set");
-        }
-        return cityRepository.findById(cityId)
-                .orElseGet(() -> createStubCity("error"));
-    }
-
-
-    private City createStubCity(String value) {
-        City city = new City();
-        city.setCityName(value);
-        city.setRegionName(value);
-        return city;
-    }
 
     public boolean cityExistsById(Long cityId){
         if(cityId == -1){
@@ -104,74 +80,74 @@ public class FetchingService {
         return result;
     }
 
+
     public UserProfile getBaseProfile(Long userId) {
         return userDataRepository.findProfileData(userId)
                 .map(row -> {
-                    String firstName = (String) row[0];
-                    String lastName = (String) row[1];
-                    String middleName = (String) row[2];
-                    LocalDate birthdate = (LocalDate) row[3];
-                    int statusOrdinal = ((Number) row[4]).intValue();
-                    UserStatus status = UserStatus.values()[statusOrdinal];
-                    String nickName = (String) row[5];
-                    int genderOrdinal = ((Number) row[6]).intValue();
-                    GenderCode gender = GenderCode.values()[genderOrdinal];
-                    Long score = ((Number) row[7]).longValue();
-                    Long placement = ((Number) row[8]).longValue();
-                    String cityName = (String) row[9];
-                    String regionName = (String) row[10];
+                    Object[] actualRow = unwrapRow(row);
+                    if (actualRow.length < 12) return null;
 
                     return UserProfile.builder()
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .middleName(middleName)
-                            .birthdate(birthdate)
-                            .status(status)
-                            .nickName(nickName)
-                            .gender(gender)
-                            .score(score)
-                            .placement(placement)
-                            .cityName(cityName != null ? cityName : "not_set")
-                            .regionName(regionName != null ? regionName : "not_set")
+                            .id(((Number) actualRow[0]).longValue())
+                            .firstName(safeString(actualRow[1]))
+                            .lastName(safeString(actualRow[2]))
+                            .middleName(safeString(actualRow[3]))
+                            .birthdate((LocalDate) actualRow[4])
+                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
+                            .nickName(safeString(actualRow[6]))
+                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
+                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
+                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
+                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
+                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
                             .build();
                 })
                 .orElse(null);
     }
-
 
     public UserProfile getMyProfile(Long userId) {
         return userDataRepository.findFullProfileData(userId)
                 .map(row -> {
-                    String firstName = (String) row[0];
-                    String lastName = (String) row[1];
-                    String middleName = (String) row[2];
-                    LocalDate birthdate = (LocalDate) row[3];
-                    int statusOrdinal = ((Number) row[4]).intValue();
-                    UserStatus status = UserStatus.values()[statusOrdinal];
-                    String nickName = (String) row[5];
-                    int genderOrdinal = ((Number) row[6]).intValue();
-                    GenderCode gender = GenderCode.values()[genderOrdinal];
-                    Long score = ((Number) row[7]).longValue();
-                    Long placement = ((Number) row[8]).longValue();
-                    String cityName = (String) row[9];
-                    String regionName = (String) row[10];
-                    String email = (String) row[11];
+                    Object[] actualRow = unwrapRow(row);
+                    if (actualRow.length < 13) return null;
 
                     return UserProfile.builder()
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .middleName(middleName)
-                            .birthdate(birthdate)
-                            .status(status)
-                            .nickName(nickName)
-                            .gender(gender)
-                            .score(score)
-                            .placement(placement)
-                            .cityName(cityName != null ? cityName : "not_set")
-                            .regionName(regionName != null ? regionName : "not_set")
-                            .email(email)
+                            .id(((Number) actualRow[0]).longValue())
+                            .firstName(safeString(actualRow[1]))
+                            .lastName(safeString(actualRow[2]))
+                            .middleName(safeString(actualRow[3]))
+                            .birthdate((LocalDate) actualRow[4])
+                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
+                            .nickName(safeString(actualRow[6]))
+                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
+                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
+                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
+                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
+                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
+                            .email(safeString(actualRow[12]))
                             .build();
                 })
                 .orElse(null);
     }
+
+    public City getCityByUserId(long id) {
+        return userDataRepository.findCityByUserId(id).orElse(null);
+    }
+
+
+    private Object[] unwrapRow(Object row) {
+        if (row instanceof Object[] outerArray) {
+            if (outerArray.length == 1 && outerArray[0] instanceof Object[] innerArray) {
+                return innerArray;
+            }
+            return outerArray;
+        }
+        return new Object[0];
+    }
+
+    private String safeString(Object obj) {
+        return obj != null ? obj.toString() : null;
+    }
+
+
 }

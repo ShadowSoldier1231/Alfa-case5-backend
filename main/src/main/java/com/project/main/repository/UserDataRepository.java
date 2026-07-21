@@ -12,19 +12,19 @@ import java.util.Optional;
 @Repository
 public interface UserDataRepository extends JpaRepository<UserData, Long> {
 
-    @Query(value = "SELECT d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
+    @Query(value = "SELECT d.id, d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
             "d.nick_name, d.gender, l.score, l.placement, c.city_name, c.region_name " +
             "FROM user_data d " +
-            "JOIN leaderboard_user l ON d.id = l.user_id " +
+            "LEFT JOIN leaderboard_user l ON d.id = l.user_id " +
             "LEFT JOIN city c ON d.city_id = c.id " +
             "WHERE d.id = :userId", nativeQuery = true)
     Optional<Object[]> findProfileData(@Param("userId") Long userId);
 
-    @Query(value = "SELECT d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
+    @Query(value = "SELECT d.id, d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
             "d.nick_name, d.gender, l.score, l.placement, c.city_name, c.region_name, u.email " +
             "FROM user_data d " +
             "JOIN user_setup u ON d.id = u.id " +
-            "JOIN leaderboard_user l ON d.id = l.user_id " +
+            "LEFT JOIN leaderboard_user l ON d.id = l.user_id " +
             "LEFT JOIN city c ON d.city_id = c.id " +
             "WHERE d.id = :userId", nativeQuery = true)
     Optional<Object[]> findFullProfileData(@Param("userId") Long userId);
