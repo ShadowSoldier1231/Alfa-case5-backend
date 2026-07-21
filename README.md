@@ -1,3 +1,5 @@
+# Alfa-case5-backend
+
 # Документация API
 
 Спецификация серверных эндпоинтов приложения.
@@ -26,12 +28,10 @@ curl -X POST -H "Content-Type: application/json" \
 > **Примечание:** Поле `validationMethod` обязательно и принимает значения `EMAIL` или `TELEGRAM`.
 
 ### Верификация аккаунта (`POST`)
-Подтверждение регистрации. Код подтверждения передается прямо в URL (Path Variable). При методе `EMAIL` это 6-значное число. Идентификация пользователя (`userId`) происходит автоматически на стороне бэкенда через временную куку `token`, выданную при регистрации.
+Подтверждение регистрации через код, отправленный на Email. Код передается в URL (path variable).
 
 ```bash
-curl --request POST \
-  --cookie "token=your_jwt_pre_auth_token_here" \
-  http://localhost:8080/api/v1/auth/verify/818018
+curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/verify/818018
 ```
 
 **Ответ (JSON):**
@@ -42,7 +42,8 @@ curl --request POST \
   "userId": 8
 }
 ```
-*(При логической ошибке или истечении сессии верификации возвращается HTTP 200, но `"success": false` и текст ошибки в `errorText`)*.
+
+*(При логической ошибке возвращается HTTP 200, но `"success": false` и текст ошибки в `errorText`)*.
 
 ### Вход (`POST`)
 Авторизация пользователя. При успехе сервер возвращает сессионную Cookie.
@@ -77,15 +78,15 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/me
 **Ответ (JSON):**
 ```json
 {
+  "id": 8,
   "email": "someemail@gmail.com",
-  "username": "1234",
   "firstName": "nameName",
   "lastName": "last_name",
   "middleName": "name",
+  "nickName": "char",
   "birthdate": "16.10.2009",
   "gender": "MALE",
   "status": "STUDENT10",
-  "cityId": 1,
   "cityName": "Название города",
   "regionName": "Название региона",
   "score": 150,
@@ -148,17 +149,18 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/profile
 **Ответ (JSON):**
 ```json
 {
+  "id": 1,
   "birthdate": "16.10.2009",
   "cityName": "Бородино",
+  "regionName": "Красноярский край",
   "firstName": "random",
   "lastName": "fun",
   "middleName": "naming",
   "nickName": "char",
   "gender": "MALE",
-  "regionName": "Красноярский край",
+  "status": "STUDENT10",
   "score": 0,
-  "placement": 0,
-  "status": "STUDENT10"
+  "placement": 0
 }
 ```
 
@@ -170,7 +172,7 @@ curl -X GET http://localhost:8080/api/v1/site/searchLocation/моск
 ```
 
 ### Получить город пользователя (`GET`)
-Возвращает название города и регион конкретного пользователя. Если ID не существует, возвращает `null`.
+Возвращает информацию о городе конкретного пользователя. Если ID не существует, возвращает `null`.
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/user/1/city
@@ -188,6 +190,35 @@ curl -X GET http://localhost:8080/api/v1/site/getAllCities
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/user/1/avatar
+```
+
+### Топ-5 игроков лидерборда (`GET`)
+Возвращает список 5 лучших игроков с их статистикой и городами.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/site/leaderboard/top5
+```
+
+**Ответ (JSON):**
+```json
+[
+  {
+    "userId": 1,
+    "placement": 1,
+    "score": 1500,
+    "firstName": "Иван",
+    "nickName": "champion",
+    "cityName": "Москва"
+  },
+  {
+    "userId": 5,
+    "placement": 2,
+    "score": 1200,
+    "firstName": "Анна",
+    "nickName": "pro_player",
+    "cityName": "Санкт-Петербург"
+  }
+]
 ```
 
 ---
@@ -238,7 +269,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 
 ## Примеры ответов API и ошибок
 
-Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `true`, при логической ошибке часто возвращается HTTP 200, но `"success": false` и соответствующий текст в поле `errorText`.
+Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`, при логической ошибке часто возвращается HTTP 200, но `"success": false` и соответствующий текст в поле `errorText`.
 
 **Базовый формат ответа:**
 ```json
@@ -259,15 +290,15 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Please login first` | Требуется предварительный вход в систему. |
 | &nbsp; | `You are already logged in` | Сессия уже активна для этого пользователя. |
 | &nbsp; | `Session expired` | Срок действия текущей сессии истек. |
-| **Верификация** | `Verification session expired.` | Временная кука `token` (JWT) отсутствует в запросе. |
-| &nbsp; | `Invalid or expired verification session.` | Временный JWT-токен в куке просрочен (прошел 1 час) или подделан. |
-| &nbsp; | `Security violation: User ID mismatch.` | ID пользователя из куки-JWT не совпадает с переданным в системе ID. |
+| **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
+| &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
-| &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек в БД. |
+| &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек. |
 | **Статус, Модерация и Баны** | `User does not exist` | Пользователь не найден в системе (или в таблице лидеров). |
 | &nbsp; | `User is now banned` | Пользователь получил бан (на 2 месяца) после накопления >2 предупреждений. |
 | &nbsp; | `User no longer exists` | Аккаунт окончательно удален, так как количество банов достигло 3 и более. |
 | &nbsp; | `User is still banned` | Действие заблокировано, так как срок текущего бана еще не истек. |
+| &nbsp; | `Account is not verified` | Аккаунт не прошел верификацию. |
 | &nbsp; | `Invalid user status code` | Передан некорректный код статуса пользователя. |
 | **Валидация Username** | `Username cannot be empty` | Имя пользователя не может быть пустым. |
 | &nbsp; | `Username cannot contain spaces` | В имени пользователя запрещены пробелы. |

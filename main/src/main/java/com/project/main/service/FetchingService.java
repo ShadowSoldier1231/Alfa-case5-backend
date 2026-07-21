@@ -57,26 +57,32 @@ public class FetchingService {
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {
         List<Object[]> rows = leaderboardRepository.findTop5LeaderboardData();
-
         List<LeaderboardTopUser> result = new ArrayList<>();
         long currentPlacement = 1;
 
-        for (Object[] row : rows) {
-            Long uId = ((Number) row[0]).longValue();
-            Long score = ((Number) row[1]).longValue();
-            String firstName = (String) row[2];
-            String nickName = (String) row[3];
-            String cityName = (String) row[4];
+        for (Object row : rows) {
+            Object[] actualRow = unwrapRow(row);
+
+            if (actualRow.length < 5) {
+                continue;
+            }
+
+            Long uId = ((Number) actualRow[0]).longValue();
+            Long score = ((Number) actualRow[1]).longValue();
+            String firstName = safeString(actualRow[2]);
+            String nickName = safeString(actualRow[3]);
+            String cityName = safeString(actualRow[4]);
 
             result.add(new LeaderboardTopUser(
                     uId,
                     currentPlacement++,
                     score,
-                    firstName != null ? firstName : "Unknown",
-                    nickName != null ? nickName : "Unknown",
-                    cityName != null ? cityName : "not_set"
+                    (firstName != null && !firstName.isEmpty()) ? firstName : "Unknown",
+                    (nickName != null && !nickName.isEmpty()) ? nickName : "Unknown",
+                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set"
             ));
         }
+
         return result;
     }
 
