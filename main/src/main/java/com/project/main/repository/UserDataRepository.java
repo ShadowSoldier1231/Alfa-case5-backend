@@ -12,21 +12,25 @@ import java.util.Optional;
 @Repository
 public interface UserDataRepository extends JpaRepository<UserData, Long> {
 
-    @Query("SELECT d.firstName, d.lastName, d.middleName, d.birthdate, d.status, d.nickName, d.gender, " +
-            "l.score, l.placement, c.cityName, c.regionName " +
-            "FROM UserData d " +
-            "JOIN LeaderboardUser l ON d.id = l.userId " +
-            "LEFT JOIN City c ON d.cityId = c.id " +
-            "WHERE d.id = :userId")
+    @Query(value = "SELECT d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
+            "d.nick_name, d.gender, l.score, l.placement, c.city_name, c.region_name " +
+            "FROM user_data d " +
+            "JOIN leaderboard_user l ON d.id = l.user_id " +
+            "LEFT JOIN city c ON d.city_id = c.id " +
+            "WHERE d.id = :userId", nativeQuery = true)
     Optional<Object[]> findProfileData(@Param("userId") Long userId);
 
-
-    @Query("SELECT d.firstName, d.lastName, d.middleName, d.birthdate, d.status, d.nickName, d.gender, " +
-            "l.score, l.placement, c.cityName, c.regionName, u.email " +
-            "FROM UserData d " +
-            "JOIN UserSetup u ON d.id = u.id " +
-            "JOIN LeaderboardUser l ON d.id = l.userId " +
-            "LEFT JOIN City c ON d.cityId = c.id " +
-            "WHERE d.id = :userId")
+    @Query(value = "SELECT d.first_name, d.last_name, d.middle_name, d.birthdate, d.status, " +
+            "d.nick_name, d.gender, l.score, l.placement, c.city_name, c.region_name, u.email " +
+            "FROM user_data d " +
+            "JOIN user_setup u ON d.id = u.id " +
+            "JOIN leaderboard_user l ON d.id = l.user_id " +
+            "LEFT JOIN city c ON d.city_id = c.id " +
+            "WHERE d.id = :userId", nativeQuery = true)
     Optional<Object[]> findFullProfileData(@Param("userId") Long userId);
+
+    @Query(value = "SELECT c.* FROM user_data d " +
+            "JOIN city c ON d.city_id = c.id " +
+            "WHERE d.id = :userId", nativeQuery = true)
+    Optional<City> findCityByUserId(@Param("userId") Long userId);
 }

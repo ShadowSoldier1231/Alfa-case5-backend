@@ -111,9 +111,11 @@ public class FetchingService {
                     String lastName = (String) row[1];
                     String middleName = (String) row[2];
                     LocalDate birthdate = (LocalDate) row[3];
-                    UserStatus status = (UserStatus) row[4];
+                    int statusOrdinal = ((Number) row[4]).intValue();
+                    UserStatus status = UserStatus.values()[statusOrdinal];
                     String nickName = (String) row[5];
-                    GenderCode gender = (GenderCode) row[6];
+                    int genderOrdinal = ((Number) row[6]).intValue();
+                    GenderCode gender = GenderCode.values()[genderOrdinal];
                     Long score = ((Number) row[7]).longValue();
                     Long placement = ((Number) row[8]).longValue();
                     String cityName = (String) row[9];
@@ -144,9 +146,11 @@ public class FetchingService {
                     String lastName = (String) row[1];
                     String middleName = (String) row[2];
                     LocalDate birthdate = (LocalDate) row[3];
-                    UserStatus status = (UserStatus) row[4];
+                    int statusOrdinal = ((Number) row[4]).intValue();
+                    UserStatus status = UserStatus.values()[statusOrdinal];
                     String nickName = (String) row[5];
-                    GenderCode gender = (GenderCode) row[6];
+                    int genderOrdinal = ((Number) row[6]).intValue();
+                    GenderCode gender = GenderCode.values()[genderOrdinal];
                     Long score = ((Number) row[7]).longValue();
                     Long placement = ((Number) row[8]).longValue();
                     String cityName = (String) row[9];
