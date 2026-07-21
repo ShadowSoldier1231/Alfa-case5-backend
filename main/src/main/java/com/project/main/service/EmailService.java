@@ -2,8 +2,12 @@ package com.project.main.service;
 
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,13 +16,16 @@ public class EmailService {
     private final String senderEmail;
     private final JavaMailSender mailSender;
 
-
     public EmailService(@Value("${spring.mail.username}") String senderEmail, JavaMailSender mailSender) {
         this.senderEmail = senderEmail;
         this.mailSender = mailSender;
     }
 
-
+    @Retryable(
+            retryFor = { MailException.class },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 10000)
+    )
     public void sendVerificationCode(String toEmail, long code) {
 
         SimpleMailMessage message = new SimpleMailMessage();
@@ -44,4 +51,13 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    @Recover
+    public void recoverFailedEmail(MailException e, String toEmail, long code) {
+
+        System.err.printf("Критическая ошибка: Не удалось отправить код %d на email %s после 3 попыток. Причина: %s%n",
+                code, toEmail, e.getMessage());
+
+    }
+
 }

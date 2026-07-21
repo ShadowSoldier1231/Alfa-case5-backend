@@ -1,11 +1,13 @@
 package com.project.main.service;
 
 
+import com.project.main.dto.EmailVerificationEvent;
 import com.project.main.enums.ValidationMethod;
 import com.project.main.model.UserSetup;
 import com.project.main.model.UserVerification;
 import com.project.main.repository.UserRepository;
 import com.project.main.repository.UserVerificationRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
@@ -15,15 +17,18 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class VerificationService {
 
+
+    private final ApplicationEventPublisher eventPublisher;
     private final UserVerificationRepository verificationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
 
     VerificationService(UserVerificationRepository verificationRepository, UserRepository userRepository,
-                        EmailService emailService){
+                        EmailService emailService, ApplicationEventPublisher eventPublisher){
         this.verificationRepository = verificationRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -41,10 +46,10 @@ public class VerificationService {
                 yield "https://t.me/alfa_auth_verification_bot?start=" + token;
             }
             case EMAIL -> {
-
                 long code = ThreadLocalRandom.current().nextLong(100_000, 1_000_000);
                 verification.setEmailVerificationCode(code);
-                emailService.sendVerificationCode(email, code);
+                eventPublisher.publishEvent(new EmailVerificationEvent(email, code));
+
                 yield "Verification code sent to your email";
             }
         };

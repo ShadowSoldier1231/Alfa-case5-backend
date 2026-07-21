@@ -88,13 +88,7 @@ public class UserService {
         user.setEmail(email);
     }
 
-    public boolean loginUser(LoginRequest loginRequest, UserSetup realUser) {
-        if (loginRequest == null || loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
-            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
-            return false;
-        }
-        return passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword());
-    }
+
 
     public boolean passwordValidator(Long id, String password) {
         UserSetup user = userRepository.findById(id).orElse(null);
