@@ -18,21 +18,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 
+
 @Service
+
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final UserDataRepository userDataRepository;
     private final UserAvatarRepository userAvatarRepository;
     private final LeaderboardRepository leaderboardRepository;
-    private final  VerificationService verificationService;
+    private final VerificationService verificationService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository,
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        UserDataRepository userDataRepository, UserAvatarRepository userAvatarRepository,
-                        LeaderboardRepository leaderboardRepository, VerificationService verificationService) {
+                       LeaderboardRepository leaderboardRepository, VerificationService verificationService) {
         this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
         this.userDataRepository = userDataRepository;
         this.userAvatarRepository = userAvatarRepository;
         this.verificationService = verificationService;
@@ -40,17 +43,19 @@ public class UserService {
 
     }
 
-    public void save(UserSetup user) {
-        user.setCurrentTime();
-        user.setPassword(this.passwordEncoder.encode(user.getPassword()));
-        this.userRepository.save(user);
+    public String hashPassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
+    }
+
+    private void performDummyCheck() {
+        passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
     }
 
     @Transactional
-    public void updatePassword(Long id, String newPassword) throws Exception {
+    public void updatePassword(Long id, String hashedPassword) throws Exception {
         UserSetup user = userRepository.findById(id)
                 .orElseThrow(() -> new Exception("User is null"));
-        user.setPassword(this.passwordEncoder.encode(newPassword));
+        user.setPassword(hashedPassword);
         userRepository.saveAndFlush(user);
     }
 
@@ -61,25 +66,18 @@ public class UserService {
     }
 
     public RegisterResult verifyUser(Long userId, Long verificationCode) {
-
         if (!userRepository.existsById(userId)) {
             return new RegisterResult(false, "User does not exist");
         }
-
         if (verificationCode == null) {
             return new RegisterResult(false, "Verification code is required");
         }
-
         String errorMsg = verificationService.verifyUser(userId, verificationCode);
-
         if (!errorMsg.isEmpty()) {
             return new RegisterResult(false, errorMsg);
         }
-
         return new RegisterResult(true, "", null, userId);
-
     }
-
 
     @Transactional
     public void updateEmail(Long id, String email) {
@@ -88,39 +86,36 @@ public class UserService {
         user.setEmail(email);
     }
 
-
-
     public boolean passwordValidator(Long id, String password) {
         UserSetup user = userRepository.findById(id).orElse(null);
         if (user == null) {
-            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+            performDummyCheck();
             return false;
         }
         return passwordEncoder.matches(password, user.getPassword());
     }
 
-
-
-    public boolean userExistsByEmail(String email){
+    public boolean userExistsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
+
     public boolean userExistsByUsername(String username) {
         return userRepository.existsByUsername(username);
     }
 
-    @Transactional
-    public Pair<String, Long> registerNewUser(RegisterRequest registerRequest) {
 
+    @Transactional
+    public Pair<String, Long> registerNewUser(RegisterRequest registerRequest, String hashedPassword) {
         UserSetup validUser = new UserSetup(
-                registerRequest.getPassword(),
+                hashedPassword,
                 registerRequest.getUsername(),
                 registerRequest.getEmail(),
                 UserRole.USER,
                 null,
                 false
         );
-
-        this.save(validUser);
+        validUser.setCurrentTime();
+        this.userRepository.save(validUser);
 
         String verification = verificationService.generateVerification(
                 validUser.getId(),
@@ -142,38 +137,22 @@ public class UserService {
         );
         userDataRepository.save(userData);
 
-
-        LeaderboardUser leaderboardUser = new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L);
-        leaderboardRepository.save(leaderboardUser);
+        leaderboardRepository.save(new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L));
 
         return Pair.of(verification, validUser.getId());
     }
 
-
     @Transactional
     public void updateUserParams(Long userId, ChangeParamsRequest changeRequest) {
-
         UserData realUser = userDataRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
 
-        if (changeRequest.getCityId() != null) {
-            realUser.setCityId(changeRequest.getCityId());
-        }
-        if (changeRequest.getBirthdate() != null) {
-            realUser.setBirthdate(changeRequest.getBirthdate());
-        }
-        if (changeRequest.getStatus() != null) {
-            realUser.setStatus(changeRequest.getStatus());
-        }
-        if (changeRequest.getNickName() != null) {
-            realUser.setNickName(changeRequest.getNickName());
-        }
-        if (changeRequest.getFirstName() != null && !changeRequest.getFirstName().isEmpty()) {
-            realUser.setFirstName(changeRequest.getFirstName());
-        }
-        if (changeRequest.getLastName() != null && !changeRequest.getLastName().isEmpty()) {
-            realUser.setLastName(changeRequest.getLastName());
-        }
+        if (changeRequest.getCityId() != null) realUser.setCityId(changeRequest.getCityId());
+        if (changeRequest.getBirthdate() != null) realUser.setBirthdate(changeRequest.getBirthdate());
+        if (changeRequest.getStatus() != null) realUser.setStatus(changeRequest.getStatus());
+        if (changeRequest.getNickName() != null) realUser.setNickName(changeRequest.getNickName());
+        if (changeRequest.getFirstName() != null && !changeRequest.getFirstName().isEmpty()) realUser.setFirstName(changeRequest.getFirstName());
+        if (changeRequest.getLastName() != null && !changeRequest.getLastName().isEmpty()) realUser.setLastName(changeRequest.getLastName());
 
         userDataRepository.save(realUser);
     }
@@ -183,14 +162,14 @@ public class UserService {
         UserSetup realUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
 
         if (realUser == null) {
-            passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+            performDummyCheck();
             throw new BadCredentialsException("Invalid username or password");
         }
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword())) {
             throw new BadCredentialsException("Invalid username or password");
         }
-        if(!realUser.isVerified()){
+        if (!realUser.isVerified()) {
             throw new BadCredentialsException("Account is not verified");
         }
 
@@ -204,7 +183,4 @@ public class UserService {
 
         return realUser.getId();
     }
-
-
-
 }

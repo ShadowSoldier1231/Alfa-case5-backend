@@ -184,7 +184,8 @@ public class LoginApiController {
             case OK:
             default:
                 try {
-                    userService.updatePassword(session.getUserId(), resetPasswordRequest.getNewPassword());
+                    String hashedPassword = userService.hashPassword(resetPasswordRequest.getNewPassword());
+                    userService.updatePassword(session.getUserId(), hashedPassword);
                 } catch (Exception e) {
                     return ResponseEntity.ok(new RegisterResult(false, "User does not exist"));
                 }
@@ -292,7 +293,10 @@ public class LoginApiController {
             return ResponseEntity.ok(new RegisterResult(false, "Invalid city id"));
         }
 
-        Pair<String, Long> authResult = userService.registerNewUser(registerRequest);
+
+        String hashedPassword = userService.hashPassword(registerRequest.getPassword());
+        Pair<String, Long> authResult = userService.registerNewUser(registerRequest, hashedPassword);
+
         Long userId = authResult.getRight();
         ResponseCookie preAuthCookie = sessionService.createPreAuthSession(userId);
 

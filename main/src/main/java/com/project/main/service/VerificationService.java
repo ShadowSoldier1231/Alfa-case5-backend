@@ -21,13 +21,12 @@ public class VerificationService {
     private final ApplicationEventPublisher eventPublisher;
     private final UserVerificationRepository verificationRepository;
     private final UserRepository userRepository;
-    private final EmailService emailService;
+
 
     VerificationService(UserVerificationRepository verificationRepository, UserRepository userRepository,
-                        EmailService emailService, ApplicationEventPublisher eventPublisher){
+                        ApplicationEventPublisher eventPublisher){
         this.verificationRepository = verificationRepository;
         this.userRepository = userRepository;
-        this.emailService = emailService;
         this.eventPublisher = eventPublisher;
     }
 
