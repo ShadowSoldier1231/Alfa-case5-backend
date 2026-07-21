@@ -1,24 +1,24 @@
-
 FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /app
 
 
-COPY --chown=gradle:gradle . .
+COPY gradlew .
+COPY gradle/wrapper gradle/wrapper
+COPY build.gradle settings.gradle ./
 
-RUN chmod +x ./gradlew || true
-RUN ./gradlew bootJar --no-daemon || \
-    (apt-get update && apt-get install -y gradle && gradle bootJar --no-daemon)
+RUN chmod +x gradlew
+
+
+RUN ./gradlew dependencies --no-daemon
+
+
+COPY src src
+RUN ./gradlew bootJar --no-daemon
 
 
 FROM eclipse-temurin:21-jre
-
 WORKDIR /app
-
-
 COPY --from=builder /app/build/libs/*.jar app.jar
-
-
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]

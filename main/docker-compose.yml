@@ -12,8 +12,9 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d main"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d main" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,17 +29,26 @@ services:
       db:
         condition: service_healthy
     environment:
-
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/main
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-user1}
-      
-
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      APP_PROXY_ENABLED: ${APP_PROXY_ENABLED}
+      APP_PROXY_HOST: ${APP_PROXY_HOST}
+      APP_PROXY_PORT: ${APP_PROXY_PORT}
       JWT_SECRET: ${JWT_SECRET}
-      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME:-}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      EMAIL_ADDRESS: ${EMAIL_ADDRESS:-}
-      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_ADDRESS: ${EMAIL_ADDRESS}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+
+    command: >
+      java -Dhttp.proxyHost=${APP_PROXY_HOST}
+           -Dhttp.proxyPort=${APP_PROXY_PORT}
+           -Dhttps.proxyHost=${APP_PROXY_HOST}
+           -Dhttps.proxyPort=${APP_PROXY_PORT}
+           -Dhttp.nonProxyHosts=localhost|127.0.0.1|db
+           -jar app.jar
+
     ports:
       - "${APP_PORT:-999}:8080"
 
