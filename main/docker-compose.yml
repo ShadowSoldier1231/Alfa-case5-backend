@@ -1,0 +1,46 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: MainContainer
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-main}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-user1}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: SpringApp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/main
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-user1}
+      
+
+      JWT_SECRET: ${JWT_SECRET}
+      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      EMAIL_ADDRESS: ${EMAIL_ADDRESS:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+    ports:
+      - "${APP_PORT:-999}:8080"
+
+volumes:
+  postgres_data:
