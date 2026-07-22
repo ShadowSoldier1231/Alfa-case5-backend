@@ -1,6 +1,6 @@
 
 services:
-  db:
+    db:
     image: postgres:16-alpine
     container_name: MainContainer
     restart: unless-stopped
@@ -8,16 +8,33 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-main}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-user1}
+      
+      POSTGRES_SHARED_BUFFERS: 128MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 256MB
+      POSTGRES_WORK_MEM: 16MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 32MB
+    
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M        
+          cpus: '0.5'         
+        reservations:
+          memory: 256M        
+          cpus: '0.25'        
+    
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d main" ]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 30s
 
   app:
     build:
