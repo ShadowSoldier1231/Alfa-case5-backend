@@ -5,7 +5,12 @@ CREATE TABLE IF NOT EXISTS city (
     region_name VARCHAR(255)
 );
 
-COPY city (id, city_name, region_name) 
-FROM '/docker-entrypoint-initdb.d/cities.csv' 
-DELIMITER ',' 
-CSV HEADER;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM city LIMIT 1) THEN
+        COPY city (id, city_name, region_name) 
+        FROM '/docker-entrypoint-initdb.d/cities.csv' 
+        DELIMITER ',' 
+        CSV HEADER;
+    END IF;
+END $$;
