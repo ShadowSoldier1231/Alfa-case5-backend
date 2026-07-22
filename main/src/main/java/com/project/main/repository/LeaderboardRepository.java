@@ -20,7 +20,9 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
     @Query(value = "SELECT l.user_id, l.score, u.first_name, u.nick_name, c.city_name " +
             "FROM leaderboard_user l " +
             "JOIN user_data u ON l.user_id = u.id " +
+            "JOIN user_setup us ON l.user_id = us.id " +
             "LEFT JOIN city c ON u.city_id = c.id " +
+            "WHERE us.is_verified = true " +
             "ORDER BY l.score DESC, l.user_id ASC " +
             "LIMIT 5", nativeQuery = true)
     List<Object[]> findTop5LeaderboardData();
