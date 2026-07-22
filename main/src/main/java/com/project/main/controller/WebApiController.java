@@ -29,11 +29,13 @@ public class WebApiController {
     }
 
 
-
     @GetMapping("/user/{id}/city")
-    public ResponseEntity<City>  getCityName(@PathVariable long id){
-        return ResponseEntity.ok(fetchingService.getCityByUserId(id));
-
+    public ResponseEntity<City> getCityName(@PathVariable long id) {
+        City city = fetchingService.getCityByUserId(id);
+        if (city == null) {
+            return ResponseEntity.ok(new City(-1L, "not_set", "not_set"));
+        }
+        return ResponseEntity.ok(city);
     }
 
 

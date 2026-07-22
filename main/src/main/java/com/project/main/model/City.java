@@ -18,6 +18,11 @@ public class City {
     public City(){
 
     }
+    public City(Long id, String cityName, String regionName){
+        this.id= id;
+        this.cityName = cityName;
+        this.regionName = regionName;
+    }
 
 
     public Long getId() {
