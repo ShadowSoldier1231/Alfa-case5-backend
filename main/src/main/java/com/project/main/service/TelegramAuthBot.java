@@ -1,6 +1,7 @@
 package com.project.main.service;
 
 
+import com.project.main.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,12 +30,14 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
     private final String botToken;
     private final VerificationService verificationService;
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private  final UserRepository userRepository;
 
     public TelegramAuthBot(@Value("${telegram.bot.token}") String botToken,
-                           VerificationService verificationService) {
+                           VerificationService verificationService, UserRepository userRepository) {
         this.botToken = botToken;
         this.telegramClient = new OkHttpTelegramClient(botToken);
         this.verificationService = verificationService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -74,6 +77,14 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
                     sendText(chatId, "❌ Ошибка: Токен верификации отсутствует.");
                     return;
                 }
+                boolean isTelegramTaken = userRepository.existsByTelegramId(chatId);
+
+                if (isTelegramTaken) {
+                    sendText(chatId, "⚠ Telegram-аккаунт уже используется. " +
+                            " Пожалуйста, войдите через другой аккаунт или отключите этот от старого профиля.");
+                    return;
+                }
+
 
                 boolean isSuccess = verificationService.verifyTelegramUser(token, chatId);
 

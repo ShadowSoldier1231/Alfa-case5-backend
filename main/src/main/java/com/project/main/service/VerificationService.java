@@ -62,18 +62,13 @@ public class VerificationService {
 
     @Transactional
     public boolean verifyTelegramUser(String token, Long chatId) {
-
-        return verificationRepository.findByTelegramVerificationToken(token)
+        return verificationRepository.findByTokenAndTelegramIdAvailable(token, chatId)
                 .map(verification -> {
-
                     return userRepository.findById(verification.getUserId())
                             .map(user -> {
-
                                 user.setTelegramId(chatId);
                                 user.setVerified(true);
-
                                 verificationRepository.deleteByUserId(verification.getUserId());
-
                                 return true;
                             })
                             .orElse(false);
