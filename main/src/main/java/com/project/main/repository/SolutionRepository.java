@@ -28,7 +28,8 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
     @Transactional
     void deleteAllByUserId( Long userId);
 
-
+    @Query(value = "SELECT COALESCE(MAX(rating), 0) FROM solution WHERE case_id = :caseId AND user_id = :userId", nativeQuery = true)
+    Long getMaxRatingByCaseIdAndUserId(@Param("caseId") Long caseId, @Param("userId") Long userId);
 
 }
 

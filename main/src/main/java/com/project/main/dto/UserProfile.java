@@ -83,34 +83,10 @@ public class UserProfile {
 
 
 
-        public Builder include(UserData userData) {
-            if (userData != null) {
-                this.id = userData.getId();
-                this.status = userData.getStatus();
-                this.birthdate = userData.getBirthdate();
-                this.firstName = userData.getFirstName();
-                this.middleName = userData.getMiddleName();
-                this.lastName = userData.getLastName();
-                this.nickName = userData.getNickName();
-                this.gender = userData.getGender();
-            }
-            return this;
-        }
-        public Builder include(City city) {
-            if (city != null) {
-                this.cityName = city.getCityName();
-                this.regionName = city.getRegionName();
-            }
-            return this;
-        }
 
-        public Builder include(LeaderboardUser leaderboardUser) {
-            if (leaderboardUser != null) {
-                this.score = leaderboardUser.getScore();
-                this.placement = leaderboardUser.getPlacement();
-            }
-            return this;
-        }
+
+
+
 
 
         public Builder cityName(String cityName) {

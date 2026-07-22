@@ -1,6 +1,7 @@
 package com.project.main.service;
 
 
+import com.project.main.dto.LeadboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.UserProfile;
 import com.project.main.enums.GenderCode;
@@ -53,6 +54,70 @@ public class FetchingService {
             return null;
         }
         return data.getPictureData();
+    }
+    public List<LeaderboardTopUser> getTop5LeaderboardByCase(Long caseId) {
+        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardDataByCaseId(caseId);
+        List<LeaderboardTopUser> result = new ArrayList<>();
+        long currentPlacement = 1;
+
+        for (Object row : rows) {
+            Object[] actualRow = unwrapRow(row);
+
+            if (actualRow.length < 5) {
+                continue;
+            }
+
+            Long uId = ((Number) actualRow[0]).longValue();
+            Long score = ((Number) actualRow[1]).longValue();
+            String firstName = safeString(actualRow[2]);
+            String nickName = safeString(actualRow[3]);
+            String cityName = safeString(actualRow[4]);
+
+            result.add(new LeaderboardTopUser(
+                    uId,
+                    currentPlacement++,
+                    score,
+                    (firstName != null && !firstName.isEmpty()) ? firstName : "Unknown",
+                    (nickName != null && !nickName.isEmpty()) ? nickName : "Unknown",
+                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set"
+            ));
+        }
+
+        return result;
+    }
+
+    public LeadboardInfo getGlobalPlacementInfo(Long userId) {
+
+        LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
+
+        if (userEntry == null || userEntry.getScore() == 0) {
+
+            Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
+            return new LeadboardInfo(0L, total);
+        }
+
+
+        Long placement = leaderboardRepository.getGlobalUserPlacement(userId);
+        Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
+
+        return new LeadboardInfo(placement,  total);
+    }
+
+    public LeadboardInfo getLocalPlacementInfo(Long userId, Long caseId) {
+
+        LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
+
+        if (userEntry == null || userEntry.getScore() == 0) {
+
+            Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
+            return new LeadboardInfo(0L, total);
+        }
+
+
+        Long placement = leaderboardRepository.getUserPlacementInCase(caseId, userId);
+        Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
+
+        return new LeadboardInfo(placement,  total);
     }
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {

@@ -137,7 +137,7 @@ public class UserService {
         );
         userDataRepository.save(userData);
 
-        leaderboardRepository.save(new LeaderboardUser(validUser.getId(), 0L, 0L, 0L, 0L));
+        leaderboardRepository.save(new LeaderboardUser(validUser.getId(), 0L, 0L,  0L));
 
         return Pair.of(verification, validUser.getId());
     }

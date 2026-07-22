@@ -372,7 +372,6 @@ public class LoginApiController {
             return ResponseEntity.notFound().build();
         }
 
-
         return ResponseEntity.ok(profile);
     }
 

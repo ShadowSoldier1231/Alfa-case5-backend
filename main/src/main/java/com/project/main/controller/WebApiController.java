@@ -3,13 +3,19 @@ package com.project.main.controller;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.project.main.dto.LeadboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
+import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserProfile;
 import com.project.main.model.City;
 
+import com.project.main.model.UserSession;
 import com.project.main.model.Views;
 import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
+import com.project.main.service.SessionService;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +27,14 @@ public class WebApiController {
 
     private final FetchingService fetchingService;
     private final CityRepository cityRepository;
+    private final SessionService sessionService;
 
-    public WebApiController(CityRepository cityRepository, FetchingService fetchingService) {
+    public WebApiController(CityRepository cityRepository, FetchingService fetchingService,
+                            SessionService sessionService) {
 
         this.cityRepository = cityRepository;
         this.fetchingService = fetchingService;
+        this.sessionService = sessionService;
     }
 
 
@@ -51,6 +60,50 @@ public class WebApiController {
 
     }
 
+    @GetMapping("/leaderboard/case/{caseId}/top5")
+    public ResponseEntity<List<LeaderboardTopUser>> getTop5ByCase(@PathVariable Long caseId) {
+        return ResponseEntity.ok(fetchingService.getTop5LeaderboardByCase(caseId));
+    }
+    @GetMapping("/leaderboard/global/my-place")
+    public ResponseEntity<LeadboardInfo> getMyGlobalPlace(@CookieValue(value = "token", required = false) String token) {
+
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getLeft();
+        if (!cookieCheck.getSuccess()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserSession session = sessionPair.getRight();
+
+
+        Long userId = session.getUserId();
+
+        LeadboardInfo info = fetchingService.getGlobalPlacementInfo(userId);
+
+        return ResponseEntity.ok(info);
+    }
+
+    @GetMapping("/leaderboard/local/my-place/{caseId}")
+    public ResponseEntity<LeadboardInfo> getMyLocalPlace(@CookieValue(value = "token", required = false) String token,
+                                                         @PathVariable Long caseId) {
+
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        RegisterResult cookieCheck = sessionPair.getLeft();
+        if (!cookieCheck.getSuccess()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserSession session = sessionPair.getRight();
+
+
+        Long userId = session.getUserId();
+
+        LeadboardInfo info = fetchingService.getLocalPlacementInfo(userId, caseId);
+
+        return ResponseEntity.ok(info);
+    }
 
     @JsonView(Views.PublicProfile.class)
     @GetMapping("/user/{id}/profile")

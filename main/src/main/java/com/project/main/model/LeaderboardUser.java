@@ -14,19 +14,18 @@ public class LeaderboardUser {
     private Long userId;
     private Long score;
     private Long warningsCount;
-    private Long placement;
     private Long banCount;
 
 
     public LeaderboardUser(){
 
     }
-    public LeaderboardUser(Long userId, Long score, Long warningsCount, Long placement,  Long banCount){
+    public LeaderboardUser(Long userId, Long score, Long warningsCount,  Long banCount){
 
         this.userId = userId;
         this.score = score;
         this.warningsCount = warningsCount;
-        this.placement = placement;
+
         this.banCount = banCount;
     }
 
@@ -54,13 +53,7 @@ public class LeaderboardUser {
         this.score = score;
     }
 
-    public Long getPlacement() {
-        return placement;
-    }
 
-    public void setPlacement(Long placement) {
-        this.placement = placement;
-    }
 
     public Long getWarningsCount() {
         return warningsCount;

@@ -29,17 +29,43 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
 
     List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
 
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE leaderboard_user u " +
-            "SET placement = ( " +
-            "    SELECT pos " +
-            "    FROM ( " +
-            "        SELECT user_id, " +
-            "        ROW_NUMBER() OVER (ORDER BY score DESC, user_id ASC) as pos " +
-            "        FROM leaderboard_user " +
-            "    ) temp " +
-            "    WHERE temp.user_id = u.user_id " +
-            ")", nativeQuery = true)
-    void updateAllPlacements();
+
+
+    @Query(value = "SELECT l.user_id, MAX(s.rating) as case_score, u.first_name, u.nick_name, c.city_name " +
+            "FROM leaderboard_user l " +
+            "JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId " +
+            "JOIN user_data u ON l.user_id = u.id " +
+            "JOIN user_setup us ON l.user_id = us.id " +
+            "LEFT JOIN city c ON u.city_id = c.id " +
+            "WHERE us.is_verified = true " +
+            "GROUP BY l.user_id, u.first_name, u.nick_name, c.city_name " +
+            "ORDER BY case_score DESC, l.user_id ASC " +
+            "LIMIT 5", nativeQuery = true)
+    List<Object[]> findTop5LeaderboardDataByCaseId(@Param("caseId") Long caseId);
+
+
+    @Query(value = "SELECT COUNT(*) + 1 FROM (" +
+            "SELECT l.user_id, MAX(s.rating) as case_score " +
+            "FROM leaderboard_user l " +
+            "JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId " +
+            "JOIN user_setup us ON l.user_id = us.id " +
+            "WHERE us.is_verified = true " +
+            "GROUP BY l.user_id " +
+            "HAVING MAX(s.rating) > (SELECT COALESCE(MAX(rating), 0) FROM solution WHERE case_id = :caseId AND user_id = :userId)" +
+            ") as better_users", nativeQuery = true)
+    Long getUserPlacementInCase(@Param("caseId") Long caseId, @Param("userId") Long userId);
+
+    @Query(value = "SELECT rank FROM (" +
+            "SELECT l.user_id, ROW_NUMBER() OVER (ORDER BY l.score DESC, l.user_id ASC) as rank " +
+            "FROM leaderboard_user l " +
+            "JOIN user_setup us ON l.user_id = us.id " +
+            "WHERE us.is_verified = true" +
+            ") t WHERE t.user_id = :userId", nativeQuery = true)
+    Long getGlobalUserPlacement(@Param("userId") Long userId);
+
+    @Query(value = "SELECT COUNT(*) FROM leaderboard_user l " +
+            "JOIN user_setup us ON l.user_id = us.id " +
+            "WHERE us.is_verified = true AND l.score > 0", nativeQuery = true)
+    Long getTotalVerifiedUsersInLeaderboard();
+
 }
