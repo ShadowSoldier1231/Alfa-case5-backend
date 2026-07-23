@@ -6,6 +6,27 @@
 
 ---
 
+## Системные эндпоинты
+
+### Проверка работоспособности (`GET`)
+Легковесный эндпоинт для Health Check. Используется мониторингом (например, Docker или Kubernetes) для проверки того, что приложение запущено и база данных доступна.
+
+```bash
+curl -X GET http://localhost:8080/health
+```
+
+**Ответ (JSON):**
+```json
+{
+  "status": "UP",
+  "timestamp": "2026-07-23T10:15:30.123",
+  "database": "UP"
+}
+```
+*(Если база данных недоступна, поле `database` будет содержать `"DOWN: <текст ошибки>"`)*.
+
+---
+
 ## Безопасность и доступ
 
 - **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными).
@@ -24,7 +45,6 @@ curl -X POST -H "Content-Type: application/json" \
   -d '{"username":"1234","password":"tea_tea1","email":"someemail@gmail.com","birthdate":"16.10.2009","cityId":"1","status":"STUDENT10","firstName":"nameName","lastName":"last_name","middleName":"name","gender":"MALE","validationMethod":"EMAIL"}' \
   http://localhost:8080/api/v1/auth/register
 ```
-
 > **Примечание:** Поле `validationMethod` обязательно и принимает значения `EMAIL` или `TELEGRAM`.
 
 ### Верификация аккаунта (`POST`)
@@ -33,7 +53,6 @@ curl -X POST -H "Content-Type: application/json" \
 ```bash
 curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/verify/818018
 ```
-
 **Ответ (JSON):**
 ```json
 {
@@ -42,7 +61,6 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/verify/8
   "userId": 8
 }
 ```
-
 *(При логической ошибке возвращается HTTP 200, но `"success": false` и текст ошибки в `errorText`)*.
 
 ### Вход (`POST`)
@@ -60,7 +78,6 @@ curl -X POST -H "Content-Type: application/json" \
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/getId
 ```
-
 **Ответ (JSON):**
 ```json
 {
@@ -74,7 +91,6 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/getId
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/me
 ```
-
 **Ответ (JSON):**
 ```json
 {
@@ -113,7 +129,6 @@ curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 ```
 
 ### Смена Email (`POST`) *(Требует Cookie)*
-
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
   -d '{"email":"test@gmail.com"}' \
@@ -145,7 +160,6 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/logout
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/user/1/profile
 ```
-
 **Ответ (JSON):**
 ```json
 {
@@ -192,13 +206,16 @@ curl -X GET http://localhost:8080/api/v1/site/getAllCities
 curl -X GET http://localhost:8080/api/v1/site/user/1/avatar
 ```
 
+---
+
+## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
+
 ### Топ-5 игроков лидерборда (`GET`)
 Возвращает список 5 лучших игроков с их статистикой и городами.
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/leaderboard/top5
 ```
-
 **Ответ (JSON):**
 ```json
 [
@@ -219,6 +236,62 @@ curl -X GET http://localhost:8080/api/v1/site/leaderboard/top5
     "cityName": "Санкт-Петербург"
   }
 ]
+```
+
+### Топ-5 игроков по конкретному кейсу (`GET`)
+Возвращает список 5 лучших игроков, которые решали указанный кейс. **Авторизация не требуется.**
+
+```bash
+curl -X GET http://localhost:8080/api/v1/site/leaderboard/case/1/top5
+```
+**Ответ (JSON):**
+```json
+[
+  {
+    "userId": 12,
+    "placement": 1,
+    "score": 150,
+    "firstName": "Иван",
+    "nickName": "pro_player",
+    "cityName": "Москва"
+  },
+  {
+    "userId": 45,
+    "placement": 2,
+    "score": 120,
+    "firstName": "Анна",
+    "nickName": "anna_dev",
+    "cityName": "Санкт-Петербург"
+  }
+]
+```
+
+### Мое место в глобальном рейтинге (`GET`) *(Требует Cookie)*
+Возвращает текущее место авторизованного пользователя в общем зачете и общее количество верифицированных участников. Если у пользователя 0 очков, `placement` будет равен `0`.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/global/my-place
+```
+**Ответ (JSON):**
+```json
+{
+  "placement": 42,
+  "total": 1500
+}
+```
+
+### Мое место в рейтинге по кейсу (`GET`) *(Требует Cookie)*
+Возвращает место авторизованного пользователя в рейтинге по конкретному кейсу и общее количество участников в глобальном зачете.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/local/my-place/1
+```
+**Ответ (JSON):**
+```json
+{
+  "placement": 5,
+  "total": 1500
+}
 ```
 
 ---
@@ -249,7 +322,6 @@ curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/getChatSequence/1
 ```
-
 **Ответ (JSON):**
 ```json
 [
@@ -320,3 +392,5 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
 | &nbsp; | `Internal server error` | Внутренняя ошибка сервера (Crash / Unhandled exception). |
+```
+
