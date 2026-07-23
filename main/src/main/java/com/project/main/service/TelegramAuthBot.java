@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
@@ -16,7 +17,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -26,18 +26,23 @@ import java.util.concurrent.Executors;
 public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateConsumer {
 
     private static final Logger logger = LoggerFactory.getLogger(TelegramAuthBot.class);
-    private final TelegramClient telegramClient;
-    private final String botToken;
-    private final VerificationService verificationService;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
-    private  final UserRepository userRepository;
 
-    public TelegramAuthBot(@Value("${telegram.bot.token}") String botToken,
-                           VerificationService verificationService, UserRepository userRepository) {
+    private final String botToken;
+    private final TelegramClient telegramClient;
+    private final VerificationService verificationService;
+    private final UserRepository userRepository;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+
+    public TelegramAuthBot(
+            @Value("${telegram.bot.token}") String botToken,
+            VerificationService verificationService,
+            UserRepository userRepository) {
+
         this.botToken = botToken;
-        this.telegramClient = new OkHttpTelegramClient(botToken);
         this.verificationService = verificationService;
         this.userRepository = userRepository;
+
+        this.telegramClient = new OkHttpTelegramClient(botToken);
     }
 
     @Override
@@ -53,7 +58,6 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
     @Override
     public void consume(List<Update> updates) {
         for (Update update : updates) {
-
             executorService.submit(() -> {
                 try {
                     processUpdate(update);
@@ -63,7 +67,6 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
             });
         }
     }
-
 
     private void processUpdate(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -77,14 +80,13 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
                     sendText(chatId, "❌ Ошибка: Токен верификации отсутствует.");
                     return;
                 }
-                boolean isTelegramTaken = userRepository.existsByTelegramId(chatId);
 
+                boolean isTelegramTaken = userRepository.existsByTelegramId(chatId);
                 if (isTelegramTaken) {
                     sendText(chatId, "⚠ Telegram-аккаунт уже используется. " +
                             " Пожалуйста, войдите через другой аккаунт или отключите этот от старого профиля.");
                     return;
                 }
-
 
                 boolean isSuccess = verificationService.verifyTelegramUser(token, chatId);
 
@@ -98,7 +100,6 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
             }
         }
     }
-
 
     private void sendText(Long chatId, String text) {
         try {
