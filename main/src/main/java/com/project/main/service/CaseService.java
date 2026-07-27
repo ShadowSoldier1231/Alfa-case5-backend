@@ -19,19 +19,18 @@ public class CaseService {
     }
 
     @Transactional
-    public CaseEntity createCase(CaseCreateRequest request,
-                                 MultipartFile pdfFile,
-                                 MultipartFile iconFile) {
+    public void createCase(CaseCreateRequest request,
+                           MultipartFile pdfFile,
+                           MultipartFile iconFile) {
 
-
-        String pdfUrl = null;
+        String pdfKey = null;
         if (pdfFile != null && !pdfFile.isEmpty()) {
-            pdfUrl = s3StorageService.uploadFile(pdfFile, "cases/pdfs");
+            pdfKey = s3StorageService.uploadFile(pdfFile, "cases/pdfs");
         }
 
-        String iconUrl = null;
+        String iconKey = null;
         if (iconFile != null && !iconFile.isEmpty()) {
-            iconUrl = s3StorageService.uploadFile(iconFile, "cases/icons");
+            iconKey = s3StorageService.uploadFile(iconFile, "cases/icons");
         }
 
         CaseEntity newCase = new CaseEntity(
@@ -42,15 +41,14 @@ public class CaseService {
                 request.getFullDescription(),
                 request.getDifficulty(),
                 request.getAverageSolveMin(),
-                pdfUrl,
-                iconUrl,
+                pdfKey,
+                iconKey,
                 request.getPromptContextEn(),
                 true,
                 request.getSortOrder(),
                 0
         );
 
-
-        return caseRepository.save(newCase);
+        CaseEntity savedCase = caseRepository.save(newCase);
     }
 }

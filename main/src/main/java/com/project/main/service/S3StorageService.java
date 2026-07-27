@@ -16,18 +16,16 @@ public class S3StorageService {
 
     private final S3Client s3Client;
     private final String bucketName;
-    private final String publicUrl;
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".pdf", ".jpg", ".jpeg", ".png", ".webp");
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     public S3StorageService(S3Client s3Client,
-                            @Value("${app.s3.bucket-name}") String bucketName,
-                            @Value("${app.s3.public-url}") String publicUrl) {
+                            @Value("${app.s3.bucket-name}") String bucketName) {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
-        this.publicUrl = publicUrl;
     }
+
 
     public String uploadFile(MultipartFile file, String folderPrefix) {
         if (file == null || file.isEmpty()) {
@@ -43,7 +41,6 @@ public class S3StorageService {
             throw new IllegalArgumentException("Недопустимый формат файла. Разрешены: " + ALLOWED_EXTENSIONS);
         }
 
-
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String uniqueFilename = UUID.randomUUID().toString() + extension;
         String s3Key = folderPrefix + "/" + uniqueFilename;
@@ -58,7 +55,7 @@ public class S3StorageService {
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
 
-            return publicUrl + "/" + s3Key;
+            return s3Key;
 
         } catch (Exception e) {
             throw new RuntimeException("Не удалось загрузить файл в хранилище: " + e.getMessage(), e);

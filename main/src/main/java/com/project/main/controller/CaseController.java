@@ -27,30 +27,6 @@ public class CaseController {
         this.sessionService = sessionService;
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createCase(
-            @CookieValue(value = "token", required = false) String token,
-            @RequestPart("case") CaseCreateRequest request,
-            @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
-            @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
-    ) {
-        Pair<RegisterResult, UserSession> authResult = sessionService.checkCookie(token);
 
-
-        if (!authResult.getLeft().getSuccess()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(authResult.getLeft().getErrorText());
-
-        }
-        try {
-            CaseEntity createdCase = caseService.createCase(request, pdfFile, iconFile);
-            return ResponseEntity.ok(createdCase);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Внутренняя ошибка сервера при создании кейса");
-        }
-    }
 
 }
