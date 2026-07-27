@@ -109,7 +109,8 @@ public class AdminApiController {
     @PostMapping("/users")
     public ResponseEntity<RegisterResult> createUser(@RequestBody @Valid AdminUserCreateRequest req) {
         try {
-            Long newUserId = userService.createAdminUser(req);
+            String hashedPassword = userService.hashPassword(req.getPassword());
+            Long newUserId = userService.createAdminUser(req, hashedPassword);
             RegisterResult res = new RegisterResult();
             res.setSuccess(true);
             res.setErrorText("");

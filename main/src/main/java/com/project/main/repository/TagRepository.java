@@ -13,40 +13,4 @@ import java.util.Optional;
 @Repository
 public interface TagRepository extends JpaRepository<Tag, Long> {
 
-    Optional<Tag> findByName(String name);
-
-    Optional<Tag> findByIdAndIsActiveTrue(Long id);
-
-    boolean existsByName(String name);
-
-
-    List<Tag> findByIsActiveTrueOrderByNameAsc();
-
-
-
-    List<Tag> findByNameIn(List<String> names);
-
-    List<Tag> findByIdIn(List<Long> ids);
-
-
-
-    @Query("SELECT t, COUNT(ct) FROM Tag t " +
-            "LEFT JOIN t.caseTags ct " +
-            "WHERE t.isActive = true " +
-            "GROUP BY t.id, t.name " +
-            "ORDER BY COUNT(ct) DESC")
-    List<Object[]> findTagsWithCaseCount();
-
-
-
-    @Query("SELECT t FROM Tag t " +
-            "LEFT JOIN t.caseTags ct " +
-            "WHERE t.isActive = true " +
-            "GROUP BY t.id " +
-            "ORDER BY COUNT(ct) DESC")
-    List<Tag> findMostPopularTags(Pageable pageable);
-
-
-    @Query("SELECT t FROM Tag t WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :query, '%')) AND t.isActive = true")
-    List<Tag> searchByName(@Param("query") String query);
 }

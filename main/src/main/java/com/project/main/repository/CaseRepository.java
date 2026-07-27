@@ -12,85 +12,32 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+
 
 
 @Repository
 public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
+
+    @Query(value = "SELECT * FROM cases WHERE is_active = true ORDER BY created_at DESC", nativeQuery = true)
     List<CaseEntity> findAllByIsActiveTrueOrderByCreatedAtDesc();
 
 
+    @Query(value = "SELECT * FROM cases ORDER BY created_at DESC", nativeQuery = true)
     List<CaseEntity> findAllByOrderByCreatedAtDesc();
 
 
-    @Query("SELECT t.name, COUNT(c.id) FROM Tag t " +
-            "LEFT JOIN t.caseTags ct " +
-            "LEFT JOIN ct.caseEntity c " +
-            "WHERE t.isActive = true " +
+    @Query(value = "SELECT t.name, COUNT(c.id) " +
+            "FROM tags t " +
+            "LEFT JOIN case_tags ct ON t.id = ct.tag_id " +
+            "LEFT JOIN cases c ON ct.case_id = c.id " +
+            "WHERE t.is_active = true " +
             "GROUP BY t.id, t.name " +
-            "ORDER BY COUNT(c.id) DESC")
+            "ORDER BY COUNT(c.id) DESC", nativeQuery = true)
     List<Object[]> findActiveTagsWithCaseCount();
-
-    Optional<CaseEntity> findBySlug(String slug);
-
-    Optional<CaseEntity> findByIdAndIsActiveTrue(Long id);
-
-    boolean existsBySlug(String slug);
-
-
-    List<CaseEntity> findByIsActiveTrueOrderBySortOrderAscCreatedAtDesc();
-
-    Page<CaseEntity> findByIsActiveTrue(Pageable pageable);
-
-
-    List<CaseEntity> findByDifficultyAndIsActiveTrue(Difficulty difficulty);
-
-    Page<CaseEntity> findByDifficultyAndIsActiveTrue(Difficulty difficulty, Pageable pageable);
-
-
-
-    @Query("SELECT DISTINCT c FROM CaseEntity c " +
-            "JOIN c.caseTags ct " +
-            "JOIN ct.tag t " +
-            "WHERE t.name IN :tagNames AND c.isActive = true " +
-            "ORDER BY c.sortOrder ASC, c.createdAt DESC")
-    List<CaseEntity> findByTagsAndIsActiveTrue(@Param("tagNames") List<String> tagNames);
-
-    @Query("SELECT DISTINCT c FROM CaseEntity c " +
-            "JOIN c.caseTags ct " +
-            "JOIN ct.tag t " +
-            "WHERE t.id = :tagId AND c.isActive = true")
-    List<CaseEntity> findByTagIdAndIsActiveTrue(@Param("tagId") Long tagId);
-
-
 
     @Modifying
     @Transactional
-    @Query("UPDATE CaseEntity c SET c.viewsCount = c.viewsCount + 1 WHERE c.id = :caseId")
+    @Query(value = "UPDATE cases SET views_count = views_count + 1 WHERE id = :caseId", nativeQuery = true)
     void incrementViewsCount(@Param("caseId") Long caseId);
-
-
-
-    @Query("SELECT c FROM CaseEntity c " +
-            "LEFT JOIN FETCH c.caseTags ct " +
-            "LEFT JOIN FETCH ct.tag " +
-            "WHERE c.slug = :slug")
-    Optional<CaseEntity> findBySlugWithTags(@Param("slug") String slug);
-
-    @Query("SELECT c FROM CaseEntity c " +
-            "LEFT JOIN FETCH c.caseTags ct " +
-            "LEFT JOIN FETCH ct.tag " +
-            "WHERE c.isActive = true " +
-            "ORDER BY c.sortOrder ASC, c.createdAt DESC")
-    List<CaseEntity> findAllActiveWithTags();
-
-
-
-    @Query("SELECT COUNT(c) FROM CaseEntity c WHERE c.isActive = true")
-    long countActiveCases();
-
-    @Query("SELECT c.difficulty, COUNT(c) FROM CaseEntity c " +
-            "WHERE c.isActive = true GROUP BY c.difficulty")
-    List<Object[]> countCasesByDifficulty();
 }

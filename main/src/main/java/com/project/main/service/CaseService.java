@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class CaseService {
                 0
         );
 
-        CaseEntity savedCase = caseRepository.save(newCase);
+        caseRepository.save(newCase);
     }
     @Transactional
     public CaseEntity getCaseByIdAndIncrementViews(Long id) {
@@ -66,12 +67,24 @@ public class CaseService {
 
     public List<Map<String, Object>> getActiveTagsWithCount() {
         return caseRepository.findActiveTagsWithCaseCount().stream()
-                .map(row -> Map.of(
-                        "name", row[0],
-                        "count", ((Number) row[1]).longValue()
-                ))
+                .map(row -> {
+                    String name = "Unknown";
+                    long count = 0L;
+
+                    if (row instanceof Object[] arr && arr.length >= 2) {
+                        name = arr[0] != null ? arr[0].toString() : "Unknown";
+                        count = arr[1] != null ? ((Number) arr[1]).longValue() : 0L;
+                    }
+
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("name", name);
+                    map.put("count", count);
+
+                    return map;
+                })
                 .collect(Collectors.toList());
     }
+
     public List<CaseEntity> getAllPublicCases() {
         return caseRepository.findAllByIsActiveTrueOrderByCreatedAtDesc();
     }
@@ -80,7 +93,7 @@ public class CaseService {
         return caseRepository.findAllByOrderByCreatedAtDesc();
     }
     @Transactional
-    public CaseEntity updateCase(Long id, CaseUpdateRequest req, MultipartFile pdfFile, MultipartFile iconFile) {
+    public void updateCase(Long id, CaseUpdateRequest req, MultipartFile pdfFile, MultipartFile iconFile) {
         CaseEntity existingCase = caseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Кейс не найден"));
 
@@ -113,7 +126,7 @@ public class CaseService {
         if (req.getPromptContextEn() != null) existingCase.setPromptContextEn(req.getPromptContextEn());
         if (req.getActive() != null) existingCase.setActive(req.getActive());
 
-        return caseRepository.save(existingCase);
+        caseRepository.save(existingCase);
     }
 
 

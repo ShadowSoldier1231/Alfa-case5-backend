@@ -155,7 +155,7 @@ public class UserService {
     }
 
     @Transactional
-    public Long createAdminUser(AdminUserCreateRequest req) {
+    public Long createAdminUser(AdminUserCreateRequest req, String hashedPassword) {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new IllegalArgumentException("Username is already taken");
         }
@@ -165,7 +165,7 @@ public class UserService {
 
 
         UserSetup newUser = new UserSetup(
-                passwordEncoder.encode(req.getPassword()),
+                hashedPassword,
                 req.getUsername(),
                 req.getEmail(),
                 req.getRole() != null ? req.getRole() : UserRole.USER,
@@ -195,6 +195,7 @@ public class UserService {
 
         return newUser.getId();
     }
+
     @Transactional
     public void updateAdminUser(Long id, AdminUserUpdateRequest req) {
         UserSetup user = userRepository.findById(id)
