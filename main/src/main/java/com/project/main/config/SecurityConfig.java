@@ -2,6 +2,7 @@ package com.project.main.config;
 
 
 import com.project.main.filter.SessionFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
+import java.util.stream.Stream;
 
 
 @Configuration
@@ -23,9 +25,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final SessionFilter sessionFilter;
+    private final String websiteAddress;
 
-    public SecurityConfig(SessionFilter sessionFilter) {
+    public SecurityConfig(SessionFilter sessionFilter,
+                          @Value("${web.address.site}") String websiteAddress) {
         this.sessionFilter = sessionFilter;
+        this.websiteAddress = websiteAddress;
     }
 
     @Bean
@@ -55,7 +60,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8081")); // тут указать host ip и port
+        List<String> allowedOrigins = Stream.of(websiteAddress)
+                .filter(addr -> addr != null && !addr.isBlank())
+                .toList();
+
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
