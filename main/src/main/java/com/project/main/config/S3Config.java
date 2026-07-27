@@ -68,7 +68,7 @@ public class S3Config {
                 System.err.println("Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
             }
         } catch (Exception e) {
-            System.err.println("⚠Ошибка при проверке бакета '" + bucketName + "': " + e.getMessage());
+            System.err.println("Ошибка при проверке бакета '" + bucketName + "': " + e.getMessage());
         }
     }
 }
