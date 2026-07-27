@@ -6,12 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 import java.net.URI;
 import java.time.Duration;
@@ -19,20 +18,12 @@ import java.time.Duration;
 @Configuration
 public class S3Config {
 
-    @Value("${app.s3.endpoint}")
-    private String endpoint;
-
-    @Value("${app.s3.access-key}")
-    private String accessKey;
-
-    @Value("${app.s3.secret-key}")
-    private String secretKey;
-
-    @Value("${app.s3.bucket-name}")
-    private String bucketName;
-
     @Bean
-    public S3Client s3Client() {
+    public S3Client s3Client(
+            @Value("${app.s3.endpoint}") String endpoint,
+            @Value("${app.s3.access-key}") String accessKey,
+            @Value("${app.s3.secret-key}") String secretKey) {
+
         return S3Client.builder()
                 .endpointOverride(URI.create(endpoint))
                 .region(Region.of("ru-central-1"))
@@ -42,25 +33,12 @@ public class S3Config {
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(true)
                         .build())
-                .overrideConfiguration(c -> c
+
+                .overrideConfiguration(ClientOverrideConfiguration.builder()
                         .apiCallAttemptTimeout(Duration.ofSeconds(5))
                         .apiCallTimeout(Duration.ofSeconds(15))
-                )
+                        .retryPolicy(RetryPolicy.builder().numRetries(2).build())
+                        .build())
                 .build();
-    }
-
-    @PostConstruct
-    public void initBucket(S3Client s3Client) {
-        try {
-            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
-        } catch (NoSuchBucketException e) {
-            try {
-                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-            } catch (Exception createEx) {
-                System.err.println("Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
-            }
-        } catch (Exception e) {
-            System.err.println("Не удалось проверить бакет '" + bucketName + "': " + e.getMessage());
-        }
     }
 }
