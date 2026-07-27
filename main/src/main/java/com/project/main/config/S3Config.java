@@ -58,17 +58,17 @@ public class S3Config {
     public void initBucket() {
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
-            System.out.println("✅ Бакет '" + bucketName + "' уже существует");
+            System.out.println("Бакет '" + bucketName + "' уже существует");
         } catch (NoSuchBucketException e) {
 
             try {
                 s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-                System.out.println("✅ Бакет '" + bucketName + "' успешно создан");
+                System.out.println("Бакет '" + bucketName + "' успешно создан");
             } catch (Exception createEx) {
-                System.err.println("❌ Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
+                System.err.println("Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
             }
         } catch (Exception e) {
-            System.err.println("⚠️ Ошибка при проверке бакета '" + bucketName + "': " + e.getMessage());
+            System.err.println("⚠Ошибка при проверке бакета '" + bucketName + "': " + e.getMessage());
         }
     }
 }
