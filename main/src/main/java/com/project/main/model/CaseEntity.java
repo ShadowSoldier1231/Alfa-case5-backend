@@ -52,8 +52,7 @@ public class CaseEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "sort_order")
-    private Integer sortOrder = 0;
+
 
     @Column(name = "views_count", nullable = false)
     private Integer viewsCount = 0;
@@ -76,7 +75,7 @@ public class CaseEntity {
 
     public CaseEntity(String slug, String title, String titleEn, String description, String fullDescription,
                       Difficulty difficulty, Integer averageSolveMin, String pdfUrl, String iconUrl,
-                      String promptContextEn, Boolean isActive, Integer sortOrder, Integer viewsCount) {
+                      String promptContextEn, Boolean isActive,  Integer viewsCount) {
         this.slug = slug;
         this.title = title;
         this.titleEn = titleEn;
@@ -88,7 +87,6 @@ public class CaseEntity {
         this.iconUrl = iconUrl;
         this.promptContextEn = promptContextEn;
         this.isActive = isActive != null ? isActive : true;
-        this.sortOrder = sortOrder != null ? sortOrder : 0;
         this.viewsCount = viewsCount != null ? viewsCount : 0;
     }
 
@@ -136,9 +134,6 @@ public class CaseEntity {
         return titleEn;
     }
 
-    public Integer getSortOrder() {
-        return sortOrder;
-    }
 
     public Integer getViewsCount() {
         return viewsCount;
@@ -212,9 +207,6 @@ public class CaseEntity {
         this.promptContextEn = promptContextEn;
     }
 
-    public void setSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;

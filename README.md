@@ -1,3 +1,4 @@
+
 # Alfa-case5-backend
 
 # Документация API
@@ -31,7 +32,7 @@ curl -X GET http://localhost:8080/health
 
 - **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными).
 - **`/api/text/**`** — **Только авторизованные пользователи**. Во все запросы нужно добавлять заголовок: `-H "Cookie: token=ТОКЕН"`.
-- **`/api/admin/**`** — **Только администраторы**. Доступ ограничен ролью `ADMIN` *(в разработке)*.
+- **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN`.
 
 ---
 
@@ -208,6 +209,31 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/avatar
 
 ---
 
+## Кейсы и Материалы (`/api/v1/cases`)
+
+### Список всех активных кейсов (`GET`)
+Возвращает список опубликованных кейсов, отсортированных по дате создания.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/cases/getAll
+```
+
+### Полная информация о кейсе (`GET`)
+Возвращает детальную информацию о кейсе по его ID, включая полное описание и ссылки на файлы. Автоматически увеличивает счетчик просмотров.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/cases/1
+```
+
+### Список активных тегов (`GET`)
+Возвращает список разрешенных тегов, которые можно использовать для фильтрации.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/cases/tags
+```
+
+---
+
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 
 ### Топ-5 игроков лидерборда (`GET`)
@@ -296,6 +322,77 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 
 ---
 
+## Администрирование (`/api/admin/v1`)
+
+*Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя с ролью `ADMIN`.*
+
+### Управление кейсами
+
+#### Список всех кейсов (`GET`)
+Возвращает все кейсы, включая неактивные (скрытые).
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases
+```
+
+#### Создание нового кейса (`POST`)
+Создает новый кейс. Принимает данные в формате `multipart/form-data`.
+
+```bash
+curl -X POST -H "Cookie: token=TOKEN" \
+  -F 'case={"slug":"new-case","title":"Новый кейс","description":"Описание","difficulty":"EASY"};type=application/json' \
+  -F 'pdfFile=@/path/to/file.pdf' \
+  -F 'iconFile=@/path/to/icon.jpg' \
+  http://localhost:8080/api/admin/v1/createCase
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 42
+}
+```
+
+#### Обновление кейса (`PUT`)
+Обновляет данные кейса. Для удаления существующих файлов передайте `"removePdf": true` или `"removeIcon": true` в JSON-части `case`.
+
+```bash
+curl -X PUT -H "Cookie: token=TOKEN" \
+  -F 'case={"title":"Обновленное название","removePdf":true};type=application/json' \
+  -F 'iconFile=@/path/to/new_icon.jpg' \
+  http://localhost:8080/api/admin/v1/cases/42
+```
+
+### Управление пользователями
+
+#### Создание пользователя (`POST`)
+Создает нового пользователя с заданными параметрами. Пользователь сразу считается верифицированным.
+
+```bash
+curl -X POST -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+  -d '{"username":"admin_created","password":"SecurePass1!","email":"test@test.com","role":"USER","firstName":"Иван","lastName":"Иванов"}' \
+  http://localhost:8080/api/admin/v1/users
+```
+
+#### Изменение данных пользователя (`PATCH`)
+Частичное обновление полей пользователя (роль, бан, верификация, личные данные). Рейтинг изменить нельзя.
+
+```bash
+curl -X PATCH -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+  -d '{"role":"ADMIN","isVerified":true,"bannedUntil":"2026-12-31T23:59:59"}' \
+  http://localhost:8080/api/admin/v1/users/42
+```
+
+#### Удаление пользователя (`DELETE`)
+Удаляет пользователя и все связанные с ним данные (решения, достижения, аватар) через каскадное удаление.
+
+```bash
+curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/users/42
+```
+
+---
+
 ## Геймификация и ИИ (`/api/text/v1`)
 
 *Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса. Для всех запросов обязательна валидная Cookie сессии пользователя.*
@@ -362,6 +459,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Please login first` | Требуется предварительный вход в систему. |
 | &nbsp; | `You are already logged in` | Сессия уже активна для этого пользователя. |
 | &nbsp; | `Session expired` | Срок действия текущей сессии истек. |
+| &nbsp; | `Access denied: ADMIN role required` | У пользователя нет прав администратора. |
 | **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
@@ -392,5 +490,3 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
 | &nbsp; | `Internal server error` | Внутренняя ошибка сервера (Crash / Unhandled exception). |
-```
-

@@ -18,7 +18,19 @@ import java.util.Optional;
 @Repository
 public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
+    List<CaseEntity> findAllByIsActiveTrueOrderByCreatedAtDesc();
 
+
+    List<CaseEntity> findAllByOrderByCreatedAtDesc();
+
+
+    @Query("SELECT t.name, COUNT(c.id) FROM Tag t " +
+            "LEFT JOIN t.caseTags ct " +
+            "LEFT JOIN ct.caseEntity c " +
+            "WHERE t.isActive = true " +
+            "GROUP BY t.id, t.name " +
+            "ORDER BY COUNT(c.id) DESC")
+    List<Object[]> findActiveTagsWithCaseCount();
 
     Optional<CaseEntity> findBySlug(String slug);
 

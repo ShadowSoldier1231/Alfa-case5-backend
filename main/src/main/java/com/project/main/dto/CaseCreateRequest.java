@@ -12,7 +12,7 @@ public class CaseCreateRequest {
     private Difficulty difficulty;
     private Integer averageSolveMin;
     private String promptContextEn;
-    private Integer sortOrder;
+    private Boolean isActive;
 
 
     public CaseCreateRequest() {
@@ -20,7 +20,7 @@ public class CaseCreateRequest {
 
     public CaseCreateRequest(String slug, String title, String titleEn, String description,
                              String fullDescription, Difficulty difficulty, Integer averageSolveMin,
-                             String promptContextEn, Integer sortOrder) {
+                             String promptContextEn, Boolean isActive) {
         this.slug = slug;
         this.title = title;
         this.titleEn = titleEn;
@@ -29,9 +29,17 @@ public class CaseCreateRequest {
         this.difficulty = difficulty;
         this.averageSolveMin = averageSolveMin;
         this.promptContextEn = promptContextEn;
-        this.sortOrder = sortOrder != null ? sortOrder : 0;
+        this.isActive = isActive;
+
     }
 
+    public void setActive(Boolean active) {
+        isActive = active;
+    }
+
+    public Boolean getActive() {
+        return isActive;
+    }
 
     public String getSlug() { return slug; }
     public void setSlug(String slug) { this.slug = slug; }
@@ -57,6 +65,5 @@ public class CaseCreateRequest {
     public String getPromptContextEn() { return promptContextEn; }
     public void setPromptContextEn(String promptContextEn) { this.promptContextEn = promptContextEn; }
 
-    public Integer getSortOrder() { return sortOrder; }
-    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
 }
