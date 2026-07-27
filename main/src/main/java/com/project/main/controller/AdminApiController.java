@@ -62,6 +62,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
+            System.err.println(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -100,6 +101,7 @@ public class AdminApiController {
             RegisterResult errorResult = new RegisterResult();
             errorResult.setSuccess(false);
             errorResult.setErrorText("Internal server error");
+            System.err.println(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult);
         }
     }
