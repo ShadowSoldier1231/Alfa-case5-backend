@@ -50,13 +50,17 @@ public class S3Config {
     }
 
     @PostConstruct
-    public void initBucket() {
-        try (S3Client client = s3Client()) {
-            client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+    public void initBucket(S3Client s3Client) {
+        try {
+            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
         } catch (NoSuchBucketException e) {
-            try (S3Client client = s3Client()) {
-                client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+            try {
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+            } catch (Exception createEx) {
+                System.err.println("Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
             }
+        } catch (Exception e) {
+            System.err.println("Не удалось проверить бакет '" + bucketName + "': " + e.getMessage());
         }
     }
 }
