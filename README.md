@@ -200,13 +200,6 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/city
 curl -X GET http://localhost:8080/api/v1/site/getAllCities
 ```
 
-### Получить аватар пользователя (`GET`)
-Загружает и отображает изображение профиля по ID.
-
-```bash
-curl -X GET http://localhost:8080/api/v1/site/user/1/avatar
-```
-
 ---
 
 ## Кейсы и Материалы (`/api/v1/cases`)
