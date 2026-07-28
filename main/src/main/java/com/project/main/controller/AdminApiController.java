@@ -3,6 +3,7 @@ package com.project.main.controller;
 
 import com.project.main.dto.*;
 import com.project.main.model.CaseEntity;
+import com.project.main.service.AvatarMigrationService;
 import com.project.main.service.UserService;
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/v1")
@@ -27,11 +29,23 @@ public class AdminApiController {
     private final SessionService sessionService;
     private final CaseService caseService;
     private final UserService userService;
-
-    public AdminApiController(SessionService sessionService, CaseService caseService, UserService userService) {
+    private final AvatarMigrationService avatarMigrationService;
+    public AdminApiController(SessionService sessionService, CaseService caseService, UserService userService, AvatarMigrationService avatarMigrationService) {
         this.sessionService = sessionService;
         this.caseService = caseService;
         this.userService = userService;
+        this.avatarMigrationService = avatarMigrationService;
+    }
+
+    @PostMapping("/migrate/avatars")
+    public ResponseEntity<?> migrateAvatars() {
+        try {
+            Map<String, Object> result = avatarMigrationService.migrateAvatarsToS3();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ошибка миграции: " + e.getMessage());
+        }
     }
 
 

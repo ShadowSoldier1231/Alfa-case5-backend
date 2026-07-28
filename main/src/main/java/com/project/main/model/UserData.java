@@ -23,6 +23,7 @@ public class UserData {
     private String nickName;
     @Enumerated(EnumType.ORDINAL)
     private GenderCode gender;
+    private String avatarUrl;
 
     public UserData(){
 
@@ -30,7 +31,7 @@ public class UserData {
 
     public UserData(Long id, String firstName, String lastName,
                     LocalDate birthdate, UserStatus status,  Long cityId, String middleName,
-                     GenderCode gender, String nickName){
+                     GenderCode gender, String nickName, String avatarUrl){
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -40,7 +41,16 @@ public class UserData {
         this.middleName = middleName;
         this.gender = gender;
         this.nickName = nickName;
+        this.avatarUrl = avatarUrl;
 
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public void setNickName(String nickName) {

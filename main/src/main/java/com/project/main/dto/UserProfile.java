@@ -40,6 +40,8 @@ public class UserProfile {
     private Long placement;
     @JsonView(Views.MyProfile.class)
     private String email;
+    @JsonView(Views.PublicProfile.class)
+    private String avatarUrl;
 
     public UserProfile() {
     }
@@ -58,6 +60,7 @@ public class UserProfile {
         this.score = builder.score;
         this.placement = builder.placement;
         this.email = builder.email;
+        this.avatarUrl = builder.avatarUrl;
     }
 
     public static Builder builder() {
@@ -80,13 +83,17 @@ public class UserProfile {
         private Long score;
         private Long placement;
         private String email;
+        private String avatarUrl;
 
 
 
 
 
 
-
+    public Builder avatarUrl(String avatarUrl){
+        this.avatarUrl = avatarUrl;
+        return  this;
+    }
 
 
         public Builder cityName(String cityName) {
@@ -266,5 +273,6 @@ public class UserProfile {
     public void setScore(Long score) {
         this.score = score;
     }
-
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

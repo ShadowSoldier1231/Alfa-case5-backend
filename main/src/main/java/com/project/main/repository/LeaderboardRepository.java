@@ -17,7 +17,7 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
     @Query("UPDATE LeaderboardUser l SET l.score = :score WHERE l.userId = :userId")
     void updateScore(@Param("userId") Long userId, @Param("score") Long score);
 
-    @Query(value = "SELECT l.user_id, l.score, u.first_name, u.nick_name, c.city_name " +
+    @Query(value = "SELECT l.user_id, l.score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
             "FROM leaderboard_user l " +
             "JOIN user_data u ON l.user_id = u.id " +
             "JOIN user_setup us ON l.user_id = us.id " +
@@ -30,15 +30,14 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
     List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
 
 
-
-    @Query(value = "SELECT l.user_id, MAX(s.rating) as case_score, u.first_name, u.nick_name, c.city_name " +
+    @Query(value = "SELECT l.user_id, MAX(s.rating) as case_score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
             "FROM leaderboard_user l " +
             "JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId " +
             "JOIN user_data u ON l.user_id = u.id " +
             "JOIN user_setup us ON l.user_id = us.id " +
             "LEFT JOIN city c ON u.city_id = c.id " +
             "WHERE us.is_verified = true " +
-            "GROUP BY l.user_id, u.first_name, u.nick_name, c.city_name " +
+            "GROUP BY l.user_id, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
             "ORDER BY case_score DESC, l.user_id ASC " +
             "LIMIT 5", nativeQuery = true)
     List<Object[]> findTop5LeaderboardDataByCaseId(@Param("caseId") Long caseId);
@@ -67,5 +66,4 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
             "JOIN user_setup us ON l.user_id = us.id " +
             "WHERE us.is_verified = true AND l.score > 0", nativeQuery = true)
     Long getTotalVerifiedUsersInLeaderboard();
-
 }

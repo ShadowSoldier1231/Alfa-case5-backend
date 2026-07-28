@@ -19,7 +19,7 @@ public interface UserDataRepository extends JpaRepository<UserData, Long> {
             " WHERE us2.is_verified = true " +
             " AND (l2.score > COALESCE(l.score, 0) " +
             "      OR (l2.score = COALESCE(l.score, 0) AND l2.user_id < d.id))) as placement, " +
-            "c.city_name, c.region_name " +
+            "c.city_name, c.region_name, d.avatar_url " +
             "FROM user_data d " +
             "LEFT JOIN leaderboard_user l ON d.id = l.user_id " +
             "LEFT JOIN city c ON d.city_id = c.id " +
@@ -33,7 +33,7 @@ public interface UserDataRepository extends JpaRepository<UserData, Long> {
             " WHERE us2.is_verified = true " +
             " AND (l2.score > COALESCE(l.score, 0) " +
             "      OR (l2.score = COALESCE(l.score, 0) AND l2.user_id < d.id))) as placement, " +
-            "c.city_name, c.region_name, u.email " +
+            "c.city_name, c.region_name, u.email, d.avatar_url " +
             "FROM user_data d " +
             "JOIN user_setup u ON d.id = u.id " +
             "LEFT JOIN leaderboard_user l ON d.id = l.user_id " +

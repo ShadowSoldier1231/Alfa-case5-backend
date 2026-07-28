@@ -48,44 +48,6 @@ public class FetchingService {
 
 
 
-    public byte[] getPictureById(Long id){
-        UserAvatar data = avatarRepository.findById(id).orElse(null);
-        if(data == null){
-            return null;
-        }
-        return data.getPictureData();
-    }
-    public List<LeaderboardTopUser> getTop5LeaderboardByCase(Long caseId) {
-        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardDataByCaseId(caseId);
-        List<LeaderboardTopUser> result = new ArrayList<>();
-        long currentPlacement = 1;
-
-        for (Object row : rows) {
-            Object[] actualRow = unwrapRow(row);
-
-            if (actualRow.length < 5) {
-                continue;
-            }
-
-            Long uId = ((Number) actualRow[0]).longValue();
-            Long score = ((Number) actualRow[1]).longValue();
-            String firstName = safeString(actualRow[2]);
-            String nickName = safeString(actualRow[3]);
-            String cityName = safeString(actualRow[4]);
-
-            result.add(new LeaderboardTopUser(
-                    uId,
-                    currentPlacement++,
-                    score,
-                    (firstName != null && !firstName.isEmpty()) ? firstName : "Unknown",
-                    (nickName != null && !nickName.isEmpty()) ? nickName : "Unknown",
-                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set"
-            ));
-        }
-
-        return result;
-    }
-
     public LeadboardInfo getGlobalPlacementInfo(Long userId) {
 
         LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
@@ -122,13 +84,23 @@ public class FetchingService {
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {
         List<Object[]> rows = leaderboardRepository.findTop5LeaderboardData();
+        return buildTop5Result(rows);
+    }
+
+    public List<LeaderboardTopUser> getTop5LeaderboardByCase(Long caseId) {
+        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardDataByCaseId(caseId);
+        return buildTop5Result(rows);
+    }
+
+
+    private List<LeaderboardTopUser> buildTop5Result(List<Object[]> rows) {
         List<LeaderboardTopUser> result = new ArrayList<>();
         long currentPlacement = 1;
 
         for (Object row : rows) {
             Object[] actualRow = unwrapRow(row);
 
-            if (actualRow.length < 5) {
+            if (actualRow.length < 6) {
                 continue;
             }
 
@@ -137,6 +109,7 @@ public class FetchingService {
             String firstName = safeString(actualRow[2]);
             String nickName = safeString(actualRow[3]);
             String cityName = safeString(actualRow[4]);
+            String avatarKey = safeString(actualRow[5]);
 
             result.add(new LeaderboardTopUser(
                     uId,
@@ -144,7 +117,8 @@ public class FetchingService {
                     score,
                     (firstName != null && !firstName.isEmpty()) ? firstName : "Unknown",
                     (nickName != null && !nickName.isEmpty()) ? nickName : "Unknown",
-                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set"
+                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set",
+                    avatarKey
             ));
         }
 
@@ -154,30 +128,6 @@ public class FetchingService {
 
     public UserProfile getBaseProfile(Long userId) {
         return userDataRepository.findProfileData(userId)
-                .map(row -> {
-                    Object[] actualRow = unwrapRow(row);
-                    if (actualRow.length < 12) return null;
-
-                    return UserProfile.builder()
-                            .id(((Number) actualRow[0]).longValue())
-                            .firstName(safeString(actualRow[1]))
-                            .lastName(safeString(actualRow[2]))
-                            .middleName(safeString(actualRow[3]))
-                            .birthdate((LocalDate) actualRow[4])
-                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
-                            .nickName(safeString(actualRow[6]))
-                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
-                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
-                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
-                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
-                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
-                            .build();
-                })
-                .orElse(null);
-    }
-
-    public UserProfile getMyProfile(Long userId) {
-        return userDataRepository.findFullProfileData(userId)
                 .map(row -> {
                     Object[] actualRow = unwrapRow(row);
                     if (actualRow.length < 13) return null;
@@ -195,7 +145,33 @@ public class FetchingService {
                             .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
                             .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
                             .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
+                            .avatarUrl(safeString(actualRow[12]))
+                            .build();
+                })
+                .orElse(null);
+    }
+
+    public UserProfile getMyProfile(Long userId) {
+        return userDataRepository.findFullProfileData(userId)
+                .map(row -> {
+                    Object[] actualRow = unwrapRow(row);
+                    if (actualRow.length < 14) return null;
+
+                    return UserProfile.builder()
+                            .id(((Number) actualRow[0]).longValue())
+                            .firstName(safeString(actualRow[1]))
+                            .lastName(safeString(actualRow[2]))
+                            .middleName(safeString(actualRow[3]))
+                            .birthdate((LocalDate) actualRow[4])
+                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
+                            .nickName(safeString(actualRow[6]))
+                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
+                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
+                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
+                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
+                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
                             .email(safeString(actualRow[12]))
+                            .avatarUrl(safeString(actualRow[13]))
                             .build();
                 })
                 .orElse(null);

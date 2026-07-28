@@ -120,24 +120,7 @@ public class WebApiController {
         return ResponseEntity.ok(profile);
     }
 
-    @GetMapping("/user/{id}/avatar")
-    public ResponseEntity<byte[]> getUserAvatar(@PathVariable("id") Long userId) {
-        if (userId == null || userId <= 0L) {
-            return ResponseEntity.badRequest().build();
-        }
 
-        byte[] imageBytes = fetchingService.getPictureById(userId);
-
-        if (imageBytes == null || imageBytes.length == 0) {
-            return ResponseEntity.notFound().build();
-        }
-
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
-                .contentLength(imageBytes.length)
-                .body(imageBytes);
-    }
 
     @GetMapping("/leaderboard/top5")
     public ResponseEntity<List<LeaderboardTopUser>> getTop5Leaderboard() {

@@ -15,33 +15,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-
-
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
 public class UserService {
 
+    private final S3StorageService s3StorageService;
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
-    private final UserAvatarRepository userAvatarRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
     private  final ApplicationEventPublisher eventPublisher;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       UserDataRepository userDataRepository, UserAvatarRepository userAvatarRepository,
+                       UserDataRepository userDataRepository,
                        LeaderboardRepository leaderboardRepository, VerificationService verificationService,
-                       ApplicationEventPublisher eventPublisher) {
+                       ApplicationEventPublisher eventPublisher, S3StorageService s3StorageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userDataRepository = userDataRepository;
-        this.userAvatarRepository = userAvatarRepository;
         this.verificationService = verificationService;
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
+        this.s3StorageService = s3StorageService;
 
     }
 
@@ -62,9 +60,19 @@ public class UserService {
     }
 
     @Transactional
-    public void saveProfilePicture(Long userId, byte[] imageBytes) {
-        UserAvatar avatar = new UserAvatar(userId, imageBytes);
-        this.userAvatarRepository.save(avatar);
+    public void saveProfilePicture(Long userId, MultipartFile file) {
+        UserData userData = userDataRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+
+        if (userData.getAvatarUrl() != null && !userData.getAvatarUrl().isBlank()) {
+            s3StorageService.deleteFile(userData.getAvatarUrl());
+        }
+
+        String avatarKey = s3StorageService.uploadFile(file, "avatars");
+
+        userData.setAvatarUrl(avatarKey);
+        userDataRepository.save(userData);
     }
 
     public RegisterResult verifyUser(Long userId, Long verificationCode) {
@@ -145,7 +153,8 @@ public class UserService {
                 registerRequest.getCityId(),
                 registerRequest.getMiddleName(),
                 gender,
-                registerRequest.getUsername()
+                registerRequest.getUsername(),
+                null
         );
         userDataRepository.save(userData);
 
@@ -186,7 +195,8 @@ public class UserService {
                 req.getCityId(),
                 req.getMiddleName(),
                 gender,
-                req.getUsername()
+                req.getUsername(),
+                null
         );
         userDataRepository.save(userData);
 

@@ -204,8 +204,9 @@ public class LoginApiController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/setProfilePicture")
-    public ResponseEntity<RegisterResult> setProfilePicture(@RequestParam("file") MultipartFile file,
-                                                            @CookieValue(value = "token", required = false) String token) {
+    public ResponseEntity<RegisterResult> setProfilePicture(
+            @RequestParam("file") MultipartFile file,
+            @CookieValue(value = "token", required = false) String token) {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         RegisterResult cookieCheck = sessionPair.getLeft();
@@ -214,24 +215,13 @@ public class LoginApiController {
         }
         UserSession session = sessionPair.getRight();
 
-        if (file.isEmpty()) {
-            return ResponseEntity.ok(new RegisterResult(false, "File cannot be empty"));
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/jpg"))) {
-            return ResponseEntity.ok(new RegisterResult(false, "Only JPEG/JPG images are allowed"));
-        }
-
-        if (file.getSize() > 5242880) {
-            return ResponseEntity.ok(new RegisterResult(false, "File size cannot exceed 5MB"));
-        }
-
         try {
-
-            userService.saveProfilePicture(session.getUserId(), file.getBytes());
+            userService.saveProfilePicture(session.getUserId(), file);
             return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.ok(new RegisterResult(false, e.getMessage()));
+        } catch (Exception e) {
             return ResponseEntity.ok(new RegisterResult(false, "Failed to process image file"));
         }
     }

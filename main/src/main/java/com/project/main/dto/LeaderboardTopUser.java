@@ -7,18 +7,27 @@ public class LeaderboardTopUser {
     private String firstName;
     private String nickName;
     private String cityName;
-
+    private String avatarUrl;
 
     public LeaderboardTopUser(Long userId, Long placement, Long score,
-                              String firstName, String nickName, String cityName) {
+                              String firstName, String nickName, String cityName,
+                              String avatarUrl) {
         this.userId = userId;
         this.placement = placement;
         this.score = score;
         this.firstName = firstName;
         this.nickName = nickName;
         this.cityName = cityName;
+        this.avatarUrl = avatarUrl;
     }
 
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
 
     public Long getUserId() { return userId; }
     public Long getPlacement() { return placement; }
