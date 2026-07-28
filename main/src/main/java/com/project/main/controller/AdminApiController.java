@@ -95,12 +95,12 @@ public class AdminApiController {
         }
 
         try {
-            caseService.createCase(request, pdfFile, iconFile);
+            Long caseId = caseService.createCase(request, pdfFile, iconFile);
 
             RegisterResult successResult = new RegisterResult();
             successResult.setSuccess(true);
             successResult.setErrorText("");
-            successResult.setId(authResult.getRight().getUserId());
+            successResult.setId(caseId);
 
             return ResponseEntity.ok(successResult);
 

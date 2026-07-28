@@ -99,7 +99,7 @@ public class CaseService {
     }
 
     @Transactional
-    public void createCase(CaseCreateRequest request,
+    public Long createCase(CaseCreateRequest request,
                            MultipartFile pdfFile,
                            MultipartFile iconFile) {
 
@@ -129,6 +129,7 @@ public class CaseService {
         );
 
         caseRepository.save(newCase);
+        return  newCase.getId();
     }
     @Transactional
     public CaseEntity getCaseByIdAndIncrementViews(Long id) {
