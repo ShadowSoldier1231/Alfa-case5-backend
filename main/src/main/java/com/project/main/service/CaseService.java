@@ -2,8 +2,14 @@ package com.project.main.service;
 
 import com.project.main.dto.CaseCreateRequest;
 import com.project.main.dto.CaseUpdateRequest;
+import com.project.main.dto.TagCreateRequest;
 import com.project.main.model.CaseEntity;
+import com.project.main.model.CaseTag;
+import com.project.main.model.CaseTagId;
+import com.project.main.model.Tag;
 import com.project.main.repository.CaseRepository;
+import com.project.main.repository.CaseTagRepository;
+import com.project.main.repository.TagRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,11 +23,79 @@ import java.util.stream.Collectors;
 public class CaseService {
 
     private final CaseRepository caseRepository;
+    private final TagRepository tagRepository;
+    private final CaseTagRepository caseTagRepository;
     private final S3StorageService s3StorageService;
 
-    public CaseService(CaseRepository caseRepository, S3StorageService s3StorageService) {
+    public CaseService(CaseRepository caseRepository,
+                       TagRepository tagRepository,
+                       CaseTagRepository caseTagRepository,
+                       S3StorageService s3StorageService) {
         this.caseRepository = caseRepository;
+        this.tagRepository = tagRepository;
+        this.caseTagRepository = caseTagRepository;
         this.s3StorageService = s3StorageService;
+    }
+
+
+
+
+    @Transactional
+    public Long createTag(TagCreateRequest request) {
+        if (request == null || request.getName() == null || request.getName().isBlank()) {
+            throw new IllegalArgumentException("Tag name cannot be empty");
+        }
+
+        String tagName = request.getName().trim();
+
+        if (tagRepository.existsByName(tagName)) {
+            throw new IllegalArgumentException("Tag with this name already exists");
+        }
+
+        Tag newTag = new Tag();
+        newTag.setName(tagName);
+        newTag.setActive(true);
+
+        Tag savedTag = tagRepository.save(newTag);
+        return savedTag.getId();
+    }
+
+    @Transactional
+    public void deactivateTag(Long tagId) {
+        Tag tag = tagRepository.findById(tagId)
+                .orElseThrow(() -> new IllegalArgumentException("Tag not found"));
+
+        tag.setActive(false);
+        tagRepository.save(tag);
+    }
+
+    @Transactional
+    public void attachTagToCase(Long caseId, Long tagId) {
+        CaseEntity caseEntity = caseRepository.findById(caseId)
+                .orElseThrow(() -> new IllegalArgumentException("Case not found"));
+
+        Tag tag = tagRepository.findById(tagId)
+                .orElseThrow(() -> new IllegalArgumentException("Tag not found"));
+
+        if (caseTagRepository.existsByCaseEntityIdAndTagId(caseId, tagId)) {
+            throw new IllegalArgumentException("Tag is already attached to this case");
+        }
+
+        CaseTag caseTag = new CaseTag();
+        caseTag.setId(new CaseTagId(caseId, tagId));
+        caseTag.setCaseEntity(caseEntity);
+        caseTag.setTag(tag);
+
+        caseTagRepository.save(caseTag);
+    }
+
+    @Transactional
+    public void detachTagFromCase(Long caseId, Long tagId) {
+        if (!caseTagRepository.existsByCaseEntityIdAndTagId(caseId, tagId)) {
+            throw new IllegalArgumentException("Tag is not attached to this case");
+        }
+
+        caseTagRepository.deleteByCaseEntityIdAndTagId(caseId, tagId);
     }
 
     @Transactional

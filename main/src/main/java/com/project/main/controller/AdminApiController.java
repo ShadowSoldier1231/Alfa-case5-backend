@@ -7,6 +7,7 @@ import com.project.main.service.UserService;
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.main.model.UserSession;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -47,9 +49,17 @@ public class AdminApiController {
     public ResponseEntity<RegisterResult> updateCase(
             @PathVariable Long id,
             @RequestPart("case") @Valid CaseUpdateRequest req,
+            BindingResult bindingResult,
             @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
+        if (bindingResult.hasErrors()) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(getValidationErrors(bindingResult));
+            return ResponseEntity.badRequest().body(res);
+        }
+
         try {
             caseService.updateCase(id, req, pdfFile, iconFile);
             RegisterResult res = new RegisterResult();
@@ -65,10 +75,10 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
-            System.err.println(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
+
 
     @PostMapping(value = "/createCase", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> createCase(
@@ -112,7 +122,18 @@ public class AdminApiController {
 
 
     @PostMapping("/users")
-    public ResponseEntity<RegisterResult> createUser(@RequestBody @Valid AdminUserCreateRequest req) {
+    public ResponseEntity<RegisterResult> createUser(
+            @RequestBody @Valid AdminUserCreateRequest req,
+            BindingResult bindingResult
+    ) {
+
+        if (bindingResult.hasErrors()) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(getValidationErrors(bindingResult));
+            return ResponseEntity.badRequest().body(res);
+        }
+
         try {
             String hashedPassword = userService.hashPassword(req.getPassword());
             Long newUserId = userService.createAdminUser(req, hashedPassword);
@@ -137,8 +158,16 @@ public class AdminApiController {
     @PatchMapping("/users/{id}")
     public ResponseEntity<RegisterResult> updateUser(
             @PathVariable Long id,
-            @RequestBody @Valid AdminUserUpdateRequest req
+            @RequestBody @Valid AdminUserUpdateRequest req,
+            BindingResult bindingResult
     ) {
+        if (bindingResult.hasErrors()) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(getValidationErrors(bindingResult));
+            return ResponseEntity.badRequest().body(res);
+        }
+
         try {
             userService.updateAdminUser(id, req);
             RegisterResult res = new RegisterResult();
@@ -157,6 +186,109 @@ public class AdminApiController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
+
+
+    @PostMapping("/tags")
+    public ResponseEntity<RegisterResult> createTag(
+            @RequestBody @Valid TagCreateRequest request,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(getValidationErrors(bindingResult));
+            return ResponseEntity.badRequest().body(res);
+        }
+
+        try {
+            Long newTagId = caseService.createTag(request);
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(true);
+            res.setErrorText("");
+            res.setId(newTagId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(res);
+        } catch (IllegalArgumentException e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        } catch (Exception e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            System.err.println(e.getMessage());
+            res.setErrorText("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+        }
+    }
+    @PatchMapping("/tags/{id}/deactivate")
+    public ResponseEntity<RegisterResult> deactivateTag(@PathVariable Long id) {
+        try {
+            caseService.deactivateTag(id);
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(true);
+            res.setErrorText("");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        } catch (Exception e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText("Internal server error");
+            System.err.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+        }
+    }
+    @PostMapping("/cases/{caseId}/tags/{tagId}")
+    public ResponseEntity<RegisterResult> attachTagToCase(
+            @PathVariable Long caseId,
+            @PathVariable Long tagId) {
+        try {
+            caseService.attachTagToCase(caseId, tagId);
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(true);
+            res.setErrorText("");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        } catch (Exception e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText("Internal server error");
+            System.err.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+        }
+    }
+
+    @DeleteMapping("/cases/{caseId}/tags/{tagId}")
+    public ResponseEntity<RegisterResult> detachTagFromCase(
+            @PathVariable Long caseId,
+            @PathVariable Long tagId) {
+        try {
+            caseService.detachTagFromCase(caseId, tagId);
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(true);
+            res.setErrorText("");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        } catch (Exception e) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText("Internal server error");
+            System.err.println(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+        }
+    }
+
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<RegisterResult> deleteUser(@PathVariable Long id) {
@@ -177,6 +309,18 @@ public class AdminApiController {
             res.setErrorText("Internal server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
+    }
+
+
+
+
+
+
+
+    private String getValidationErrors(BindingResult bindingResult) {
+        return bindingResult.getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
     }
 
 }

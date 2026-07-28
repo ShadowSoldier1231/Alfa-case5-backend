@@ -364,6 +364,46 @@ curl -X PUT -H "Cookie: token=TOKEN" \
   http://localhost:8080/api/admin/v1/cases/42
 ```
 
+### Управление тегами
+
+#### Создание нового тега (`POST`)
+Создает новый тег. Имя тега должно быть уникальным.
+
+```bash
+curl -X POST -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+  -d '{"name": "Spring Boot"}' \
+  http://localhost:8080/api/admin/v1/tags
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 5
+}
+```
+
+#### Деактивация тега (`PATCH`)
+Делает тег неактивным (скрывает его из публичного списка), но не удаляет из базы данных.
+
+```bash
+curl -X PATCH -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/tags/5/deactivate
+```
+
+#### Привязка тега к кейсу (`POST`)
+Связывает существующий тег с конкретным кейсом.
+
+```bash
+curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/42/tags/5
+```
+
+#### Отвязка тега от кейса (`DELETE`)
+Удаляет связь между тегом и кейсом.
+
+```bash
+curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/42/tags/5
+```
+
 ### Управление пользователями
 
 #### Создание пользователя (`POST`)
@@ -438,7 +478,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 
 ## Примеры ответов API и ошибок
 
-Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`, при логической ошибке часто возвращается HTTP 200, но `"success": false` и соответствующий текст в поле `errorText`.
+Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`. При ошибках валидации (`@Valid`) возвращается HTTP 400 с текстом ошибки в формате `"<поле>: <сообщение>"` (например, `"name: Tag name cannot be empty"`). При логических ошибках часто возвращается HTTP 200, но `"success": false` и соответствующий текст в поле `errorText`.
 
 **Базовый формат ответа:**
 ```json
@@ -486,6 +526,12 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Only JPEG/JPG images are allowed` | Разрешены только изображения с расширением JPEG/JPG. |
 | &nbsp; | `File size cannot exceed 5MB` | Размер загружаемого файла превышает 5 МБ. |
 | &nbsp; | `Failed to process image file` | Ошибка на стороне сервера при обработке картинки. |
+| **Управление тегами** | `Tag name cannot be empty` | Имя тега не может быть пустым. |
+| &nbsp; | `Tag name must be between 1 and 100 characters` | Имя тега слишком длинное или короткое. |
+| &nbsp; | `Tag with this name already exists` | Тег с таким именем уже существует в системе. |
+| &nbsp; | `Tag not found` | Указанный ID тега не найден в базе данных. |
+| &nbsp; | `Tag is already attached to this case` | Этот тег уже привязан к данному кейсу. |
+| &nbsp; | `Tag is not attached to this case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
 | **Системные / Общие** | `Invalid input data` | Переданы некорректные входные данные. |
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
