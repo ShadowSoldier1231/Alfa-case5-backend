@@ -98,18 +98,22 @@ public class CaseService {
                 .orElseThrow(() -> new IllegalArgumentException("Кейс не найден"));
 
 
-        if (req.getRemovePdf()) {
-            s3StorageService.deleteFile(existingCase.getPdfUrl());
-            existingCase.setPdfUrl(null);
+        if (req.getRemovePdf() != null) {
+            if (req.getRemovePdf()) {
+                s3StorageService.deleteFile(existingCase.getPdfUrl());
+                existingCase.setPdfUrl(null);
+            }
         } else if (pdfFile != null && !pdfFile.isEmpty()) {
             s3StorageService.deleteFile(existingCase.getPdfUrl());
             existingCase.setPdfUrl(s3StorageService.uploadFile(pdfFile, "cases/pdfs"));
         }
 
 
-        if (req.getRemoveIcon()) {
-            s3StorageService.deleteFile(existingCase.getIconUrl());
-            existingCase.setIconUrl(null);
+        if (req.getRemoveIcon() != null) {
+            if (req.getRemoveIcon()) {
+                s3StorageService.deleteFile(existingCase.getIconUrl());
+                existingCase.setIconUrl(null);
+            }
         } else if (iconFile != null && !iconFile.isEmpty()) {
             s3StorageService.deleteFile(existingCase.getIconUrl());
             existingCase.setIconUrl(s3StorageService.uploadFile(iconFile, "cases/icons"));

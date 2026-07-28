@@ -5,7 +5,6 @@ import com.project.main.dto.UserDeletedEvent;
 import com.project.main.model.UserData;
 import com.project.main.repository.AchievementRepository;
 import com.project.main.repository.SolutionRepository;
-import com.project.main.repository.UserAvatarRepository;
 import com.project.main.repository.UserDataRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;

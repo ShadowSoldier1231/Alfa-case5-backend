@@ -21,17 +21,14 @@ public class FetchingService {
     private final CityRepository cityRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
-    private final  UserAvatarRepository avatarRepository;
 
     public FetchingService(LeaderboardRepository leaderboardRepository,
-                           UserDataRepository userDataRepository, CityRepository cityRepository,
-                           UserAvatarRepository avatarRepository) {
+                           UserDataRepository userDataRepository, CityRepository cityRepository) {
 
 
         this.userDataRepository = userDataRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.cityRepository = cityRepository;
-        this.avatarRepository = avatarRepository;
     }
 
 
