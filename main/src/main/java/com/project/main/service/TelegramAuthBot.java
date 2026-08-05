@@ -2,6 +2,7 @@ package com.project.main.service;
 
 
 import com.project.main.repository.UserRepository;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -110,6 +111,20 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
             telegramClient.execute(message);
         } catch (TelegramApiException e) {
             logger.error("Не удалось отправить сообщение в чат {}", chatId, e);
+        }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        System.out.println("Остановка потоков Telegram Bot...");
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 }
