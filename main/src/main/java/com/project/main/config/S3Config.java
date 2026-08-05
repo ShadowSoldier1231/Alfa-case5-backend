@@ -11,9 +11,7 @@ import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.net.URI;
 import java.time.Duration;
@@ -42,8 +40,8 @@ public class S3Config {
                         .pathStyleAccessEnabled(true)
                         .build())
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .apiCallAttemptTimeout(Duration.ofSeconds(5))
-                        .apiCallTimeout(Duration.ofSeconds(15))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(3))
+                        .apiCallTimeout(Duration.ofSeconds(5))
                         .retryPolicy(RetryPolicy.builder().numRetries(2).build())
                         .build())
                 .build();
@@ -57,18 +55,14 @@ public class S3Config {
     @PostConstruct
     public void initBucket() {
         try {
-            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
-            System.out.println("Бакет '" + bucketName + "' уже существует");
-        } catch (NoSuchBucketException e) {
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+            System.out.println("Бакет '" + bucketName + "' успешно создан");
 
-            try {
-                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-                System.out.println("Бакет '" + bucketName + "' успешно создан");
-            } catch (Exception createEx) {
-                System.err.println("Не удалось создать бакет '" + bucketName + "': " + createEx.getMessage());
-            }
+        } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException e) {
+            System.out.println("Бакет '" + bucketName + "' уже существует");
+
         } catch (Exception e) {
-            System.err.println("Ошибка при проверке бакета '" + bucketName + "': " + e.getMessage());
+            System.err.println("Не удалось проверить/создать бакет '" + bucketName + "': " + e.getMessage());
         }
     }
 }

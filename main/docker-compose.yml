@@ -37,6 +37,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minioContainer
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -116,7 +117,8 @@ services:
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     deploy:
       resources:
         limits:
