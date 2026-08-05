@@ -43,11 +43,20 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   app:
     build:
@@ -72,8 +81,23 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       EMAIL_ADDRESS: ${EMAIL_ADDRESS}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xmx1G -Xms256m"
     ports:
       - "${APP_PORT:-999}:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
 
   nginx:
     image: nginx:alpine
@@ -82,16 +106,32 @@ services:
     ports:
       - "333:80"
     environment:
-
       - WEBSITE_ADDRESS=${WEBSITE_ADDRESS:-*}
-      - SERVER_IP=${SERVER_IP}
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
       - minio
     networks:
       - default
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pidof nginx || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
 volumes:
   postgres_data:
   minio_data:
+
+networks:
+  default:
+    driver: bridge
