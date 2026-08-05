@@ -28,6 +28,16 @@ public class S3Config {
             @Value("${app.s3.secret-key}") String secretKey,
             @Value("${app.s3.bucket-name}") String bucketName) {
 
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new IllegalStateException("app.s3.endpoint is blank");
+        }
+        if (accessKey == null || accessKey.isBlank()) {
+            throw new IllegalStateException("app.s3.access-key is blank");
+        }
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("app.s3.secret-key is blank");
+        }
+
         this.bucketName = bucketName;
 
         this.s3Client = S3Client.builder()
