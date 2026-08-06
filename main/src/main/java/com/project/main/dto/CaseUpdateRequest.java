@@ -4,23 +4,35 @@ import com.project.main.enums.Difficulty;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class CaseUpdateRequest {
 
-    @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug может содержать только строчные латинские буквы, цифры и дефис")
+    @Pattern(regexp = "^[a-z0-9-]+$", message = "Invalid slug format")
+    @Size(max = 100, message = "Slug too long (max 100)")
     private String slug;
 
+    @Size(max = 255, message = "Title too long (max 255)")
     private String title;
+
+    @Size(max = 255, message = "TitleEn too long (max 255)")
     private String titleEn;
+
+    @Size(max = 1000, message = "Description too long (max 1000)")
     private String description;
+
+    @Size(max = 5000, message = "Full description too long (max 5000)")
     private String fullDescription;
+
     private Difficulty difficulty;
 
-    @Min(value = 1, message = "Среднее время решения должно быть не менее 1 минуты")
-    @Max(value = 10000, message = "Среднее время решения не может быть больше 10000 минут")
+    @Min(value = 1, message = "Solve time must be at least 1 min")
+    @Max(value = 10000, message = "Solve time cannot exceed 10000 min")
     private Integer averageSolveMin;
 
+    @Size(max = 2000, message = "Prompt context too long (max 2000)")
     private String promptContextEn;
+
     private Boolean isActive;
     private Boolean removePdf;
     private Boolean removeIcon;

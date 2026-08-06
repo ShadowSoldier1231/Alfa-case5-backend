@@ -520,11 +520,21 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `File size cannot exceed 5MB` | Размер загружаемого файла превышает 5 МБ. |
 | &nbsp; | `Failed to process image file` | Ошибка на стороне сервера при обработке картинки. |
 | **Управление тегами** | `Tag name cannot be empty` | Имя тега не может быть пустым. |
-| &nbsp; | `Tag name must be between 1 and 100 characters` | Имя тега слишком длинное или короткое. |
-| &nbsp; | `Tag with this name already exists` | Тег с таким именем уже существует в системе. |
+| &nbsp; | `Tag name too long (max 100)` | Имя тега превышает 100 символов. |
+| &nbsp; | `Tag already exists` | Тег с таким именем уже существует в системе. |
 | &nbsp; | `Tag not found` | Указанный ID тега не найден в базе данных. |
-| &nbsp; | `Tag is already attached to this case` | Этот тег уже привязан к данному кейсу. |
-| &nbsp; | `Tag is not attached to this case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
+| &nbsp; | `Tag already attached to case` | Этот тег уже привязан к данному кейсу. |
+| &nbsp; | `Tag not attached to case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
+| **Управление кейсами** | `Case not found` | Указанный ID кейса не найден. |
+| &nbsp; | `Invalid slug format` | Slug содержит недопустимые символы (только строчные буквы, цифры и дефис). |
+| &nbsp; | `Slug too long (max 100)` | Slug превышает 100 символов. |
+| &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |
+| &nbsp; | `TitleEn too long (max 255)` | Английское название превышает 255 символов. |
+| &nbsp; | `Description too long (max 1000)` | Краткое описание превышает 1000 символов. |
+| &nbsp; | `Full description too long (max 5000)` | Полное описание превышает 5000 символов. |
+| &nbsp; | `Solve time must be at least 1 min` | Время решения должно быть не менее 1 минуты. |
+| &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
+| &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
 | **Системные / Общие** | `Invalid input data` | Переданы некорректные входные данные. |
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
