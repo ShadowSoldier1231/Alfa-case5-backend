@@ -90,6 +90,7 @@ services:
       APP_S3_ACCESS_KEY: ${APP_S3_ACCESS_KEY}
       APP_S3_SECRET_KEY: ${APP_S3_SECRET_KEY}
       APP_S3_BUCKET_NAME: ${APP_S3_BUCKET_NAME:-alfa-cases}
+      WEBSITE_ADDRESS: ${WEBSITE_ADDRESS}
       JAVA_TOOL_OPTIONS: "-Xmx1G -Xms256m"
     ports:
       - "${APP_PORT:-999}:8080"
@@ -117,7 +118,7 @@ services:
     ports:
       - "333:80"
     environment:
-      - WEBSITE_ADDRESS=${WEBSITE_ADDRESS:-*}
+      - WEBSITE_ADDRESS=${WEBSITE_ADDRESS}
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
