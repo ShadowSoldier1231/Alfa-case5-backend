@@ -67,12 +67,36 @@ public class S3Config {
         try {
             s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
             System.out.println("Бакет '" + bucketName + "' успешно создан");
-
         } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException e) {
             System.out.println("Бакет '" + bucketName + "' уже существует");
-
         } catch (Exception e) {
             System.err.println("Не удалось проверить/создать бакет '" + bucketName + "': " + e.getMessage());
+            return;
+        }
+
+        try {
+            String policyJson = String.format(
+                    "{" +
+                            "\"Version\":\"2012-10-17\"," +
+                            "\"Statement\":[" +
+                            "{" +
+                            "\"Effect\":\"Allow\"," +
+                            "\"Principal\":\"*\"," +
+                            "\"Action\":[\"s3:GetObject\"]," +
+                            "\"Resource\":[\"arn:aws:s3:::%s/*\"]" +
+                            "}" +
+                            "]" +
+                            "}", bucketName
+            );
+
+            s3Client.putBucketPolicy(PutBucketPolicyRequest.builder()
+                    .bucket(bucketName)
+                    .policy(policyJson)
+                    .build());
+
+            System.out.println("Политика публичного чтения (download) успешно применена к бакету '" + bucketName + "'");
+        } catch (Exception e) {
+            System.err.println("Не удалось применить публичную политику к бакету '" + bucketName + "': " + e.getMessage());
         }
     }
 }
