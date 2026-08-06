@@ -116,7 +116,7 @@ services:
     container_name: NginxProxy
     restart: unless-stopped
     ports:
-      - "333:80"
+      - "2479:80"
     environment:
       - WEBSITE_ADDRESS=${WEBSITE_ADDRESS}
     volumes:
