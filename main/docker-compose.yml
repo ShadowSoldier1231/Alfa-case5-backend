@@ -120,7 +120,7 @@ services:
     environment:
       - WEBSITE_ADDRESS=${WEBSITE_ADDRESS}
     volumes:
-      - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
     depends_on:
       minio:
         condition: service_healthy
