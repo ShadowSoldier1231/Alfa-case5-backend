@@ -167,33 +167,41 @@ public class CaseService {
     public List<CaseEntity> getAllAdminCases() {
         return caseRepository.findAllByOrderByCreatedAtDesc();
     }
+
     @Transactional
     public void updateCase(Long id, CaseUpdateRequest req, MultipartFile pdfFile, MultipartFile iconFile) {
         CaseEntity existingCase = caseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Кейс не найден"));
 
 
-        if (req.getRemovePdf() != null) {
-            if (req.getRemovePdf()) {
+        if (pdfFile != null && !pdfFile.isEmpty()) {
+
+            if (existingCase.getPdfUrl() != null) {
                 s3StorageService.deleteFile(existingCase.getPdfUrl());
-                existingCase.setPdfUrl(null);
             }
-        } else if (pdfFile != null && !pdfFile.isEmpty()) {
-            s3StorageService.deleteFile(existingCase.getPdfUrl());
             existingCase.setPdfUrl(s3StorageService.uploadFile(pdfFile, "cases/pdfs"));
-        }
 
+        } else if (Boolean.TRUE.equals(req.getRemovePdf())) {
 
-        if (req.getRemoveIcon() != null) {
-            if (req.getRemoveIcon()) {
-                s3StorageService.deleteFile(existingCase.getIconUrl());
-                existingCase.setIconUrl(null);
+            if (existingCase.getPdfUrl() != null) {
+                s3StorageService.deleteFile(existingCase.getPdfUrl());
             }
-        } else if (iconFile != null && !iconFile.isEmpty()) {
-            s3StorageService.deleteFile(existingCase.getIconUrl());
-            existingCase.setIconUrl(s3StorageService.uploadFile(iconFile, "cases/icons"));
+            existingCase.setPdfUrl(null);
         }
 
+
+        if (iconFile != null && !iconFile.isEmpty()) {
+            if (existingCase.getIconUrl() != null) {
+                s3StorageService.deleteFile(existingCase.getIconUrl());
+            }
+            existingCase.setIconUrl(s3StorageService.uploadFile(iconFile, "cases/icons"));
+
+        } else if (Boolean.TRUE.equals(req.getRemoveIcon())) {
+            if (existingCase.getIconUrl() != null) {
+                s3StorageService.deleteFile(existingCase.getIconUrl());
+            }
+            existingCase.setIconUrl(null);
+        }
 
         if (req.getSlug() != null) existingCase.setSlug(req.getSlug());
         if (req.getTitle() != null) existingCase.setTitle(req.getTitle());

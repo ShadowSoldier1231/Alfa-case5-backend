@@ -1,16 +1,25 @@
 package com.project.main.dto;
 
 import com.project.main.enums.Difficulty;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 
 public class CaseUpdateRequest {
 
+    @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug может содержать только строчные латинские буквы, цифры и дефис")
     private String slug;
+
     private String title;
     private String titleEn;
     private String description;
     private String fullDescription;
     private Difficulty difficulty;
+
+    @Min(value = 1, message = "Среднее время решения должно быть не менее 1 минуты")
+    @Max(value = 10000, message = "Среднее время решения не может быть больше 10000 минут")
     private Integer averageSolveMin;
+
     private String promptContextEn;
     private Boolean isActive;
     private Boolean removePdf;
