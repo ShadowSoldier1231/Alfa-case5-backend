@@ -143,15 +143,18 @@ public class CaseService {
     public List<Map<String, Object>> getActiveTagsWithCount() {
         return caseRepository.findActiveTagsWithCaseCount().stream()
                 .map(row -> {
+                    Long id = null;
                     String name = "Unknown";
                     long count = 0L;
 
-                    if (row instanceof Object[] arr && arr.length >= 2) {
-                        name = arr[0] != null ? arr[0].toString() : "Unknown";
-                        count = arr[1] != null ? ((Number) arr[1]).longValue() : 0L;
+                    if (row instanceof Object[] arr && arr.length >= 3) {
+                        id = arr[0] != null ? ((Number) arr[0]).longValue() : null;
+                        name = arr[1] != null ? arr[1].toString() : "Unknown";
+                        count = arr[2] != null ? ((Number) arr[2]).longValue() : 0L;
                     }
 
                     Map<String, Object> map = new HashMap<>();
+                    map.put("id", id);
                     map.put("name", name);
                     map.put("count", count);
 

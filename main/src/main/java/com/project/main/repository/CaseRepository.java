@@ -24,7 +24,7 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
     List<CaseEntity> findAllByOrderByCreatedAtDesc();
 
 
-    @Query(value = "SELECT t.name, COUNT(c.id) " +
+    @Query(value = "SELECT t.id, t.name, COUNT(c.id) " +
             "FROM tags t " +
             "LEFT JOIN case_tags ct ON t.id = ct.tag_id " +
             "LEFT JOIN cases c ON ct.case_id = c.id " +
