@@ -225,7 +225,17 @@ curl -X GET http://localhost:8080/api/v1/cases/1
 curl -X GET http://localhost:8080/api/v1/cases/tags
 ```
 
+**Ответ (JSON):**
+
+```json
+[
+  {"id": 1, "name": "Java", "count": 15},
+  {"id": 2, "name": "Spring", "count": 10}
+]
+```
+
 ---
+
 
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 
