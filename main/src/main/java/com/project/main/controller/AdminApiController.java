@@ -5,14 +5,13 @@ import com.project.main.dto.*;
 import com.project.main.model.CaseEntity;
 import com.project.main.service.UserService;
 import jakarta.validation.Valid;
-import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import com.project.main.model.UserSession;
 import com.project.main.service.CaseService;
-import com.project.main.service.SessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
@@ -27,12 +26,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin/v1")
 public class AdminApiController {
 
-    private final SessionService sessionService;
     private final CaseService caseService;
     private final UserService userService;
+    private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
-    public AdminApiController(SessionService sessionService, CaseService caseService, UserService userService) {
-        this.sessionService = sessionService;
+    public AdminApiController( CaseService caseService, UserService userService) {
         this.caseService = caseService;
         this.userService = userService;
     }
@@ -75,6 +73,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
+            logger.error("Internal server error while updating a case", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -82,16 +81,16 @@ public class AdminApiController {
 
     @PostMapping(value = "/createCase", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> createCase(
-            @CookieValue(value = "token", required = false) String token,
-            @RequestPart("case") CaseCreateRequest request,
+            @RequestPart("case") @Valid CaseCreateRequest request,
+            BindingResult bindingResult,
             @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
-
-        Pair<RegisterResult, UserSession> authResult = sessionService.checkCookie(token);
-
-        if (!authResult.getLeft().getSuccess()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(authResult.getLeft());
+        if (bindingResult.hasErrors()) {
+            RegisterResult res = new RegisterResult();
+            res.setSuccess(false);
+            res.setErrorText(getValidationErrors(bindingResult));
+            return ResponseEntity.badRequest().body(res);
         }
 
         try {
@@ -114,7 +113,7 @@ public class AdminApiController {
             RegisterResult errorResult = new RegisterResult();
             errorResult.setSuccess(false);
             errorResult.setErrorText("Internal server error");
-            System.err.println(e.getMessage());
+            logger.error("Internal server error while creating a case", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult);
         }
     }
@@ -151,6 +150,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
+            logger.error("Internal server error while creating a user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -183,6 +183,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
+            logger.error("Internal server error while updating a user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -215,7 +216,7 @@ public class AdminApiController {
         } catch (Exception e) {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
-            System.err.println(e.getMessage());
+            logger.error("Internal server error while creating a tag", e);
             res.setErrorText("Internal server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
@@ -237,7 +238,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
-            System.err.println(e.getMessage());
+            logger.error("Internal server error while updating a tag", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -260,7 +261,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
-            System.err.println(e.getMessage());
+            logger.error("Internal server error while attaching a tag", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -284,7 +285,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
-            System.err.println(e.getMessage());
+            logger.error("Internal server error while detaching a tag", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
@@ -307,6 +308,7 @@ public class AdminApiController {
             RegisterResult res = new RegisterResult();
             res.setSuccess(false);
             res.setErrorText("Internal server error");
+            logger.error("Internal server error while deleting a user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
