@@ -1,8 +1,10 @@
 package com.project.main.service;
 
 import com.project.main.dto.CaseCreateRequest;
+import com.project.main.dto.CasePromptResponse;
 import com.project.main.dto.CaseUpdateRequest;
 import com.project.main.dto.TagCreateRequest;
+import com.project.main.exception.ApiException;
 import com.project.main.model.CaseEntity;
 import com.project.main.model.CaseTag;
 import com.project.main.model.CaseTagId;
@@ -10,6 +12,7 @@ import com.project.main.model.Tag;
 import com.project.main.repository.CaseRepository;
 import com.project.main.repository.CaseTagRepository;
 import com.project.main.repository.TagRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -219,5 +222,23 @@ public class CaseService {
         caseRepository.save(existingCase);
     }
 
+
+    @Transactional(readOnly = true)
+    public CasePromptResponse getCasePrompt(Long caseId) {
+        CaseEntity caseEntity = caseRepository.findById(caseId)
+                .orElseThrow(() -> new ApiException("Case with ID: " + caseId + " is not found", HttpStatus.NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(caseEntity.getActive())) {
+            throw new ApiException("Case is inactive", HttpStatus.NOT_FOUND);
+        }
+
+        String prompt = caseEntity.getPromptContextEn();
+
+        return new CasePromptResponse(
+                caseEntity.getTitle(),
+                prompt != null ? prompt : "",
+                caseEntity.getId()
+        );
+    }
 
 }

@@ -226,7 +226,6 @@ curl -X GET http://localhost:8080/api/v1/cases/tags
 ```
 
 **Ответ (JSON):**
-
 ```json
 [
   {"id": 1, "name": "Java", "count": 15},
@@ -234,8 +233,8 @@ curl -X GET http://localhost:8080/api/v1/cases/tags
 ]
 ```
 
----
 
+---
 
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 
@@ -477,6 +476,22 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/getChatSe
 curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processViolation
 ```
 
+### Получение промпта (контекста) кейса (`GET`) *(Требует Cookie)*
+Возвращает ID, название и контекстный промпт (инструкции для ИИ) для указанного кейса. Используется микросервисом ИИ для инициализации диалога.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/prompt
+```
+**Ответ (JSON) при успехе:**
+```json
+{
+  "id": 1,
+  "title": "Название кейса",
+  "promptContextEn": "Ты опытный разработчик. Твоя задача..."
+}
+```
+*(При ошибке авторизации возвращается HTTP 401, при отсутствии или неактивности кейса — HTTP 404 с текстом ошибки в стандартном формате `RegisterResult`)*.
+
 ---
 
 ## Примеры ответов API и ошибок
@@ -535,7 +550,9 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processV
 | &nbsp; | `Tag not found` | Указанный ID тега не найден в базе данных. |
 | &nbsp; | `Tag already attached to case` | Этот тег уже привязан к данному кейсу. |
 | &nbsp; | `Tag not attached to case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
-| **Управление кейсами** | `Case not found` | Указанный ID кейса не найден. |
+| **Управление кейсами** | `Case not found` | Указанный ID кейса не найден (общая ошибка). |
+| &nbsp; | `Case with ID: X is not found` | Указанный ID кейса не найден в базе данных (вместо X будет реальный ID). |
+| &nbsp; | `Case is inactive` | Попытка получить данные (или промпт) кейса, который был деактивирован (скрыт). |
 | &nbsp; | `Invalid slug format` | Slug содержит недопустимые символы (только строчные буквы, цифры и дефис). |
 | &nbsp; | `Slug too long (max 100)` | Slug превышает 100 символов. |
 | &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |

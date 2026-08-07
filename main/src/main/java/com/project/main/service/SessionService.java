@@ -5,11 +5,13 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserDeletedEvent;
+import com.project.main.exception.ApiException;
 import com.project.main.model.UserSession;
 import com.project.main.repository.UserSessionRepository;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -64,6 +66,12 @@ public class SessionService {
             return Pair.of(new RegisterResult(false, "Session expired"), null);
         }
         return Pair.of(new RegisterResult(true, ""), session);
+    }
+    public void checkCookieOrThrow(String token){
+        if (token == null) throw new ApiException("Please login first", HttpStatus.UNAUTHORIZED);
+        UserSession session = sessionRepository.findByToken(token)
+                .orElse(null);
+        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) throw new ApiException("Session expired", HttpStatus.UNAUTHORIZED);
     }
 
     public ResponseCookie createPreAuthSession(Long userId) {

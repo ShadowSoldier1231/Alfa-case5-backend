@@ -1,6 +1,7 @@
 package com.project.main.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.project.main.dto.CasePromptResponse;
 import com.project.main.dto.RegisterResult;
 
 
@@ -8,13 +9,11 @@ import com.project.main.model.Solution;
 import com.project.main.model.UserSession;
 import com.project.main.model.Views;
 
-import com.project.main.service.SessionService;
-import com.project.main.service.SolutionService;
-import com.project.main.service.UserModerationService;
-import com.project.main.service.UserService;
+import com.project.main.service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,17 +29,16 @@ public class TextAnalysisIntegrationController  {
 
 
     private final UserModerationService moderationService;
-    private final UserService userService;
     private final SessionService sessionService;
+    private final CaseService caseService;
     private final SolutionService solutionService;
 
-    public TextAnalysisIntegrationController(UserModerationService moderationService,
-                                             UserService userService, SolutionService solutionService,
-                                             SessionService sessionService) {
+    public TextAnalysisIntegrationController(UserModerationService moderationService, SolutionService solutionService,
+                                             CaseService caseService, SessionService sessionService) {
         this.moderationService = moderationService;
         this.solutionService = solutionService;
-        this.userService = userService;
         this.sessionService = sessionService;
+        this.caseService = caseService;
     }
 
 
@@ -134,6 +132,18 @@ public class TextAnalysisIntegrationController  {
         return ResponseEntity.ok(chatSequence);
     }
 
+    @GetMapping("/cases/{id}/prompt")
+    public ResponseEntity<CasePromptResponse> getCasePrompt(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long id) {
 
+
+        sessionService.checkCookieOrThrow(token);
+
+
+        CasePromptResponse prompt = caseService.getCasePrompt(id);
+
+        return ResponseEntity.ok(prompt);
+    }
 }
 
