@@ -24,8 +24,8 @@ import java.util.List;
 @Component
 public class SessionFilter extends OncePerRequestFilter {
 
-    private UserSessionRepository sessionRepository;
-    private UserRepository userRepository;
+    private final UserSessionRepository sessionRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public SessionFilter(UserSessionRepository sessionRepository, UserRepository userRepository) {

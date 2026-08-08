@@ -1,13 +1,13 @@
 package com.project.main.dto;
 
-public class LeadboardInfo {
+public class LeaderboardInfo {
     private Long placement;
     private Long total;
 
-    public LeadboardInfo(){
+    public LeaderboardInfo(){
 
     }
-    public  LeadboardInfo(Long placement, Long total){
+    public LeaderboardInfo(Long placement, Long total){
         this.placement = placement;
         this.total = total;
     }

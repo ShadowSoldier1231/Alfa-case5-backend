@@ -7,7 +7,6 @@ import com.project.main.model.UserSetup;
 import com.project.main.repository.LeaderboardRepository;
 import com.project.main.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

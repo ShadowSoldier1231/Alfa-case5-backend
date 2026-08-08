@@ -3,7 +3,7 @@ package com.project.main.controller;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.LeadboardInfo;
+import com.project.main.dto.LeaderboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserProfile;
@@ -16,7 +16,6 @@ import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -65,7 +64,7 @@ public class WebApiController {
         return ResponseEntity.ok(fetchingService.getTop5LeaderboardByCase(caseId));
     }
     @GetMapping("/leaderboard/global/my-place")
-    public ResponseEntity<LeadboardInfo> getMyGlobalPlace(@CookieValue(value = "token", required = false) String token) {
+    public ResponseEntity<LeaderboardInfo> getMyGlobalPlace(@CookieValue(value = "token", required = false) String token) {
 
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
@@ -79,14 +78,14 @@ public class WebApiController {
 
         Long userId = session.getUserId();
 
-        LeadboardInfo info = fetchingService.getGlobalPlacementInfo(userId);
+        LeaderboardInfo info = fetchingService.getGlobalPlacementInfo(userId);
 
         return ResponseEntity.ok(info);
     }
 
     @GetMapping("/leaderboard/local/my-place/{caseId}")
-    public ResponseEntity<LeadboardInfo> getMyLocalPlace(@CookieValue(value = "token", required = false) String token,
-                                                         @PathVariable Long caseId) {
+    public ResponseEntity<LeaderboardInfo> getMyLocalPlace(@CookieValue(value = "token", required = false) String token,
+                                                           @PathVariable Long caseId) {
 
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
@@ -100,7 +99,7 @@ public class WebApiController {
 
         Long userId = session.getUserId();
 
-        LeadboardInfo info = fetchingService.getLocalPlacementInfo(userId, caseId);
+        LeaderboardInfo info = fetchingService.getLocalPlacementInfo(userId, caseId);
 
         return ResponseEntity.ok(info);
     }

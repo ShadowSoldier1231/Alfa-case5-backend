@@ -292,7 +292,7 @@ public class LoginApiController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, preAuthCookie.toString())
-                .body(new RegisterResult(true, "", authResult.getLeft(), authResult.getRight()));
+                .body(new RegisterResult(true, "", authResult.getLeft(), userId));
 
     }
 

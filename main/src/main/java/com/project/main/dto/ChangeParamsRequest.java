@@ -2,7 +2,6 @@ package com.project.main.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.main.enums.UserStatus;
-import jakarta.validation.constraints.Email;
 import java.time.LocalDate;
 
 public class ChangeParamsRequest {

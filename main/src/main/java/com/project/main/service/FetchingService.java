@@ -1,7 +1,7 @@
 package com.project.main.service;
 
 
-import com.project.main.dto.LeadboardInfo;
+import com.project.main.dto.LeaderboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.UserProfile;
 import com.project.main.enums.GenderCode;
@@ -45,38 +45,38 @@ public class FetchingService {
 
 
 
-    public LeadboardInfo getGlobalPlacementInfo(Long userId) {
+    public LeaderboardInfo getGlobalPlacementInfo(Long userId) {
 
         LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
 
         if (userEntry == null || userEntry.getScore() == 0) {
 
             Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
-            return new LeadboardInfo(0L, total);
+            return new LeaderboardInfo(0L, total);
         }
 
 
         Long placement = leaderboardRepository.getGlobalUserPlacement(userId);
         Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
 
-        return new LeadboardInfo(placement,  total);
+        return new LeaderboardInfo(placement,  total);
     }
 
-    public LeadboardInfo getLocalPlacementInfo(Long userId, Long caseId) {
+    public LeaderboardInfo getLocalPlacementInfo(Long userId, Long caseId) {
 
         LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
 
         if (userEntry == null || userEntry.getScore() == 0) {
 
             Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
-            return new LeadboardInfo(0L, total);
+            return new LeaderboardInfo(0L, total);
         }
 
 
         Long placement = leaderboardRepository.getUserPlacementInCase(caseId, userId);
         Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
 
-        return new LeadboardInfo(placement,  total);
+        return new LeaderboardInfo(placement,  total);
     }
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {
