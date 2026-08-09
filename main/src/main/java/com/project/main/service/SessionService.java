@@ -68,11 +68,11 @@ public class SessionService {
     }
 
     public void checkCookieOrThrow(String token) {
-        if (token == null) throw new InvalidSessionException("Please login first");
+        if (token == null) throw new InvalidSessionException("Please login first", token);
 
         UserSession session = sessionRepository.findByToken(token).orElse(null);
         if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new InvalidSessionException("Session expired");
+            throw new InvalidSessionException("Session expired", token);
         }
     }
 

@@ -47,7 +47,7 @@ public class TextAnalysisIntegrationController {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
 
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         return ResponseEntity.ok(sessionPair.getLeft());
@@ -59,7 +59,7 @@ public class TextAnalysisIntegrationController {
                                                            HttpServletResponse response) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -82,7 +82,7 @@ public class TextAnalysisIntegrationController {
                                                    @RequestBody Solution solution) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -104,12 +104,12 @@ public class TextAnalysisIntegrationController {
                                                           @PathVariable Long caseId) {
 
         if (token == null) {
-            throw new InvalidSessionException("Please login first");
+            throw new InvalidSessionException("Please login first", token);
         }
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();

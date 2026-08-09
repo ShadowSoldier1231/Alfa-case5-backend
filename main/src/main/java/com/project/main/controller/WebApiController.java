@@ -67,7 +67,7 @@ public class WebApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();
@@ -84,7 +84,7 @@ public class WebApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();

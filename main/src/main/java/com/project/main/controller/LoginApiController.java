@@ -63,7 +63,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -98,7 +98,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -134,7 +134,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -176,7 +176,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
@@ -285,7 +285,7 @@ public class LoginApiController {
             HttpServletResponse response) {
 
         if (token == null) {
-            throw new InvalidSessionException("You are not logged in");
+            throw new InvalidSessionException("You are not logged in", token);
         }
 
         ResponseCookie cookie = sessionService.deleteCookie(token);
@@ -301,7 +301,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         Long userId = sessionPair.getRight().getUserId();
 
@@ -324,7 +324,7 @@ public class LoginApiController {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         Long userId = sessionPair.getRight().getUserId();
 
@@ -339,12 +339,12 @@ public class LoginApiController {
             HttpServletResponse response) {
 
         if (token == null) {
-            throw new InvalidSessionException("Verification session expired.");
+            throw new InvalidSessionException("Verification session expired.", token);
         }
 
         Long tokenUserId = sessionService.getUserIdFromPreAuthCookie(token);
         if (tokenUserId == null) {
-            throw new InvalidSessionException("Invalid or expired verification session.");
+            throw new InvalidSessionException("Invalid or expired verification session.", token);
         }
 
         userService.verifyUser(tokenUserId, verificationCode);
