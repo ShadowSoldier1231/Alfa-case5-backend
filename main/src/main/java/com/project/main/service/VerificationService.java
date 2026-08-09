@@ -3,6 +3,7 @@ package com.project.main.service;
 
 import com.project.main.dto.EmailVerificationEvent;
 import com.project.main.enums.ValidationMethod;
+import com.project.main.exception.*;
 import com.project.main.model.UserSetup;
 import com.project.main.model.UserVerification;
 import com.project.main.repository.UserRepository;
@@ -77,28 +78,20 @@ public class VerificationService {
     }
 
     @Transactional
-    public String verifyUser(Long userId, Long verificationCode) {
+    public void verifyUser(Long userId, Long verificationCode) {
 
         UserVerification verification = verificationRepository.findByUserIdAndEmailVerificationCode(
                 userId,
                 verificationCode
-        ).orElse(null);
+        ).orElseThrow(() -> new BadRequestException("Invalid or expired verification code"));
 
-        if (verification == null) {
-            return "Invalid or expired verification code";
-        }
-
-        UserSetup user = userRepository.findById(verification.getUserId()).orElse(null);
-        if (user == null) {
-            return "User does not exist";
-        }
+        UserSetup user = userRepository.findById(verification.getUserId())
+                .orElseThrow(() -> new NotFoundException("User does not exist"));
 
         user.setVerified(true);
         userRepository.save(user);
 
         verificationRepository.delete(verification);
-
-        return "";
     }
 
 }

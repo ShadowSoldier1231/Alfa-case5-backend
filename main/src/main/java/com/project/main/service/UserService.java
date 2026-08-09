@@ -3,20 +3,21 @@ package com.project.main.service;
 import com.project.main.dto.*;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
+import com.project.main.exception.BadRequestException;
+import com.project.main.exception.ConflictException;
+import com.project.main.exception.InvalidCredentialsException;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.*;
 import com.project.main.repository.*;
 import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
-import java.util.NoSuchElementException;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
-
 
 @Service
 public class UserService {
@@ -27,7 +28,7 @@ public class UserService {
     private final LeaderboardRepository leaderboardRepository;
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
-    private  final ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        UserDataRepository userDataRepository,
@@ -40,7 +41,6 @@ public class UserService {
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
         this.s3StorageService = s3StorageService;
-
     }
 
     public String hashPassword(String rawPassword) {
@@ -52,9 +52,9 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(Long id, String hashedPassword) throws Exception {
+    public void updatePassword(Long id, String hashedPassword) {
         UserSetup user = userRepository.findById(id)
-                .orElseThrow(() -> new Exception("User is null"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
         user.setPassword(hashedPassword);
         userRepository.saveAndFlush(user);
     }
@@ -62,8 +62,7 @@ public class UserService {
     @Transactional
     public void saveProfilePicture(Long userId, MultipartFile file) {
         UserData userData = userDataRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (userData.getAvatarUrl() != null && !userData.getAvatarUrl().isBlank()) {
             s3StorageService.deleteFile(userData.getAvatarUrl());
@@ -75,24 +74,21 @@ public class UserService {
         userDataRepository.save(userData);
     }
 
-    public RegisterResult verifyUser(Long userId, Long verificationCode) {
+    public void verifyUser(Long userId, Long verificationCode) {
         if (!userRepository.existsById(userId)) {
-            return new RegisterResult(false, "User does not exist");
+            throw new NotFoundException("User does not exist");
         }
         if (verificationCode == null) {
-            return new RegisterResult(false, "Verification code is required");
+            throw new BadRequestException("Verification code is required");
         }
-        String errorMsg = verificationService.verifyUser(userId, verificationCode);
-        if (!errorMsg.isEmpty()) {
-            return new RegisterResult(false, errorMsg);
-        }
-        return new RegisterResult(true, "", null, userId);
+
+        verificationService.verifyUser(userId, verificationCode);
     }
 
     @Transactional
     public void updateEmail(Long id, String email) {
         UserSetup user = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
         user.setEmail(email);
     }
 
@@ -116,8 +112,7 @@ public class UserService {
     @Transactional
     public void deleteUserByAdmin(Long userId) {
         UserSetup user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
-
+                .orElseThrow(() -> new NotFoundException("User does not exist"));
 
         eventPublisher.publishEvent(new UserDeletedEvent(userId));
 
@@ -158,7 +153,7 @@ public class UserService {
         );
         userDataRepository.save(userData);
 
-        leaderboardRepository.save(new LeaderboardUser(validUser.getId(), 0L, 0L,  0L));
+        leaderboardRepository.save(new LeaderboardUser(validUser.getId(), 0L, 0L, 0L));
 
         return Pair.of(verification, validUser.getId());
     }
@@ -166,12 +161,11 @@ public class UserService {
     @Transactional
     public Long createAdminUser(AdminUserCreateRequest req, String hashedPassword) {
         if (userRepository.existsByUsername(req.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new ConflictException("Username is already taken");
         }
         if (userRepository.existsByEmail(req.getEmail())) {
-            throw new IllegalArgumentException("Email is already taken");
+            throw new ConflictException("Email is already taken");
         }
-
 
         UserSetup newUser = new UserSetup(
                 hashedPassword,
@@ -183,7 +177,6 @@ public class UserService {
         );
         newUser.setCurrentTime();
         userRepository.save(newUser);
-
 
         GenderCode gender = (req.getGender() != null) ? req.getGender() : GenderCode.NOT_STATED;
         UserData userData = new UserData(
@@ -200,7 +193,6 @@ public class UserService {
         );
         userDataRepository.save(userData);
 
-
         leaderboardRepository.save(new LeaderboardUser(newUser.getId(), 0L, 0L, 0L));
 
         return newUser.getId();
@@ -209,21 +201,19 @@ public class UserService {
     @Transactional
     public void updateAdminUser(Long id, AdminUserUpdateRequest req) {
         UserSetup user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
         UserData userData = userDataRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User data not found"));
+                .orElseThrow(() -> new NotFoundException("User data not found"));
 
         if (req.getRole() != null) user.setRole(req.getRole());
         if (req.getBannedUntil() != null) user.setBannedUntil(req.getBannedUntil());
         if (req.getIsVerified() != null) user.setVerified(req.getIsVerified());
         if (req.getEmail() != null) {
-
             if (!req.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(req.getEmail())) {
-                throw new IllegalArgumentException("Email is already taken");
+                throw new ConflictException("Email is already taken");
             }
             user.setEmail(req.getEmail());
         }
-
 
         if (req.getFirstName() != null) userData.setFirstName(req.getFirstName());
         if (req.getLastName() != null) userData.setLastName(req.getLastName());
@@ -241,7 +231,7 @@ public class UserService {
     @Transactional
     public void updateUserParams(Long userId, ChangeParamsRequest changeRequest) {
         UserData realUser = userDataRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+                .orElseThrow(() -> new NotFoundException("User does not exist"));
 
         if (changeRequest.getCityId() != null) realUser.setCityId(changeRequest.getCityId());
         if (changeRequest.getBirthdate() != null) realUser.setBirthdate(changeRequest.getBirthdate());
@@ -259,19 +249,20 @@ public class UserService {
 
         if (realUser == null) {
             performDummyCheck();
-            throw new BadCredentialsException("Invalid username or password");
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), realUser.getPassword())) {
-            throw new BadCredentialsException("Invalid username or password");
+            throw new InvalidCredentialsException("Invalid username or password");
         }
+
         if (!realUser.isVerified()) {
-            throw new BadCredentialsException("Account is not verified");
+            throw new InvalidCredentialsException("Account is not verified");
         }
 
         if (realUser.getBannedUntil() != null) {
             if (realUser.getBannedUntil().isAfter(LocalDateTime.now())) {
-                throw new BadCredentialsException("User is still banned");
+                throw new InvalidCredentialsException("User is still banned");
             }
             realUser.setBannedUntil(null);
             userRepository.save(realUser);

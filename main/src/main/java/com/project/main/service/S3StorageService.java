@@ -1,6 +1,11 @@
 package com.project.main.service;
 
 
+import com.project.main.controller.AdminApiController;
+import com.project.main.exception.BadRequestException;
+import com.project.main.exception.InternalServerErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +22,8 @@ public class S3StorageService {
 
     private final S3Client s3Client;
     private final String bucketName;
+    private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
+
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".pdf", ".jpg", ".jpeg", ".png", ".webp");
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -30,16 +37,16 @@ public class S3StorageService {
 
     public String uploadFile(MultipartFile file, String folderPrefix) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Файл не может быть пустым");
+            throw new BadRequestException("File cannot be empty");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("Размер файла не должен превышать 5 МБ");
+            throw new BadRequestException("File size cannot exceed 5 MB");
         }
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !isAllowedExtension(originalFilename)) {
-            throw new IllegalArgumentException("Недопустимый формат файла. Разрешены: " + ALLOWED_EXTENSIONS);
+            throw new BadRequestException("Invalid file extension. Allowed Extensions: " + ALLOWED_EXTENSIONS);
         }
 
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
@@ -59,7 +66,7 @@ public class S3StorageService {
             return s3Key;
 
         } catch (Exception e) {
-            throw new RuntimeException("Не удалось загрузить файл в хранилище: " + e.getMessage(), e);
+            throw new InternalServerErrorException("Could not upload file: " + e.getMessage());
         }
     }
 
@@ -76,7 +83,7 @@ public class S3StorageService {
                     .build());
         } catch (Exception e) {
 
-            System.err.println("Не удалось удалить файл из S3: " + s3Key + ". Ошибка: " + e.getMessage());
+            logger.error("Could not delete file from S3: " + s3Key + ". Error: " + e.getMessage());
         }
     }
 }

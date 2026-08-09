@@ -6,6 +6,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserDeletedEvent;
 import com.project.main.exception.ApiException;
+import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.UserSession;
 import com.project.main.repository.UserSessionRepository;
 
@@ -57,21 +58,22 @@ public class SessionService {
         sessionRepository.deleteByUserId(event.userId());
     }
 
-    public Pair<RegisterResult, UserSession> checkCookie(String token){
-
+    public Pair<RegisterResult, UserSession> checkCookie(String token) {
         if (token == null) return Pair.of(new RegisterResult(false, "Please login first"), null);
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
+        UserSession session = sessionRepository.findByToken(token).orElse(null);
         if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
             return Pair.of(new RegisterResult(false, "Session expired"), null);
         }
         return Pair.of(new RegisterResult(true, ""), session);
     }
-    public void checkCookieOrThrow(String token){
-        if (token == null) throw new ApiException("Please login first", HttpStatus.UNAUTHORIZED);
-        UserSession session = sessionRepository.findByToken(token)
-                .orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) throw new ApiException("Session expired", HttpStatus.UNAUTHORIZED);
+
+    public void checkCookieOrThrow(String token) {
+        if (token == null) throw new InvalidSessionException("Please login first");
+
+        UserSession session = sessionRepository.findByToken(token).orElse(null);
+        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidSessionException("Session expired");
+        }
     }
 
     public ResponseCookie createPreAuthSession(Long userId) {

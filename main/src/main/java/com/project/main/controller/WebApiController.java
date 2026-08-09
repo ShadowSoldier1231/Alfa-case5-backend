@@ -7,6 +7,9 @@ import com.project.main.dto.LeaderboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserProfile;
+import com.project.main.exception.BadRequestException;
+import com.project.main.exception.InvalidSessionException;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.City;
 
 import com.project.main.model.UserSession;
@@ -15,7 +18,6 @@ import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -30,12 +32,10 @@ public class WebApiController {
 
     public WebApiController(CityRepository cityRepository, FetchingService fetchingService,
                             SessionService sessionService) {
-
         this.cityRepository = cityRepository;
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
     }
-
 
     @GetMapping("/user/{id}/city")
     public ResponseEntity<City> getCityName(@PathVariable long id) {
@@ -46,61 +46,51 @@ public class WebApiController {
         return ResponseEntity.ok(city);
     }
 
-
     @GetMapping("/searchLocation/{cityName}")
-    public ResponseEntity<List<City>> getCityId(@PathVariable String cityName){
+    public ResponseEntity<List<City>> getCityId(@PathVariable String cityName) {
         return ResponseEntity.ok(cityRepository.findByCityNameContainingIgnoreCase(cityName));
-
     }
 
     @GetMapping("/getAllCities")
-    public ResponseEntity<List<City>> getAllCities(){
+    public ResponseEntity<List<City>> getAllCities() {
         return ResponseEntity.ok(cityRepository.findAll());
-
     }
 
     @GetMapping("/leaderboard/case/{caseId}/top5")
     public ResponseEntity<List<LeaderboardTopUser>> getTop5ByCase(@PathVariable Long caseId) {
         return ResponseEntity.ok(fetchingService.getTop5LeaderboardByCase(caseId));
     }
-    @GetMapping("/leaderboard/global/my-place")
-    public ResponseEntity<LeaderboardInfo> getMyGlobalPlace(@CookieValue(value = "token", required = false) String token) {
 
+    @GetMapping("/leaderboard/global/my-place")
+    public ResponseEntity<LeaderboardInfo> getMyGlobalPlace(
+            @CookieValue(value = "token", required = false) String token) {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getLeft();
-        if (!cookieCheck.getSuccess()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
         }
 
         UserSession session = sessionPair.getRight();
-
-
         Long userId = session.getUserId();
 
         LeaderboardInfo info = fetchingService.getGlobalPlacementInfo(userId);
-
         return ResponseEntity.ok(info);
     }
 
     @GetMapping("/leaderboard/local/my-place/{caseId}")
-    public ResponseEntity<LeaderboardInfo> getMyLocalPlace(@CookieValue(value = "token", required = false) String token,
-                                                           @PathVariable Long caseId) {
-
+    public ResponseEntity<LeaderboardInfo> getMyLocalPlace(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId) {
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        RegisterResult cookieCheck = sessionPair.getLeft();
-        if (!cookieCheck.getSuccess()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText());
         }
 
         UserSession session = sessionPair.getRight();
-
-
         Long userId = session.getUserId();
 
         LeaderboardInfo info = fetchingService.getLocalPlacementInfo(userId, caseId);
-
         return ResponseEntity.ok(info);
     }
 
@@ -108,18 +98,16 @@ public class WebApiController {
     @GetMapping("/user/{id}/profile")
     public ResponseEntity<UserProfile> getUserProfile(@PathVariable("id") Long userId) {
         if (userId == null || userId <= 0L) {
-            return ResponseEntity.badRequest().build();
+            throw new BadRequestException("Invalid user ID");
         }
 
         UserProfile profile = fetchingService.getBaseProfile(userId);
         if (profile == null) {
-            return ResponseEntity.notFound().build();
+            throw new NotFoundException("Profile not found");
         }
 
         return ResponseEntity.ok(profile);
     }
-
-
 
     @GetMapping("/leaderboard/top5")
     public ResponseEntity<List<LeaderboardTopUser>> getTop5Leaderboard() {
@@ -131,8 +119,6 @@ public class WebApiController {
 
         return ResponseEntity.ok(top5);
     }
-
-
 }
 
 

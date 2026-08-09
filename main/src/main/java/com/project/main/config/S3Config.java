@@ -66,11 +66,11 @@ public class S3Config {
     public void initBucket() {
         try {
             s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
-            System.out.println("Бакет '" + bucketName + "' успешно создан");
+            System.out.println("Bucket '" + bucketName + "' is created successfully");
         } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException e) {
-            System.out.println("Бакет '" + bucketName + "' уже существует");
+            System.out.println("Bucket '" + bucketName + "' already exists");
         } catch (Exception e) {
-            System.err.println("Не удалось проверить/создать бакет '" + bucketName + "': " + e.getMessage());
+            System.err.println("Could not check/create bucket '" + bucketName + "': " + e.getMessage());
             return;
         }
 
@@ -94,9 +94,9 @@ public class S3Config {
                     .policy(policyJson)
                     .build());
 
-            System.out.println("Политика публичного чтения (download) успешно применена к бакету '" + bucketName + "'");
+            System.out.println("Download policy successfully applied to bucket: '" + bucketName + "'");
         } catch (Exception e) {
-            System.err.println("Не удалось применить публичную политику к бакету '" + bucketName + "': " + e.getMessage());
+            System.err.println("Could not apply download polity to bucket: '" + bucketName + "'. Error: " + e.getMessage());
         }
     }
 }

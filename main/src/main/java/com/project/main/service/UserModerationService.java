@@ -2,6 +2,7 @@ package com.project.main.service;
 
 
 import com.project.main.dto.UserDeletedEvent;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.LeaderboardUser;
 import com.project.main.model.UserSetup;
 import com.project.main.repository.LeaderboardRepository;
@@ -33,12 +34,11 @@ public class UserModerationService {
     @Transactional
     public String addWarning(Long userId) {
         LeaderboardUser user = leaderboardRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+                .orElseThrow(() -> new NotFoundException("User does not exist"));
 
         user.setWarningsCount(user.getWarningsCount() + 1);
 
         if (user.getWarningsCount() > 2) {
-
             return this.banUser(user);
         }
 
@@ -46,24 +46,24 @@ public class UserModerationService {
         return null;
     }
 
-
     @Transactional
-    public String banUser(LeaderboardUser leaderboardUser){
+    public String banUser(LeaderboardUser leaderboardUser) {
+        if (leaderboardUser == null) {
+            throw new NotFoundException("User does not exist");
+        }
 
-
-        if(leaderboardUser == null) return  "User does not exist";
-
-        if (leaderboardUser.getBanCount() >= 3){
+        if (leaderboardUser.getBanCount() >= 3) {
             eventPublisher.publishEvent(new UserDeletedEvent(leaderboardUser.getUserId()));
-            return  "User no longer exists";
+            return "User no longer exists";
         }
-        UserSetup user = userRepository.findById(leaderboardUser.getUserId()).orElse(null);
-        if(user == null){
-            return  "User does not exist";
-        }
+
+        UserSetup user = userRepository.findById(leaderboardUser.getUserId())
+                .orElseThrow(() -> new NotFoundException("User does not exist"));
+
         leaderboardUser.setBanCount(leaderboardUser.getBanCount() + 1L);
         leaderboardUser.setWarningsCount(0L);
         user.setBannedUntil(LocalDateTime.now().plusMonths(2));
+
         leaderboardRepository.save(leaderboardUser);
         userRepository.save(user);
 

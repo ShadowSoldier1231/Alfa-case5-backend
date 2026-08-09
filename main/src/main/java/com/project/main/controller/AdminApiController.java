@@ -2,6 +2,9 @@ package com.project.main.controller;
 
 
 import com.project.main.dto.*;
+import com.project.main.exception.ApiException;
+import com.project.main.exception.BadRequestException;
+import com.project.main.exception.InternalServerErrorException;
 import com.project.main.model.CaseEntity;
 import com.project.main.service.UserService;
 import jakarta.validation.Valid;
@@ -21,7 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 @RestController
 @RequestMapping("/api/admin/v1")
 public class AdminApiController {
@@ -30,13 +32,10 @@ public class AdminApiController {
     private final UserService userService;
     private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
-    public AdminApiController( CaseService caseService, UserService userService) {
+    public AdminApiController(CaseService caseService, UserService userService) {
         this.caseService = caseService;
         this.userService = userService;
     }
-
-
-
 
     @GetMapping("/cases")
     public ResponseEntity<List<CaseEntity>> getAllCasesAdmin() {
@@ -52,32 +51,19 @@ public class AdminApiController {
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
         if (bindingResult.hasErrors()) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(getValidationErrors(bindingResult));
-            return ResponseEntity.badRequest().body(res);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         try {
             caseService.updateCase(id, req, pdfFile, iconFile);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while updating a case", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
-
 
     @PostMapping(value = "/createCase", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> createCase(
@@ -87,71 +73,38 @@ public class AdminApiController {
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
         if (bindingResult.hasErrors()) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(getValidationErrors(bindingResult));
-            return ResponseEntity.badRequest().body(res);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         try {
             Long caseId = caseService.createCase(request, pdfFile, iconFile);
-
-            RegisterResult successResult = new RegisterResult();
-            successResult.setSuccess(true);
-            successResult.setErrorText("");
-            successResult.setId(caseId);
-
-            return ResponseEntity.ok(successResult);
-
-        } catch (IllegalArgumentException e) {
-            RegisterResult errorResult = new RegisterResult();
-            errorResult.setSuccess(false);
-            errorResult.setErrorText(e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResult);
-
+            return ResponseEntity.ok(new RegisterResult(true, "", caseId));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult errorResult = new RegisterResult();
-            errorResult.setSuccess(false);
-            errorResult.setErrorText("Internal server error");
             logger.error("Internal server error while creating a case", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
-
-
 
     @PostMapping("/users")
     public ResponseEntity<RegisterResult> createUser(
             @RequestBody @Valid AdminUserCreateRequest req,
             BindingResult bindingResult
     ) {
-
         if (bindingResult.hasErrors()) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(getValidationErrors(bindingResult));
-            return ResponseEntity.badRequest().body(res);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         try {
             String hashedPassword = userService.hashPassword(req.getPassword());
             Long newUserId = userService.createAdminUser(req, hashedPassword);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            res.setId(newUserId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResult(true, "", newUserId));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while creating a user", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
 
@@ -162,32 +115,19 @@ public class AdminApiController {
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(getValidationErrors(bindingResult));
-            return ResponseEntity.badRequest().body(res);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         try {
             userService.updateAdminUser(id, req);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while updating a user", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
-
 
     @PostMapping("/tags")
     public ResponseEntity<RegisterResult> createTag(
@@ -195,74 +135,45 @@ public class AdminApiController {
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(getValidationErrors(bindingResult));
-            return ResponseEntity.badRequest().body(res);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         try {
             Long newTagId = caseService.createTag(request);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            res.setId(newTagId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResult(true, "", newTagId));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
             logger.error("Internal server error while creating a tag", e);
-            res.setErrorText("Internal server error");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
+
     @PatchMapping("/tags/{id}/deactivate")
     public ResponseEntity<RegisterResult> deactivateTag(@PathVariable Long id) {
         try {
             caseService.deactivateTag(id);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
-            logger.error("Internal server error while updating a tag", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            logger.error("Internal server error while deactivating a tag", e);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
+
     @PostMapping("/cases/{caseId}/tags/{tagId}")
     public ResponseEntity<RegisterResult> attachTagToCase(
             @PathVariable Long caseId,
             @PathVariable Long tagId) {
         try {
             caseService.attachTagToCase(caseId, tagId);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while attaching a tag", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
 
@@ -272,50 +183,27 @@ public class AdminApiController {
             @PathVariable Long tagId) {
         try {
             caseService.detachTagFromCase(caseId, tagId);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while detaching a tag", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
-
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<RegisterResult> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUserByAdmin(id);
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(true);
-            res.setErrorText("");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText(e.getMessage());
-            return ResponseEntity.badRequest().body(res);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            RegisterResult res = new RegisterResult();
-            res.setSuccess(false);
-            res.setErrorText("Internal server error");
             logger.error("Internal server error while deleting a user", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+            throw new InternalServerErrorException("Internal server error");
         }
     }
-
-
-
-
 
 
 

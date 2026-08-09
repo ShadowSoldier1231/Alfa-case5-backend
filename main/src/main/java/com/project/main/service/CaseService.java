@@ -5,6 +5,9 @@ import com.project.main.dto.CasePromptResponse;
 import com.project.main.dto.CaseUpdateRequest;
 import com.project.main.dto.TagCreateRequest;
 import com.project.main.exception.ApiException;
+import com.project.main.exception.BadRequestException;
+import com.project.main.exception.ConflictException;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.CaseEntity;
 import com.project.main.model.CaseTag;
 import com.project.main.model.CaseTagId;
@@ -46,13 +49,13 @@ public class CaseService {
     @Transactional
     public Long createTag(TagCreateRequest request) {
         if (request == null || request.getName() == null || request.getName().isBlank()) {
-            throw new IllegalArgumentException("Tag name cannot be empty");
+            throw new BadRequestException("Tag name cannot be empty");
         }
 
         String tagName = request.getName().trim();
 
         if (tagRepository.existsByName(tagName)) {
-            throw new IllegalArgumentException("Tag with this name already exists");
+            throw new ConflictException("Tag with this name already exists");
         }
 
         Tag newTag = new Tag();
@@ -66,7 +69,7 @@ public class CaseService {
     @Transactional
     public void deactivateTag(Long tagId) {
         Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new IllegalArgumentException("Tag not found"));
+                .orElseThrow(() -> new NotFoundException("Tag not found"));
 
         tag.setActive(false);
         tagRepository.save(tag);
@@ -75,13 +78,13 @@ public class CaseService {
     @Transactional
     public void attachTagToCase(Long caseId, Long tagId) {
         CaseEntity caseEntity = caseRepository.findById(caseId)
-                .orElseThrow(() -> new IllegalArgumentException("Case not found"));
+                .orElseThrow(() -> new NotFoundException("Case not found"));
 
         Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new IllegalArgumentException("Tag not found"));
+                .orElseThrow(() -> new NotFoundException("Tag not found"));
 
         if (caseTagRepository.existsByCaseEntityIdAndTagId(caseId, tagId)) {
-            throw new IllegalArgumentException("Tag is already attached to this case");
+            throw new ConflictException("Tag is already attached to this case");
         }
 
         CaseTag caseTag = new CaseTag();
@@ -95,7 +98,7 @@ public class CaseService {
     @Transactional
     public void detachTagFromCase(Long caseId, Long tagId) {
         if (!caseTagRepository.existsByCaseEntityIdAndTagId(caseId, tagId)) {
-            throw new IllegalArgumentException("Tag is not attached to this case");
+            throw new BadRequestException("Tag is not attached to this case");
         }
 
         caseTagRepository.deleteByCaseEntityIdAndTagId(caseId, tagId);
@@ -134,10 +137,11 @@ public class CaseService {
         caseRepository.save(newCase);
         return  newCase.getId();
     }
+
     @Transactional
     public CaseEntity getCaseByIdAndIncrementViews(Long id) {
         CaseEntity caseEntity = caseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Кейс не найден"));
+                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
 
         caseRepository.incrementViewsCount(id);
         return caseEntity;
@@ -177,7 +181,7 @@ public class CaseService {
     @Transactional
     public void updateCase(Long id, CaseUpdateRequest req, MultipartFile pdfFile, MultipartFile iconFile) {
         CaseEntity existingCase = caseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Кейс не найден"));
+                .orElseThrow(() -> new NotFoundException("Case with ID: "+ id + " is not found"));
 
 
         if (pdfFile != null && !pdfFile.isEmpty()) {
@@ -229,7 +233,7 @@ public class CaseService {
                 .orElseThrow(() -> new ApiException("Case with ID: " + caseId + " is not found", HttpStatus.NOT_FOUND));
 
         if (!Boolean.TRUE.equals(caseEntity.getActive())) {
-            throw new ApiException("Case is inactive", HttpStatus.NOT_FOUND);
+            throw new NotFoundException("Case is inactive");
         }
 
         String prompt = caseEntity.getPromptContextEn();
