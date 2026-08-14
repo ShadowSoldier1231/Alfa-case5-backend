@@ -138,16 +138,13 @@ public class CaseService {
         return CasePublicDto.from(c, loadTags(List.of(c)).getOrDefault(id, List.of()));
     }
 
-    public List<Map<String, Object>> getActiveTagsWithCount() {
-        return caseRepository.getActiveTagsWithCaseCount().stream()
-                .map(row -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("id", ((Number) row[0]).longValue());
-                    m.put("name", row[1]);
-                    m.put("count", ((Number) row[2]).longValue());
-                    return m;
-                })
-                .toList();
+    public Map<Long, Object> getActiveTagsWithCount() {
+        Map<Long, Object> tags = new LinkedHashMap<>();
+        for (Object[] row : caseRepository.getActiveTagsWithCaseCount()) {
+            tags.put(((Number) row[0]).longValue(),
+                    Map.of("name", row[1], "count", ((Number) row[2]).longValue()));
+        }
+        return tags;
     }
 
     @Transactional(readOnly = true)

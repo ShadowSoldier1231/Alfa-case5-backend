@@ -32,7 +32,7 @@ public class CaseController {
     }
 
     @GetMapping("/tags")
-    public ResponseEntity<List<Map<String, Object>>> getActiveTags() {
+    public ResponseEntity<Map<Long, Object>> getActiveTags() {
         return ResponseEntity.ok(caseService.getActiveTagsWithCount());
     }
 }
