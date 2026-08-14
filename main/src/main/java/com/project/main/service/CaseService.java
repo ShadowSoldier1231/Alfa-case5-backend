@@ -217,10 +217,10 @@ public class CaseService {
     }
 
 
-    public String getCasePrompt(Long id) {
+    public CasePromptResponse getCasePrompt(Long id) {
         CaseEntity c = caseRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
-        return c.getPromptContextEn();
+                .orElseThrow(() -> new NotFoundException("Case is not found"));
+        return new CasePromptResponse(c.getTitle(), c.getPromptContextEn(),c.getId());
     }
 
 
