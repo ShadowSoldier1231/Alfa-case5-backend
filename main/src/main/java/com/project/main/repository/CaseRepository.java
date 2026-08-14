@@ -39,9 +39,12 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
             "GROUP BY t.id, t.name ORDER BY COUNT(ct.case_id) DESC, t.name ASC", nativeQuery = true)
     List<Object[]> getActiveTagsWithCaseCount();
 
-    @Query(value = "SELECT ct.case_id, t.id, t.name FROM case_tags ct " +
+    @Query(value = "SELECT ct.case_id, t.id, t.name, " +
+            "(SELECT COUNT(*) FROM case_tags ct2 WHERE ct2.tag_id = t.id) " +
+            "FROM case_tags ct " +
             "JOIN tags t ON t.id = ct.tag_id " +
-            "WHERE ct.case_id IN (:caseIds) ORDER BY t.id ASC", nativeQuery = true)
+            "WHERE ct.case_id IN (:caseIds) " +
+            "ORDER BY t.id ASC", nativeQuery = true)
     List<Object[]> findTagsByCaseIds(@Param("caseIds") List<Long> caseIds);
 
 

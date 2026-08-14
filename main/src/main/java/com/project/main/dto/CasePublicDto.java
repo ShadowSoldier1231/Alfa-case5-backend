@@ -14,7 +14,7 @@ public record CasePublicDto(
         Integer viewsCount, LocalDateTime createdAt, LocalDateTime updatedAt,
         List<TagInfo> tags) {
 
-    public record TagInfo(Long id, String name) {}
+    public record TagInfo(Long id, String name, long count) {}
 
     public static CasePublicDto from(CaseEntity c, List<TagInfo> tags) {
         return new CasePublicDto(c.getId(), c.getSlug(), c.getTitle(), c.getTitleEn(),

@@ -231,7 +231,10 @@ public class CaseService {
                 .collect(Collectors.groupingBy(
                         row -> ((Number) row[0]).longValue(),
                         Collectors.mapping(
-                                row -> new CasePublicDto.TagInfo(((Number) row[1]).longValue(), (String) row[2]),
+                                row -> new CasePublicDto.TagInfo(
+                                        ((Number) row[1]).longValue(),
+                                        (String) row[2],
+                                        ((Number) row[3]).longValue()),
                                 Collectors.toList())));
     }
 
