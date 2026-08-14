@@ -1,7 +1,7 @@
 package com.project.main.controller;
 
 
-import com.project.main.model.CaseEntity;
+import com.project.main.dto.CasePublicDto;
 import com.project.main.service.CaseService;
 
 import org.springframework.http.ResponseEntity;
@@ -22,12 +22,12 @@ public class CaseController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<CaseEntity>> getAllCases() {
+    public ResponseEntity<List<CasePublicDto>> getAllCases() {
         return ResponseEntity.ok(caseService.getAllPublicCases());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CaseEntity> getCaseById(@PathVariable Long id) {
+    public ResponseEntity<CasePublicDto> getCaseById(@PathVariable Long id) {
         return ResponseEntity.ok(caseService.getCaseByIdAndIncrementViews(id));
     }
 

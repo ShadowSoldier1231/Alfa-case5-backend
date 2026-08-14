@@ -1,26 +1,18 @@
 package com.project.main.service;
 
-import com.project.main.dto.CaseCreateRequest;
-import com.project.main.dto.CasePromptResponse;
-import com.project.main.dto.CaseUpdateRequest;
-import com.project.main.dto.TagCreateRequest;
-import com.project.main.exception.ApiException;
+import com.project.main.dto.*;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
-import com.project.main.model.CaseEntity;
-import com.project.main.model.CaseTag;
-import com.project.main.model.CaseTagId;
-import com.project.main.model.Tag;
+import com.project.main.model.*;
 import com.project.main.repository.CaseRepository;
 import com.project.main.repository.CaseTagRepository;
 import com.project.main.repository.TagRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -139,43 +131,41 @@ public class CaseService {
     }
 
     @Transactional
-    public CaseEntity getCaseByIdAndIncrementViews(Long id) {
-        CaseEntity caseEntity = caseRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
-
+    public CasePublicDto getCaseByIdAndIncrementViews(Long id) {
         caseRepository.incrementViewsCount(id);
-        return caseEntity;
+        CaseEntity c = caseRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
+        return CasePublicDto.from(c, loadTags(List.of(c)).getOrDefault(id, List.of()));
     }
 
     public List<Map<String, Object>> getActiveTagsWithCount() {
-        return caseRepository.findActiveTagsWithCaseCount().stream()
+        return caseRepository.getActiveTagsWithCaseCount().stream()
                 .map(row -> {
-                    Long id = null;
-                    String name = "Unknown";
-                    long count = 0L;
-
-                    if (row instanceof Object[] arr && arr.length >= 3) {
-                        id = arr[0] != null ? ((Number) arr[0]).longValue() : null;
-                        name = arr[1] != null ? arr[1].toString() : "Unknown";
-                        count = arr[2] != null ? ((Number) arr[2]).longValue() : 0L;
-                    }
-
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", id);
-                    map.put("name", name);
-                    map.put("count", count);
-
-                    return map;
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", ((Number) row[0]).longValue());
+                    m.put("name", row[1]);
+                    m.put("count", ((Number) row[2]).longValue());
+                    return m;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public List<CaseEntity> getAllPublicCases() {
-        return caseRepository.findAllByIsActiveTrueOrderByCreatedAtDesc();
+    @Transactional(readOnly = true)
+    public List<CasePublicDto> getAllPublicCases() {
+        List<CaseEntity> cases = caseRepository.findAllActive();
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
+        return cases.stream()
+                .map(c -> CasePublicDto.from(c, tags.getOrDefault(c.getId(), List.of())))
+                .toList();
     }
 
-    public List<CaseEntity> getAllAdminCases() {
-        return caseRepository.findAllByOrderByCreatedAtDesc();
+    @Transactional(readOnly = true)
+    public List<CaseAdminDto> getAllAdminCases() {
+        List<CaseEntity> cases = caseRepository.findAllForAdmin();
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
+        return cases.stream()
+                .map(c -> CaseAdminDto.from(c, tags.getOrDefault(c.getId(), List.of())))
+                .toList();
     }
 
     @Transactional
@@ -227,22 +217,22 @@ public class CaseService {
     }
 
 
-    @Transactional(readOnly = true)
-    public CasePromptResponse getCasePrompt(Long caseId) {
-        CaseEntity caseEntity = caseRepository.findById(caseId)
-                .orElseThrow(() -> new ApiException("Case with ID: " + caseId + " is not found", HttpStatus.NOT_FOUND));
+    public String getCasePrompt(Long id) {
+        CaseEntity c = caseRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
+        return c.getPromptContextEn();
+    }
 
-        if (!Boolean.TRUE.equals(caseEntity.getActive())) {
-            throw new NotFoundException("Case is inactive");
-        }
 
-        String prompt = caseEntity.getPromptContextEn();
-
-        return new CasePromptResponse(
-                caseEntity.getTitle(),
-                prompt != null ? prompt : "",
-                caseEntity.getId()
-        );
+    private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<CaseEntity> cases) {
+        if (cases.isEmpty()) return Map.of();
+        List<Long> ids = cases.stream().map(CaseEntity::getId).toList();
+        return caseRepository.findTagsByCaseIds(ids).stream()
+                .collect(Collectors.groupingBy(
+                        row -> ((Number) row[0]).longValue(),
+                        Collectors.mapping(
+                                row -> new CasePublicDto.TagInfo(((Number) row[1]).longValue(), (String) row[2]),
+                                Collectors.toList())));
     }
 
 }

@@ -5,7 +5,7 @@ import com.project.main.dto.*;
 import com.project.main.exception.ApiException;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
-import com.project.main.model.CaseEntity;
+import com.project.main.dto.CaseAdminDto;
 import com.project.main.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -18,7 +18,6 @@ import com.project.main.service.CaseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -38,7 +37,7 @@ public class AdminApiController {
     }
 
     @GetMapping("/cases")
-    public ResponseEntity<List<CaseEntity>> getAllCasesAdmin() {
+    public ResponseEntity<List<CaseAdminDto>> getAllCasesAdmin() {
         return ResponseEntity.ok(caseService.getAllAdminCases());
     }
 

@@ -16,69 +16,35 @@ import java.util.Optional;
 public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
 
+
+
     @Query(value = "SELECT * FROM cases WHERE is_active = true ORDER BY created_at DESC", nativeQuery = true)
-    List<CaseEntity> findAllByIsActiveTrueOrderByCreatedAtDesc();
-
-
+    List<CaseEntity> findAllActive();
     @Query(value = "SELECT * FROM cases ORDER BY created_at DESC", nativeQuery = true)
-    List<CaseEntity> findAllByOrderByCreatedAtDesc();
+    List<CaseEntity> findAllForAdmin();
 
-
-    @Query(value = "SELECT t.id, t.name, COUNT(c.id) " +
-            "FROM tags t " +
-            "LEFT JOIN case_tags ct ON t.id = ct.tag_id " +
-            "LEFT JOIN cases c ON ct.case_id = c.id " +
-            "WHERE t.is_active = true " +
-            "GROUP BY t.id, t.name " +
-            "ORDER BY COUNT(c.id) DESC", nativeQuery = true)
-    List<Object[]> findActiveTagsWithCaseCount();
-
-
-    @Query(value = "SELECT c.* FROM cases c " +
-            "WHERE c.is_active = true " +
-            "ORDER BY c.sort_order ASC, c.created_at DESC", nativeQuery = true)
-    List<CaseEntity> findAllActiveWithTags();
+    @Query(value = "SELECT * FROM cases WHERE id = :id", nativeQuery = true)
+    Optional<CaseEntity> findById(@Param("id") Long id);
 
 
 
-
-    @Query(value = "SELECT COUNT(*) FROM cases WHERE is_active = true", nativeQuery = true)
-    long countActiveCases();
-
-    @Query(value = "SELECT difficulty, COUNT(*) FROM cases " +
-            "WHERE is_active = true GROUP BY difficulty", nativeQuery = true)
-    List<Object[]> countCasesByDifficulty();
-
+    @Query(value = "UPDATE cases SET views_count = views_count + 1 WHERE id = :id", nativeQuery = true)
     @Modifying
     @Transactional
-    @Query(value = "UPDATE cases SET views_count = views_count + 1 WHERE id = :caseId", nativeQuery = true)
-    void incrementViewsCount(@Param("caseId") Long caseId);
+    void incrementViewsCount(@Param("id") Long id);
+
+    @Query(value = "SELECT t.id, t.name, COUNT(ct.case_id) FROM tags t " +
+            "LEFT JOIN case_tags ct ON t.id = ct.tag_id " +
+            "WHERE t.is_active = true " +
+            "GROUP BY t.id, t.name ORDER BY COUNT(ct.case_id) DESC, t.name ASC", nativeQuery = true)
+    List<Object[]> getActiveTagsWithCaseCount();
+
+    @Query(value = "SELECT ct.case_id, t.id, t.name FROM case_tags ct " +
+            "JOIN tags t ON t.id = ct.tag_id " +
+            "WHERE ct.case_id IN (:caseIds) ORDER BY t.id ASC", nativeQuery = true)
+    List<Object[]> findTagsByCaseIds(@Param("caseIds") List<Long> caseIds);
 
 
-    @Query(value = "SELECT * FROM cases WHERE difficulty = :difficulty AND is_active = true", nativeQuery = true)
-    List<CaseEntity> findByDifficultyAndIsActiveTrue(@Param("difficulty") String difficulty);
-
-
-    @Query(value = "SELECT c.* FROM cases c " +
-            "WHERE c.slug = :slug", nativeQuery = true)
-    Optional<CaseEntity> findBySlugWithTags(@Param("slug") String slug);
-
-    @Query(value = "SELECT DISTINCT c.* FROM cases c " +
-            "JOIN case_tags ct ON c.id = ct.case_id " +
-            "WHERE ct.tag_id = :tagId AND c.is_active = true", nativeQuery = true)
-    List<CaseEntity> findByTagIdAndIsActiveTrue(@Param("tagId") Long tagId);
-
-    @Query(value = "SELECT DISTINCT c.* FROM cases c " +
-            "JOIN case_tags ct ON c.id = ct.case_id " +
-            "JOIN tags t ON ct.tag_id = t.id " +
-            "WHERE t.name IN (:tagNames) AND c.is_active = true " +
-            "ORDER BY c.sort_order ASC, c.created_at DESC", nativeQuery = true)
-    List<CaseEntity> findByTagsAndIsActiveTrue(@Param("tagNames") List<String> tagNames);
-
-
-    Optional<CaseEntity> findBySlug(String slug);
-    Optional<CaseEntity> findByIdAndIsActiveTrue(Long id);
-    boolean existsBySlug(String slug);
 
 
 }
