@@ -85,6 +85,15 @@ public class AdminApiController {
             throw new InternalServerErrorException("Internal server error");
         }
     }
+    @GetMapping("/users")
+    public ResponseEntity<PageResponse<UserListItem>> getAllUsersAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        return ResponseEntity.ok(userService.getAdminUsers(page, size, search, sort));
+    }
 
     @PostMapping("/users")
     public ResponseEntity<RegisterResult> createUser(
@@ -105,6 +114,28 @@ public class AdminApiController {
             logger.error("Internal server error while creating a user", e);
             throw new InternalServerErrorException("Internal server error");
         }
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<PageResponse<TagListItem>> getAllTagsAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "createdAt,desc") String sort
+    ) {
+        try {
+            return ResponseEntity.ok(caseService.getAdminTags(page, size, search, sort));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while getting admin tags", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserDetailsResponse> getUserDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserDetails(id));
     }
 
     @PatchMapping("/users/{id}")
@@ -157,6 +188,39 @@ public class AdminApiController {
             throw e;
         } catch (Exception e) {
             logger.error("Internal server error while deactivating a tag", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+    @PatchMapping("/tags/{id}/activate")
+    public ResponseEntity<RegisterResult> activateTag(@PathVariable Long id) {
+        try {
+            caseService.activateTag(id);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while activating a tag", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @PatchMapping("/tags/{id}")
+    public ResponseEntity<RegisterResult> updateTag(
+            @PathVariable Long id,
+            @RequestBody @Valid TagUpdateRequest request,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
+
+        try {
+            caseService.updateTag(id, request);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while updating a tag", e);
             throw new InternalServerErrorException("Internal server error");
         }
     }

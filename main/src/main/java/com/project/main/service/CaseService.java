@@ -8,10 +8,13 @@ import com.project.main.model.*;
 import com.project.main.repository.CaseRepository;
 import com.project.main.repository.CaseTagRepository;
 import com.project.main.repository.TagRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +67,15 @@ public class CaseService {
                 .orElseThrow(() -> new NotFoundException("Tag not found"));
 
         tag.setActive(false);
+        tagRepository.save(tag);
+    }
+
+    @Transactional
+    public void activateTag(Long tagId) {
+        Tag tag = tagRepository.findById(tagId)
+                .orElseThrow(() -> new NotFoundException("Tag not found"));
+
+        tag.setActive(true);
         tagRepository.save(tag);
     }
 
@@ -135,7 +147,9 @@ public class CaseService {
         caseRepository.incrementViewsCount(id);
         CaseEntity c = caseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Кейс не найден"));
-        return CasePublicDto.from(c, loadTags(List.of(c)).getOrDefault(id, List.of()));
+        return CasePublicDto.from(c,
+                loadTags(List.of(c)).getOrDefault(id, List.of())
+        );
     }
 
     public List<Map<String, Object>> getActiveTagsWithCount() {
@@ -155,7 +169,9 @@ public class CaseService {
         List<CaseEntity> cases = caseRepository.findAllActive();
         Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
         return cases.stream()
-                .map(c -> CasePublicDto.from(c, tags.getOrDefault(c.getId(), List.of())))
+                .map(c -> CasePublicDto.from(c,
+                        tags.getOrDefault(c.getId(), List.of()))
+                )
                 .toList();
     }
 
@@ -164,7 +180,9 @@ public class CaseService {
         List<CaseEntity> cases = caseRepository.findAllForAdmin();
         Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
         return cases.stream()
-                .map(c -> CaseAdminDto.from(c, tags.getOrDefault(c.getId(), List.of())))
+                .map(c -> CaseAdminDto.from(c,
+                        tags.getOrDefault(c.getId(), List.of()))
+                )
                 .toList();
     }
 
@@ -237,5 +255,126 @@ public class CaseService {
                                         ((Number) row[3]).longValue()),
                                 Collectors.toList())));
     }
+
+
+
+
+
+
+    @Transactional(readOnly = true)
+    public PageResponse<TagListItem> getAdminTags(int page, int size, String search, String sort) {
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "created_at");
+
+        if (sort != null && !sort.isBlank()) {
+            String[] sortParts = sort.split(",");
+            String property = sortParts[0].trim();
+
+            Sort.Direction direction = Sort.Direction.ASC;
+            if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+                direction = Sort.Direction.DESC;
+            }
+
+            String sortColumn = switch (property.toLowerCase()) {
+                case "id" -> "id";
+                case "name" -> "name";
+                case "active" -> "is_active";
+                case "casecount", "case_count", "casescount", "cases_count" -> "case_count";
+                case "createdat", "created_at" -> "created_at";
+                default -> "created_at";
+            };
+
+            sortBy = Sort.by(direction, sortColumn);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortBy);
+
+        String searchTerm = null;
+        if (search != null && !search.isBlank()) {
+            searchTerm = search.trim();
+        }
+
+        Page<Object[]> tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
+
+        List<TagListItem> items = tagPage.getContent().stream()
+                .map(row -> {
+                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
+                    String name = row[1] != null ? row[1].toString() : null;
+                    Boolean active = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
+                    Long caseCount = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+
+                    return new TagListItem(id, name, active, caseCount);
+                })
+                .toList();
+
+        return new PageResponse<>(
+                items,
+                tagPage.getNumber(),
+                tagPage.getSize(),
+                tagPage.getTotalElements(),
+                tagPage.getTotalPages()
+        );
+    }
+    @Transactional
+    public void updateTag(Long tagId, TagUpdateRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Request cannot be empty");
+        }
+
+        boolean hasName = request.getName() != null;
+        boolean hasActive = request.getActive() != null;
+
+        if (!hasName && !hasActive) {
+            throw new BadRequestException("No fields to update");
+        }
+
+        Tag tag = tagRepository.findById(tagId)
+                .orElseThrow(() -> new NotFoundException("Tag not found"));
+
+        if (hasName) {
+            String newName = request.getName().trim();
+
+            if (newName.isBlank()) {
+                throw new BadRequestException("Tag name cannot be empty");
+            }
+
+            if (newName.length() > 100) {
+                throw new BadRequestException("Tag name must be between 1 and 100 characters");
+            }
+
+            if (!newName.equals(tag.getName()) && tagRepository.existsByName(newName)) {
+                throw new ConflictException("Tag with this name already exists");
+            }
+
+            tag.setName(newName);
+        }
+
+        if (hasActive) {
+            tag.setActive(request.getActive());
+        }
+
+        tagRepository.save(tag);
+    }
+
+
+    private Boolean toBoolean(Object value) {
+        if (value == null) {
+            return false;
+        }
+
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        return "true".equalsIgnoreCase(value.toString());
+    }
+
 
 }

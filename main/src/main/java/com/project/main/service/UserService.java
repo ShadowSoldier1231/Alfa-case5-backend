@@ -3,14 +3,22 @@ package com.project.main.service;
 import com.project.main.dto.*;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
-import com.project.main.exception.BadRequestException;
-import com.project.main.exception.ConflictException;
-import com.project.main.exception.InvalidCredentialsException;
-import com.project.main.exception.NotFoundException;
+import com.project.main.enums.UserStatus;
+import com.project.main.exception.*;
 import com.project.main.model.*;
 import com.project.main.repository.*;
 import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -29,11 +37,14 @@ public class UserService {
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final FetchingService fetchingService;
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        UserDataRepository userDataRepository,
                        LeaderboardRepository leaderboardRepository, VerificationService verificationService,
-                       ApplicationEventPublisher eventPublisher, S3StorageService s3StorageService) {
+                       ApplicationEventPublisher eventPublisher, S3StorageService s3StorageService,
+                       FetchingService fetchingService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userDataRepository = userDataRepository;
@@ -41,6 +52,7 @@ public class UserService {
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
         this.s3StorageService = s3StorageService;
+        this.fetchingService = fetchingService;
     }
 
     public String hashPassword(String rawPassword) {
@@ -270,4 +282,119 @@ public class UserService {
 
         return realUser.getId();
     }
+
+
+
+
+
+    public PageResponse<UserListItem> getAdminUsers(int page, int size, String search, String sort) {
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        Sort sortBy = Sort.unsorted();
+        if (sort != null && !sort.isBlank()) {
+            String[] sortParts = sort.split(",");
+            String property = sortParts[0];
+            Sort.Direction direction = Sort.Direction.ASC;
+            if (sortParts.length > 1 && sortParts[1].equalsIgnoreCase("desc")) {
+                direction = Sort.Direction.DESC;
+            }
+
+            String sortProperty = property;
+            if ("createdAt".equalsIgnoreCase(property)) {
+                sortProperty = "creation_date";
+            }
+
+            sortBy = Sort.by(direction, sortProperty);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortBy);
+        String searchTerm = (search != null && !search.isBlank()) ? search.trim() : null;
+
+
+        Page<Object[]> userPage = userRepository.findUsersForAdmin(searchTerm, pageable);
+
+
+        List<UserListItem> items = userPage.getContent().stream().map(row -> {
+            Long id = ((Number) row[0]).longValue();
+            String username = (String) row[1];
+            String email = (String) row[2];
+            String nickName = (String) row[3];
+
+
+            String role = row[4] != null ? row[4].toString() : null;
+
+            String status = null;
+            if (row[5] != null) {
+                int ordinal = ((Number) row[5]).intValue();
+                if (ordinal >= 0 && ordinal < UserStatus.values().length) {
+                    status = UserStatus.values()[ordinal].name();
+                }
+            }
+
+            boolean isVerified = row[6] != null && (Boolean) row[6];
+
+
+            LocalDateTime bannedUntil = null;
+            if (row[7] != null) {
+                if (row[7] instanceof LocalDateTime) {
+                    bannedUntil = (LocalDateTime) row[7];
+                } else if (row[7] instanceof Timestamp) {
+                    bannedUntil = ((Timestamp) row[7]).toLocalDateTime();
+                }
+            }
+
+            return new UserListItem(id, username, email, nickName, role, status, isVerified, bannedUntil);
+        }).collect(Collectors.toList());
+
+        return new PageResponse<>(
+                items,
+                userPage.getNumber(),
+                userPage.getSize(),
+                userPage.getTotalElements(),
+                userPage.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public UserDetailsResponse getUserDetails(Long userId) {
+        UserSetup user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        UserProfile profile = fetchingService.getMyProfile(userId);
+
+        if (profile == null) {
+            logger.error("Failed to load user profile for userId={}", userId);
+            throw new InternalServerErrorException("Profile could not be loaded");
+        }
+
+
+        return new UserDetailsResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                profile.getFirstName(),
+                profile.getMiddleName(),
+                profile.getLastName(),
+                profile.getNickName(),
+                profile.getStatus(),
+                profile.getGender(),
+                profile.getBirthdate(),
+                profile.getCityName() != null ? profile.getCityName() : "not_set",
+                profile.getRegionName() != null ? profile.getRegionName() : "not_set",
+                profile.getScore() != null ? profile.getScore() : 0L,
+                profile.getPlacement() != null ? profile.getPlacement() : 0L,
+                profile.getAvatarUrl(),
+                user.getRole(),
+                user.isVerified(),
+                user.getBannedUntil(),
+                user.getCreationDate()
+        );
+    }
+
+
 }

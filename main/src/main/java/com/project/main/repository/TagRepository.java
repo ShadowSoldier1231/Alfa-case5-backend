@@ -1,6 +1,8 @@
 package com.project.main.repository;
 
 import com.project.main.model.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -46,4 +48,33 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
             "AND t.is_active = true", nativeQuery = true)
     List<Tag> searchByName(@Param("query") String query);
+
+    @Query(
+            value = """
+                SELECT t.id,
+                       t.name,
+                       t.is_active,
+                       COUNT(ct.case_id) AS case_count,
+                       t.created_at
+                FROM tags t
+                LEFT JOIN case_tags ct ON t.id = ct.tag_id
+                WHERE CAST(:search AS text) IS NULL
+                   OR CAST(:search AS text) = ''
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                GROUP BY t.id, t.name, t.is_active, t.created_at
+                """,
+            countQuery = """
+                SELECT COUNT(t.id)
+                FROM tags t
+                WHERE CAST(:search AS text) IS NULL
+                   OR CAST(:search AS text) = ''
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                """,
+            nativeQuery = true
+    )
+    Page<Object[]> findAdminTagsWithCaseCount(
+            @Param("search") String search,
+            Pageable pageable
+    );
+
 }

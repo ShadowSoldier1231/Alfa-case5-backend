@@ -1,3 +1,5 @@
+
+
 # Alfa-case5-backend
 
 # Документация API
@@ -14,17 +16,19 @@ curl -X GET http://localhost:8080/health
 **Ответ (JSON):**
 ```json
 {
-"status": "UP",
-"timestamp": "2026-07-23T10:15:30.123",
-"database": "UP"
+  "status": "UP",
+  "timestamp": "2026-07-23T10:15:30.123",
+  "database": "UP"
 }
 ```
 *(Если база данных недоступна, поле `database` будет содержать `"DOWN: <текст ошибки>"`)*.
+
 ---
 ## Безопасность и доступ
 - **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными).
-- **`/api/text/**`** — **Только авторизованные пользователи**. Во все запросы нужно добавлять заголовок: `-H "Cookie: token=ТОКЕН"`.
-- **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN`.
+- **`/api/text/v1/**`** — **Требует Cookie**. На уровне Spring Security эндпоинты открыты (`permitAll`), но контроллеры вручную проверяют наличие и валидность заголовка `Cookie: token=ТОКЕН`.
+- **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN` (проверяется Spring Security).
+
 ---
 ## Профиль и Аутентификация (`/api/v1/auth`)
 ### Регистрация (`POST`)
@@ -35,6 +39,7 @@ curl -X POST -H "Content-Type: application/json" \
 http://localhost:8080/api/v1/auth/register
 ```
 > **Примечание:** Поле `validationMethod` обязательно и принимает значения `EMAIL` или `TELEGRAM`.
+
 ### Верификация аккаунта (`POST`)
 Подтверждение регистрации через код, отправленный на Email. Код передается в URL (path variable).
 ```bash
@@ -43,11 +48,12 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/verify/8
 **Ответ (JSON):**
 ```json
 {
-"success": true,
-"errorText": "",
-"userId": 8
+  "success": true,
+  "errorText": "",
+  "id": 8
 }
 ```
+
 ### Вход (`POST`)
 Авторизация пользователя. При успехе сервер возвращает сессионную Cookie.
 ```bash
@@ -55,6 +61,7 @@ curl -X POST -H "Content-Type: application/json" \
 -d '{"username":"001","password":"tea_1teaaaa"}' \
 http://localhost:8080/api/v1/auth/login
 ```
+
 ### Получение ID текущего пользователя (`GET`) *(Требует Cookie)*
 Легковесный метод для получения только ID пользователя по валидной сессионной Cookie.
 ```bash
@@ -63,9 +70,10 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/getId
 **Ответ (JSON):**
 ```json
 {
-"userId": 8
+  "id": 8
 }
 ```
+
 ### Получение полного профиля (`GET`) *(Требует Cookie)*
 Возвращает расширенную информацию о текущем авторизованном пользователе, включая email, личные данные, статистику в таблице лидеров и информацию о городе.
 ```bash
@@ -74,21 +82,23 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/me
 **Ответ (JSON):**
 ```json
 {
-"id": 8,
-"email": "someemail@gmail.com",
-"firstName": "nameName",
-"lastName": "last_name",
-"middleName": "name",
-"nickName": "char",
-"birthdate": "16.10.2009",
-"gender": "MALE",
-"status": "STUDENT10",
-"cityName": "Название города",
-"regionName": "Название региона",
-"score": 150,
-"placement": 42
+  "id": 8,
+  "email": "someemail@gmail.com",
+  "firstName": "nameName",
+  "lastName": "last_name",
+  "middleName": "name",
+  "nickName": "char",
+  "birthdate": "16.10.2009",
+  "gender": "MALE",
+  "status": "STUDENT10",
+  "cityName": "Название города",
+  "regionName": "Название региона",
+  "score": 150,
+  "placement": 42,
+  "avatarUrl": "avatars/uuid.jpg"
 }
 ```
+
 ### Смена пароля (`POST`) *(Требует Cookie)*
 Замена текущего пароля на новый.
 ```bash
@@ -96,30 +106,35 @@ curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"oldPassword":"tea_1teaaaa","newPassword":"teaFFan13"}' \
 http://localhost:8080/api/v1/auth/resetpassword
 ```
+
 ### Изменение личных данных (`POST`) *(Требует Cookie)*
 Обновление полей профиля. При ошибке валидации данные не сохраняются.
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
--d '{"firstName":"111","lastName":"kvq","middleName":"someOtherName","birthdate":"16.01.2000","cityId":"15","status":"UNDERGRADUATE"}' \
+-d '{"firstName":"111","lastName":"kvq","middleName":"someOtherName","birthdate":"16.01.2000","cityId":"15","status":"UNDERGRADUATE","nickName":"newNick"}' \
 http://localhost:8080/api/v1/auth/changeparams
 ```
+
 ### Смена Email (`POST`) *(Требует Cookie)*
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"email":"test@gmail.com"}' \
 http://localhost:8080/api/v1/auth/changeemail
 ```
+
 ### Установка аватара (`POST`) *(Требует Cookie)*
 Загрузка файла изображения профиля.
 ```bash
 curl -v -F "file=@/path/to/image.jpeg" -H "Cookie: token=TOKEN" \
 http://localhost:8080/api/v1/auth/setProfilePicture
 ```
+
 ### Выход (`GET`) *(Требует Cookie)*
 Удаление сессионной куки пользователя.
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/logout
 ```
+
 ---
 ## Публичные данные и просмотр профилей (`/api/v1/site`)
 ### Карточка профиля (`GET`)
@@ -130,35 +145,40 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/profile
 **Ответ (JSON):**
 ```json
 {
-"id": 1,
-"birthdate": "16.10.2009",
-"cityName": "Бородино",
-"regionName": "Красноярский край",
-"firstName": "random",
-"lastName": "fun",
-"middleName": "naming",
-"nickName": "char",
-"gender": "MALE",
-"status": "STUDENT10",
-"score": 0,
-"placement": 0
+  "id": 1,
+  "birthdate": "16.10.2009",
+  "cityName": "Бородино",
+  "regionName": "Красноярский край",
+  "firstName": "random",
+  "lastName": "fun",
+  "middleName": "naming",
+  "nickName": "char",
+  "gender": "MALE",
+  "status": "STUDENT10",
+  "score": 0,
+  "placement": 0,
+  "avatarUrl": "avatars/uuid.jpg"
 }
 ```
+
 ### Поиск города по названию (`GET`)
 Используется для фильтрации списка городов при поиске. Возвращает массив совпадений или пустой список.
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/searchLocation/моск
 ```
+
 ### Получить город пользователя (`GET`)
 Возвращает информацию о городе конкретного пользователя. Если ID не существует, возвращает объект с дефолтными значениями (`id: -1`, `cityName: "not_set"`, `regionName: "not_set"`).
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/user/1/city
 ```
+
 ### Список всех городов (`GET`)
 Запрос полного списка городов для выпадающих списков или фильтров.
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/getAllCities
 ```
+
 ---
 ## Кейсы и Материалы (`/api/v1/cases`)
 ### Список всех активных кейсов (`GET`)
@@ -166,11 +186,13 @@ curl -X GET http://localhost:8080/api/v1/site/getAllCities
 ```bash
 curl -X GET http://localhost:8080/api/v1/cases/getAll
 ```
+
 ### Полная информация о кейсе (`GET`)
 Возвращает детальную информацию о кейсе по его ID, включая полное описание и ссылки на файлы. Автоматически увеличивает счетчик просмотров.
 ```bash
 curl -X GET http://localhost:8080/api/v1/cases/1
 ```
+
 ### Список активных тегов (`GET`)
 Возвращает список разрешенных тегов, которые можно использовать для фильтрации.
 ```bash
@@ -179,10 +201,11 @@ curl -X GET http://localhost:8080/api/v1/cases/tags
 **Ответ (JSON):**
 ```json
 [
-{"id": 1, "name": "Java", "count": 15},
-{"id": 2, "name": "Spring", "count": 10}
+  {"id": 1, "name": "Java", "count": 15},
+  {"id": 2, "name": "Spring", "count": 10}
 ]
 ```
+
 ---
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 ### Топ-5 игроков лидерборда (`GET`)
@@ -193,50 +216,33 @@ curl -X GET http://localhost:8080/api/v1/site/leaderboard/top5
 **Ответ (JSON):**
 ```json
 [
-{
-"userId": 1,
-"placement": 1,
-"score": 1500,
-"firstName": "Иван",
-"nickName": "champion",
-"cityName": "Москва"
-},
-{
-"userId": 5,
-"placement": 2,
-"score": 1200,
-"firstName": "Анна",
-"nickName": "pro_player",
-"cityName": "Санкт-Петербург"
-}
+  {
+    "userId": 1,
+    "placement": 1,
+    "score": 1500,
+    "firstName": "Иван",
+    "nickName": "champion",
+    "cityName": "Москва",
+    "avatarUrl": "avatars/1.jpg"
+  },
+  {
+    "userId": 5,
+    "placement": 2,
+    "score": 1200,
+    "firstName": "Анна",
+    "nickName": "pro_player",
+    "cityName": "Санкт-Петербург",
+    "avatarUrl": "avatars/5.jpg"
+  }
 ]
 ```
+
 ### Топ-5 игроков по конкретному кейсу (`GET`)
 Возвращает список 5 лучших игроков, которые решали указанный кейс. **Авторизация не требуется.**
 ```bash
 curl -X GET http://localhost:8080/api/v1/site/leaderboard/case/1/top5
 ```
-**Ответ (JSON):**
-```json
-[
-{
-"userId": 12,
-"placement": 1,
-"score": 150,
-"firstName": "Иван",
-"nickName": "pro_player",
-"cityName": "Москва"
-},
-{
-"userId": 45,
-"placement": 2,
-"score": 120,
-"firstName": "Анна",
-"nickName": "anna_dev",
-"cityName": "Санкт-Петербург"
-}
-]
-```
+
 ### Мое место в глобальном рейтинге (`GET`) *(Требует Cookie)*
 Возвращает текущее место авторизованного пользователя в общем зачете и общее количество верифицированных участников. Если у пользователя 0 очков, `placement` будет равен `0`.
 ```bash
@@ -245,10 +251,11 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 **Ответ (JSON):**
 ```json
 {
-"placement": 42,
-"total": 1500
+  "placement": 42,
+  "total": 1500
 }
 ```
+
 ### Мое место в рейтинге по кейсу (`GET`) *(Требует Cookie)*
 Возвращает место авторизованного пользователя в рейтинге по конкретному кейсу и общее количество участников в глобальном зачете.
 ```bash
@@ -257,19 +264,22 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 **Ответ (JSON):**
 ```json
 {
-"placement": 5,
-"total": 1500
+  "placement": 5,
+  "total": 1500
 }
 ```
+
 ---
 ## Администрирование (`/api/admin/v1`)
 *Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя с ролью `ADMIN`.*
+
 ### Управление кейсами
 #### Список всех кейсов (`GET`)
 Возвращает все кейсы, включая неактивные (скрытые).
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases
 ```
+
 #### Создание нового кейса (`POST`)
 Создает новый кейс. Принимает данные в формате `multipart/form-data`.
 ```bash
@@ -279,14 +289,7 @@ curl -X POST -H "Cookie: token=TOKEN" \
 -F 'iconFile=@/path/to/icon.jpg' \
 http://localhost:8080/api/admin/v1/createCase
 ```
-**Ответ (JSON):**
-```json
-{
-"success": true,
-"errorText": "",
-"id": 42
-}
-```
+
 #### Обновление кейса (`PUT`)
 Обновляет данные кейса. Для удаления существующих файлов передайте `"removePdf": true` или `"removeIcon": true` в JSON-части `case`.
 ```bash
@@ -295,7 +298,14 @@ curl -X PUT -H "Cookie: token=TOKEN" \
 -F 'iconFile=@/path/to/new_icon.jpg' \
 http://localhost:8080/api/admin/v1/cases/42
 ```
+
 ### Управление тегами
+#### Список тегов (`GET`)
+Возвращает пагинированный список тегов с количеством привязанных кейсов.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/tags?page=0&size=25&search=&sort=createdAt,desc"
+```
+
 #### Создание нового тега (`POST`)
 Создает новый тег. Имя тега должно быть уникальным.
 ```bash
@@ -303,30 +313,52 @@ curl -X POST -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
 -d '{"name": "Spring Boot"}' \
 http://localhost:8080/api/admin/v1/tags
 ```
-**Ответ (JSON):**
-```json
-{
-"success": true,
-"errorText": "",
-"id": 5
-}
+
+#### Обновление тега (`PATCH`)
+Обновляет имя или статус активности тега.
+```bash
+curl -X PATCH -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+-d '{"name": "New Name", "active": true}' \
+http://localhost:8080/api/admin/v1/tags/5
 ```
+
 #### Деактивация тега (`PATCH`)
 Делает тег неактивным (скрывает его из публичного списка), но не удаляет из базы данных.
 ```bash
 curl -X PATCH -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/tags/5/deactivate
 ```
+
+#### Активация тега (`PATCH`)
+Делает тег активным (возвращает в публичный список).
+```bash
+curl -X PATCH -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/tags/5/activate
+```
+
 #### Привязка тега к кейсу (`POST`)
 Связывает существующий тег с конкретным кейсом.
 ```bash
 curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/42/tags/5
 ```
+
 #### Отвязка тега от кейса (`DELETE`)
 Удаляет связь между тегом и кейсом.
 ```bash
 curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/42/tags/5
 ```
+
 ### Управление пользователями
+#### Список пользователей (`GET`)
+Возвращает пагинированный список пользователей с возможностью поиска и сортировки.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users?page=0&size=25&search=&sort=createdAt,desc"
+```
+
+#### Детальная информация о пользователе (`GET`)
+Возвращает полную информацию о пользователе, включая профиль и статистику.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/users/42
+```
+
 #### Создание пользователя (`POST`)
 Создает нового пользователя с заданными параметрами. Пользователь сразу считается верифицированным.
 ```bash
@@ -334,6 +366,7 @@ curl -X POST -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
 -d '{"username":"admin_created","password":"SecurePass1!","email":"test@test.com","role":"USER","firstName":"Иван","lastName":"Иванов"}' \
 http://localhost:8080/api/admin/v1/users
 ```
+
 #### Изменение данных пользователя (`PATCH`)
 Частичное обновление полей пользователя (роль, бан, верификация, личные данные). Рейтинг изменить нельзя.
 ```bash
@@ -341,26 +374,31 @@ curl -X PATCH -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
 -d '{"role":"ADMIN","isVerified":true,"bannedUntil":"2026-12-31T23:59:59"}' \
 http://localhost:8080/api/admin/v1/users/42
 ```
+
 #### Удаление пользователя (`DELETE`)
 Удаляет пользователя и все связанные с ним данные (решения, достижения, аватар) через каскадное удаление.
 ```bash
 curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/users/42
 ```
+
 ---
 ## Геймификация и ИИ (`/api/text/v1`)
 *Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса. Для всех запросов обязательна валидная Cookie сессии пользователя.*
+
 ### Проверка сессии (`GET`)
 Вызывается микросервисом для проверки валидности текущей сессии пользователя.
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/checkCookie
 ```
+
 ### Сохранение решения (`POST`)
 Принимает от микросервиса данные о решении кейса и обновляет суммарный рейтинг (score) игрока на основном сервере.
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
--d '{"caseId":"4","rating":"150","solutionText":"текст запроса","solutionResponse":"ответ ИИ"}' \
+-d '{"caseId": 4, "rating": 150, "solutionText": "текст запроса", "solutionResponse": "ответ ИИ"}' \
 http://localhost:8080/api/text/v1/addScore
 ```
+
 ### История диалога с ИИ (`GET`)
 Отдает микросервису историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса.
 ```bash
@@ -369,15 +407,17 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/getChatSe
 **Ответ (JSON):**
 ```json
 [
-{ "solutionText": "запрос1", "solutionResponse": "ответ1" },
-{ "solutionText": "запрос2", "solutionResponse": "ответ2" }
+  { "solutionText": "запрос1", "solutionResponse": "ответ1" },
+  { "solutionText": "запрос2", "solutionResponse": "ответ2" }
 ]
 ```
+
 ### Обработка нарушений (`POST`)
 Микросервис сообщает о токсичном поведении пользователя. Запрос увеличивает счетчик предупреждений; при достижении лимита удаляет аккаунт.
 ```bash
 curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processViolation
 ```
+
 ### Получение промпта (контекста) кейса (`GET`) *(Требует Cookie)*
 Возвращает ID, название и контекстный промпт (инструкции для ИИ) для указанного кейса. Используется микросервисом ИИ для инициализации диалога.
 ```bash
@@ -386,22 +426,24 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 **Ответ (JSON) при успехе:**
 ```json
 {
-"id": 1,
-"title": "Название кейса",
-"promptContextEn": "Ты опытный разработчик. Твоя задача..."
+  "id": 1,
+  "title": "Название кейса",
+  "promptContextEn": "Ты опытный разработчик. Твоя задача..."
 }
 ```
-*(При ошибке авторизации возвращается HTTP 401, при отсутствии или неактивности кейса — HTTP 404 с текстом ошибки в стандартном формате `RegisterResult`)*.
+
 ---
 ## Примеры ответов API и ошибок
 Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`. При ошибках валидации (`@Valid`) возвращается HTTP 400 с текстом ошибки в формате `"<поле>: <сообщение>"` (например, `"name: Tag name cannot be empty"`).
+
 **Базовый формат ответа:**
 ```json
 {
-"success": false,
-"errorText": "Текст ошибки"
+  "success": false,
+  "errorText": "Текст ошибки"
 }
 ```
+
 ### Сводная таблица всех ошибок
 | Категория | Текст ошибки (`errorText`) | Описание / Причина |
 | :--- | :--- | :--- |
@@ -412,7 +454,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Please login first` | Требуется предварительный вход в систему. |
 | &nbsp; | `You are already logged in` | Сессия уже активна для этого пользователя. |
 | &nbsp; | `Session expired` | Срок действия текущей сессии истек. |
-| &nbsp; | `Access denied: ADMIN role required` | У пользователя нет прав администратора. |
+| &nbsp; | `Access denied: ADMIN role required` | У пользователя нет прав администратора (HTTP 403). |
 | **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
@@ -422,7 +464,6 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `User no longer exists` | Аккаунт окончательно удален, так как количество банов достигло 3 и более. |
 | &nbsp; | `User is still banned` | Действие заблокировано, так как срок текущего бана еще не истек. |
 | &nbsp; | `Account is not verified` | Аккаунт не прошел верификацию. |
-| &nbsp; | `Invalid user status code` | Передан некорректный код статуса пользователя. |
 | **Валидация Username** | `Username cannot be empty` | Имя пользователя не может быть пустым. |
 | &nbsp; | `Username cannot contain spaces` | В имени пользователя запрещены пробелы. |
 | &nbsp; | `Username cannot be shorter than 3 characters` | Слишком короткое имя (минимум 3 символа). |
@@ -432,26 +473,31 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `This email address is invalid` | Некорректный формат email-адреса. |
 | &nbsp; | `This email address is already taken` | Данный email уже зарегистрирован. |
 | &nbsp; | `Invalid email format` | Некорректный формат email (при создании пользователя администратором). |
-| &nbsp; | `Email is already taken` | Email уже зарегистрирован (при создании пользователя администратором). |
+| &nbsp; | `Email is already taken` | Email уже зарегистрирован (при создании/обновлении пользователя). |
 | **Валидация Пароля** | `Password cannot be empty` | Пароль не может быть пустым. |
 | &nbsp; | `Password cannot be shorter than 8 characters` | Слишком короткий пароль (минимум 8 символов). |
 | &nbsp; | `Password cannot be longer than 30 characters` | Слишком длинный пароль (максимум 30 символов). |
 | &nbsp; | `Password must contain at least 1 digit` | Пароль должен содержать хотя бы одну цифру. |
 | &nbsp; | `Password must contain at least 1 special character` | Пароль должен содержать хотя бы один спецсимвол. |
-| **Загрузка файлов** | `File cannot be empty` | Отправлен пустой файл. |
+| **Загрузка файлов (S3)** | `File cannot be empty` | Отправлен пустой файл. |
 | &nbsp; | `Invalid file extension. Allowed Extensions: [.pdf, .jpg, .jpeg, .png, .webp]` | Загружен файл с недопустимым расширением. |
 | &nbsp; | `File size cannot exceed 5 MB` | Размер загружаемого файла превышает 5 МБ. |
-| &nbsp; | `Failed to process image file` | Ошибка на стороне сервера при обработке картинки. |
+| &nbsp; | `Invalid file content` | Файл поврежден или слишком мал для проверки заголовка. |
+| &nbsp; | `File content does not match allowed formats` | Магические байты файла не соответствуют разрешенным форматам. |
+| &nbsp; | `File extension does not match content` | Расширение файла не совпадает с его фактическим содержимым. |
+| &nbsp; | `PDF files are not allowed for this upload` | Попытка загрузить PDF в поле, предназначенное только для изображений. |
+| &nbsp; | `Could not upload file: ...` | Ошибка сети или S3 при загрузке. |
 | **Управление тегами** | `Tag name cannot be empty` | Имя тега не может быть пустым. |
 | &nbsp; | `Tag name must be between 1 and 100 characters` | Имя тега должно быть от 1 до 100 символов. |
 | &nbsp; | `Tag with this name already exists` | Тег с таким именем уже существует в системе. |
 | &nbsp; | `Tag not found` | Указанный ID тега не найден в базе данных. |
 | &nbsp; | `Tag is already attached to this case` | Этот тег уже привязан к данному кейсу. |
 | &nbsp; | `Tag is not attached to this case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
+| &nbsp; | `Request cannot be empty` | Тело запроса обновления тега пустое. |
+| &nbsp; | `No fields to update` | В запросе обновления тега не передано ни имени, ни статуса активности. |
 | **Управление кейсами** | `Case not found` | Указанный ID кейса не найден (общая ошибка). |
-| &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров. |
+| &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров *(в коде может отображаться как "ÐšÐµÐ¹Ñ Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½" из-за проблем с кодировкой)*. |
 | &nbsp; | `Case with ID: X is not found` | Указанный ID кейса не найден в базе данных (вместо X будет реальный ID). |
-| &nbsp; | `Case is inactive` | Попытка получить данные (или промпт) кейса, который был деактивирован (скрыт). |
 | &nbsp; | `Invalid slug format` | Slug содержит недопустимые символы (только строчные буквы, цифры и дефис). |
 | &nbsp; | `Slug too long (max 100)` | Slug превышает 100 символов. |
 | &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |
@@ -461,6 +507,8 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Solve time must be at least 1 min` | Время решения должно быть не менее 1 минуты. |
 | &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
+| **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |
+| &nbsp; | `Size must be between 1 and 100` | Размер страницы должен быть от 1 до 100 элементов. |
 | **Системные / Общие / Профиль** | `Invalid input data` | Переданы некорректные входные данные. |
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
@@ -469,4 +517,5 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `User not found` | Пользователь не найден в базе данных. |
 | &nbsp; | `User data not found` | Расширенные данные пользователя не найдены. |
 | &nbsp; | `Failed to update email` | Внутренняя ошибка сервера при обновлении email. |
+| &nbsp; | `Invalid validation method provided` | Передан некорректный метод верификации (ожидается EMAIL или TELEGRAM). |
 | &nbsp; | `Internal server error` | Внутренняя ошибка сервера (Crash / Unhandled exception). |

@@ -12,6 +12,12 @@ import java.time.LocalDateTime;
 
 
 @Entity
+@Table(
+        name = "user_setup",
+        indexes = {
+                @Index(name = "idx_user_setup_creation_date", columnList = "creation_date")
+        }
+)
 public class UserSetup {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
