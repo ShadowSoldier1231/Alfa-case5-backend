@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
         this.sessionService = sessionService;
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RegisterResult> handleJsonMappingException(HttpMessageNotReadableException ex) {
 
