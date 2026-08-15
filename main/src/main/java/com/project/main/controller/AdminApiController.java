@@ -1,11 +1,13 @@
 package com.project.main.controller;
 
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.*;
 import com.project.main.exception.ApiException;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.dto.CaseAdminDto;
+import com.project.main.model.Views;
 import com.project.main.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -41,6 +43,7 @@ public class AdminApiController {
         return ResponseEntity.ok(caseService.getAllAdminCases());
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PutMapping(value = "/cases/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> updateCase(
             @PathVariable Long id,
@@ -64,6 +67,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping(value = "/createCase", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> createCase(
             @RequestPart("case") @Valid CaseCreateRequest request,
@@ -95,6 +99,7 @@ public class AdminApiController {
         return ResponseEntity.ok(userService.getAdminUsers(page, size, search, sort));
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/users")
     public ResponseEntity<RegisterResult> createUser(
             @RequestBody @Valid AdminUserCreateRequest req,
@@ -138,6 +143,7 @@ public class AdminApiController {
         return ResponseEntity.ok(userService.getUserDetails(id));
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PatchMapping("/users/{id}")
     public ResponseEntity<RegisterResult> updateUser(
             @PathVariable Long id,
@@ -159,6 +165,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/tags")
     public ResponseEntity<RegisterResult> createTag(
             @RequestBody @Valid TagCreateRequest request,
@@ -179,6 +186,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PatchMapping("/tags/{id}/deactivate")
     public ResponseEntity<RegisterResult> deactivateTag(@PathVariable Long id) {
         try {
@@ -191,6 +199,8 @@ public class AdminApiController {
             throw new InternalServerErrorException("Internal server error");
         }
     }
+
+    @JsonView(Views.RegisterResultPartial.class)
     @PatchMapping("/tags/{id}/activate")
     public ResponseEntity<RegisterResult> activateTag(@PathVariable Long id) {
         try {
@@ -204,6 +214,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PatchMapping("/tags/{id}")
     public ResponseEntity<RegisterResult> updateTag(
             @PathVariable Long id,
@@ -225,6 +236,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/cases/{caseId}/tags/{tagId}")
     public ResponseEntity<RegisterResult> attachTagToCase(
             @PathVariable Long caseId,
@@ -240,6 +252,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @DeleteMapping("/cases/{caseId}/tags/{tagId}")
     public ResponseEntity<RegisterResult> detachTagFromCase(
             @PathVariable Long caseId,
@@ -255,6 +268,7 @@ public class AdminApiController {
         }
     }
 
+    @JsonView(Views.RegisterResultPartial.class)
     @DeleteMapping("/users/{id}")
     public ResponseEntity<RegisterResult> deleteUser(@PathVariable Long id) {
         try {
