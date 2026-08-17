@@ -3,10 +3,7 @@ package com.project.main.controller;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.LeaderboardInfo;
-import com.project.main.dto.LeaderboardTopUser;
-import com.project.main.dto.RegisterResult;
-import com.project.main.dto.UserProfile;
+import com.project.main.dto.*;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
 import com.project.main.exception.NotFoundException;
@@ -18,6 +15,8 @@ import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -47,13 +46,23 @@ public class WebApiController {
     }
 
     @GetMapping("/searchLocation/{cityName}")
-    public ResponseEntity<List<City>> getCityId(@PathVariable String cityName) {
-        return ResponseEntity.ok(cityRepository.findByCityNameContainingIgnoreCase(cityName));
+    public ResponseEntity<PageResponse<City>> getCityId(
+            @PathVariable String cityName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(defaultValue = "city_name,asc") String sort) {
+
+        return ResponseEntity.ok(fetchingService.searchCities(cityName, page, size, sort));
     }
 
     @GetMapping("/getAllCities")
-    public ResponseEntity<List<City>> getAllCities() {
-        return ResponseEntity.ok(cityRepository.findAll());
+    public ResponseEntity<PageResponse<City>> getAllCities(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "city_name,asc") String sort) {
+
+        return ResponseEntity.ok(fetchingService.getAllCities(page, size, search, sort));
     }
 
     @GetMapping("/leaderboard/case/{caseId}/top5")
@@ -119,6 +128,11 @@ public class WebApiController {
 
         return ResponseEntity.ok(top5);
     }
+
+
+
+
+
 }
 
 

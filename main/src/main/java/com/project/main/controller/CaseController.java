@@ -2,6 +2,7 @@ package com.project.main.controller;
 
 
 import com.project.main.dto.CasePublicDto;
+import com.project.main.dto.PageResponse;
 import com.project.main.service.CaseService;
 
 import org.springframework.http.ResponseEntity;
@@ -22,8 +23,13 @@ public class CaseController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<CasePublicDto>> getAllCases() {
-        return ResponseEntity.ok(caseService.getAllPublicCases());
+    public ResponseEntity<PageResponse<CasePublicDto>> getAllCases(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "created_at,desc") String sort) {
+
+        return ResponseEntity.ok(caseService.getPublicCases(page, size, search, sort));
     }
 
     @GetMapping("/{id}")
@@ -32,7 +38,12 @@ public class CaseController {
     }
 
     @GetMapping("/tags")
-    public ResponseEntity<List<Map<String, Object>>> getActiveTags() {
-        return ResponseEntity.ok(caseService.getActiveTagsWithCount());
+    public ResponseEntity<PageResponse<CasePublicDto.TagInfo>> getActiveTags(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "case_count,desc") String sort) {
+
+        return ResponseEntity.ok(caseService.getPublicTags(page, size, search, sort));
     }
 }

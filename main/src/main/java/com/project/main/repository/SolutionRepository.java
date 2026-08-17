@@ -2,6 +2,8 @@ package com.project.main.repository;
 
 
 import com.project.main.model.Solution;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +32,28 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
 
     @Query(value = "SELECT COALESCE(MAX(rating), 0) FROM solution WHERE case_id = :caseId AND user_id = :userId", nativeQuery = true)
     Long getMaxRatingByCaseIdAndUserId(@Param("caseId") Long caseId, @Param("userId") Long userId);
+
+
+    @Query(
+            value = """
+        SELECT *
+        FROM solution
+        WHERE case_id = :caseId
+          AND user_id = :userId
+        """,
+            countQuery = """
+        SELECT COUNT(solution_id)
+        FROM solution
+        WHERE case_id = :caseId
+          AND user_id = :userId
+        """,
+            nativeQuery = true
+    )
+    Page<Solution> findChatSequence(
+            @Param("caseId") Long caseId,
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
 
 }
 

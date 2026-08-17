@@ -39,8 +39,20 @@ public class AdminApiController {
     }
 
     @GetMapping("/cases")
-    public ResponseEntity<List<CaseAdminDto>> getAllCasesAdmin() {
-        return ResponseEntity.ok(caseService.getAllAdminCases());
+    public ResponseEntity<PageResponse<CaseAdminDto>> getAllCasesAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "created_at,desc") String sort) {
+
+        try {
+            return ResponseEntity.ok(caseService.getAdminCases(page, size, search, sort));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while getting admin cases", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
     }
 
     @JsonView(Views.RegisterResultPartial.class)

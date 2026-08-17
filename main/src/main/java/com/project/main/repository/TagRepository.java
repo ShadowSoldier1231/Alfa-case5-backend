@@ -77,4 +77,37 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             Pageable pageable
     );
 
+
+    @Query(
+            value = """
+        SELECT t.id,
+               t.name,
+               COUNT(ct.case_id) AS case_count
+        FROM tags t
+        LEFT JOIN case_tags ct ON t.id = ct.tag_id
+        WHERE t.is_active = true
+          AND (
+                CAST(:search AS text) IS NULL
+             OR CAST(:search AS text) = ''
+             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+          )
+        GROUP BY t.id, t.name
+        """,
+            countQuery = """
+        SELECT COUNT(t.id)
+        FROM tags t
+        WHERE t.is_active = true
+          AND (
+                CAST(:search AS text) IS NULL
+             OR CAST(:search AS text) = ''
+             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+          )
+        """,
+            nativeQuery = true
+    )
+    Page<Object[]> findPublicTagsWithCaseCount(
+            @Param("search") String search,
+            Pageable pageable
+    );
+
 }

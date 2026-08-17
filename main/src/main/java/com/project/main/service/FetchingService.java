@@ -3,11 +3,17 @@ package com.project.main.service;
 
 import com.project.main.dto.LeaderboardInfo;
 import com.project.main.dto.LeaderboardTopUser;
+import com.project.main.dto.PageResponse;
 import com.project.main.dto.UserProfile;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserStatus;
+import com.project.main.exception.BadRequestException;
 import com.project.main.model.*;
 import com.project.main.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -42,8 +48,54 @@ public class FetchingService {
     }
 
 
+    public PageResponse<City> searchCities(String cityName, int page, int size, String sort) {
+        validatePagination(page, size);
 
+        String searchTerm = cityName == null ? "" : cityName.trim();
 
+        if (searchTerm.isEmpty()) {
+            return new PageResponse<>(
+                    List.of(),
+                    page,
+                    size,
+                    0,
+                    0
+            );
+        }
+
+        Pageable pageable = PageRequest.of(page, size, buildCitySort(sort));
+
+        Page<City> cityPage = cityRepository.searchByCityName(searchTerm, pageable);
+
+        return new PageResponse<>(
+                cityPage.getContent(),
+                cityPage.getNumber(),
+                cityPage.getSize(),
+                cityPage.getTotalElements(),
+                cityPage.getTotalPages()
+        );
+    }
+
+    public PageResponse<City> getAllCities(int page, int size, String search, String sort) {
+        validatePagination(page, size);
+
+        String searchTerm = null;
+        if (search != null && !search.isBlank()) {
+            searchTerm = search.trim();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, buildCitySort(sort));
+
+        Page<City> cityPage = cityRepository.findAllCities(searchTerm, pageable);
+
+        return new PageResponse<>(
+                cityPage.getContent(),
+                cityPage.getNumber(),
+                cityPage.getSize(),
+                cityPage.getTotalElements(),
+                cityPage.getTotalPages()
+        );
+    }
 
     public LeaderboardInfo getGlobalPlacementInfo(Long userId) {
 
@@ -193,5 +245,38 @@ public class FetchingService {
         return obj != null ? obj.toString() : null;
     }
 
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+    }
+    private Sort buildCitySort(String sort) {
+        Sort sortBy = Sort.by(Sort.Direction.ASC, "city_name");
+
+        if (sort == null || sort.isBlank()) {
+            return sortBy;
+        }
+
+        String[] sortParts = sort.split(",");
+        String property = sortParts[0].trim();
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+            direction = Sort.Direction.DESC;
+        }
+
+        String sortColumn = switch (property.toLowerCase()) {
+            case "id" -> "id";
+            case "cityname", "city_name", "name", "city" -> "city_name";
+            case "regionname", "region_name", "region" -> "region_name";
+            default -> "city_name";
+        };
+
+        return Sort.by(direction, sortColumn);
+    }
 
 }

@@ -152,38 +152,45 @@ public class CaseService {
         );
     }
 
-    public List<Map<String, Object>> getActiveTagsWithCount() {
-        return caseRepository.getActiveTagsWithCaseCount().stream()
-                .map(row -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("id", ((Number) row[0]).longValue());
-                    m.put("name", row[1]);
-                    m.put("count", ((Number) row[2]).longValue());
-                    return m;
-                })
-                .toList();
-    }
+
+
+
 
     @Transactional(readOnly = true)
-    public List<CasePublicDto> getAllPublicCases() {
-        List<CaseEntity> cases = caseRepository.findAllActive();
-        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
-        return cases.stream()
-                .map(c -> CasePublicDto.from(c,
-                        tags.getOrDefault(c.getId(), List.of()))
-                )
-                .toList();
-    }
+    public PageResponse<CasePublicDto> getPublicCases(int page, int size, String search, String sort) {
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
 
-    @Transactional(readOnly = true)
-    public List<CaseAdminDto> getAllAdminCases() {
-        List<CaseEntity> cases = caseRepository.findAllForAdmin();
-        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
-        return cases.stream()
-                .map(c -> CaseAdminDto.from(c,
-                        tags.getOrDefault(c.getId(), List.of()))
-                )
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
+        String searchTerm = null;
+        if (search != null && !search.isBlank()) {
+            searchTerm = search.trim();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, buildPublicCaseSort(sort));
+
+        Page<CaseEntity> casePage = caseRepository.findPublicCases(searchTerm, pageable);
+
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(casePage.getContent());
+
+        List<CasePublicDto> items = casePage.getContent().stream()
+                .map(c -> CasePublicDto.from(
+                        c,
+                        tags.getOrDefault(c.getId(), List.of())
+                ))
                 .toList();
+
+        return new PageResponse<>(
+                items,
+                casePage.getNumber(),
+                casePage.getSize(),
+                casePage.getTotalElements(),
+                casePage.getTotalPages()
+        );
     }
 
     @Transactional
@@ -363,6 +370,182 @@ public class CaseService {
         tagRepository.save(tag);
     }
 
+
+    @Transactional(readOnly = true)
+    public PageResponse<CasePublicDto.TagInfo> getPublicTags(int page, int size, String search, String sort) {
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
+        String searchTerm = null;
+        if (search != null && !search.isBlank()) {
+            searchTerm = search.trim();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, buildPublicTagSort(sort));
+
+        Page<Object[]> tagPage = tagRepository.findPublicTagsWithCaseCount(searchTerm, pageable);
+
+        List<CasePublicDto.TagInfo> items = tagPage.getContent().stream()
+                .map(row -> new CasePublicDto.TagInfo(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
+
+        return new PageResponse<>(
+                items,
+                tagPage.getNumber(),
+                tagPage.getSize(),
+                tagPage.getTotalElements(),
+                tagPage.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CaseAdminDto> getAdminCases(int page, int size, String search, String sort) {
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
+        String searchTerm = null;
+        if (search != null && !search.isBlank()) {
+            searchTerm = search.trim();
+        }
+
+        Pageable pageable = PageRequest.of(page, size, buildCaseSort(sort));
+
+        Page<CaseEntity> casePage = caseRepository.findAdminCases(searchTerm, pageable);
+
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(casePage.getContent());
+
+        List<CaseAdminDto> items = casePage.getContent().stream()
+                .map(c -> CaseAdminDto.from(
+                        c,
+                        tags.getOrDefault(c.getId(), List.of())
+                ))
+                .toList();
+
+        return new PageResponse<>(
+                items,
+                casePage.getNumber(),
+                casePage.getSize(),
+                casePage.getTotalElements(),
+                casePage.getTotalPages()
+        );
+    }
+
+
+
+
+
+
+
+    private Sort buildPublicTagSort(String sort) {
+        Sort sortBy = Sort.by(
+                Sort.Order.desc("case_count"),
+                Sort.Order.asc("name")
+        );
+
+        if (sort == null || sort.isBlank()) {
+            return sortBy;
+        }
+
+        String[] sortParts = sort.split(",");
+        String property = sortParts[0].trim();
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+            direction = Sort.Direction.DESC;
+        }
+
+        String sortColumn = switch (property.toLowerCase()) {
+            case "id" -> "id";
+            case "name" -> "name";
+            case "count", "casecount", "case_count", "casescount", "cases_count" -> "case_count";
+            default -> "case_count";
+        };
+
+        Sort result = Sort.by(direction, sortColumn);
+
+        if (!sortColumn.equals("name")) {
+            result = result.and(Sort.by(Sort.Direction.ASC, "name"));
+        }
+
+        return result;
+    }
+
+    private Sort buildPublicCaseSort(String sort) {
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "created_at");
+
+        if (sort == null || sort.isBlank()) {
+            return sortBy;
+        }
+
+        String[] sortParts = sort.split(",");
+        String property = sortParts[0].trim();
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+            direction = Sort.Direction.DESC;
+        }
+
+        String sortColumn = switch (property.toLowerCase()) {
+            case "id" -> "id";
+            case "slug" -> "slug";
+            case "title" -> "title";
+            case "titleen", "title_en" -> "title_en";
+            case "difficulty" -> "difficulty";
+            case "averagesolvemin", "average_solve_min", "averagesolve", "average" -> "average_solve_min";
+            case "views", "viewscount", "views_count" -> "views_count";
+            case "createdat", "created_at" -> "created_at";
+            case "updatedat", "updated_at" -> "updated_at";
+            default -> "created_at";
+        };
+
+        return Sort.by(direction, sortColumn);
+    }
+
+    private Sort buildCaseSort(String sort) {
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "created_at");
+
+        if (sort == null || sort.isBlank()) {
+            return sortBy;
+        }
+
+        String[] sortParts = sort.split(",");
+        String property = sortParts[0].trim();
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+            direction = Sort.Direction.DESC;
+        }
+
+        String sortColumn = switch (property.toLowerCase()) {
+            case "id" -> "id";
+            case "slug" -> "slug";
+            case "title" -> "title";
+            case "titleen", "title_en" -> "title_en";
+            case "difficulty" -> "difficulty";
+            case "averagesolvemin", "average_solve_min", "averagesolve", "average" -> "average_solve_min";
+            case "views", "viewscount", "views_count" -> "views_count";
+            case "active", "isactive", "is_active" -> "is_active";
+            case "createdat", "created_at" -> "created_at";
+            case "updatedat", "updated_at" -> "updated_at";
+            default -> "created_at";
+        };
+
+        return Sort.by(direction, sortColumn);
+    }
 
     private Boolean toBoolean(Object value) {
         if (value == null) {

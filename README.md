@@ -162,9 +162,21 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/profile
 ```
 
 ### Поиск города по названию (`GET`)
-Используется для фильтрации списка городов при поиске. Возвращает массив совпадений или пустой список.
+Используется для фильтрации списка городов при поиске. Возвращает пагинированный массив совпадений.
 ```bash
-curl -X GET http://localhost:8080/api/v1/site/searchLocation/моск
+curl -X GET "http://localhost:8080/api/v1/site/searchLocation/моск?page=0&size=25&sort=city_name,asc"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {"id": 1, "cityName": "Москва", "regionName": "Московская область"}
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 1,
+  "totalPages": 1
+}
 ```
 
 ### Получить город пользователя (`GET`)
@@ -174,17 +186,57 @@ curl -X GET http://localhost:8080/api/v1/site/user/1/city
 ```
 
 ### Список всех городов (`GET`)
-Запрос полного списка городов для выпадающих списков или фильтров.
+Запрос пагинированного списка городов для выпадающих списков или фильтров с возможностью поиска.
 ```bash
-curl -X GET http://localhost:8080/api/v1/site/getAllCities
+curl -X GET "http://localhost:8080/api/v1/site/getAllCities?page=0&size=25&search=&sort=city_name,asc"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {"id": 1, "cityName": "Москва", "regionName": "Московская область"},
+    {"id": 2, "cityName": "Санкт-Петербург", "regionName": "Ленинградская область"}
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
 ```
 
 ---
 ## Кейсы и Материалы (`/api/v1/cases`)
 ### Список всех активных кейсов (`GET`)
-Возвращает список опубликованных кейсов, отсортированных по дате создания.
+Возвращает пагинированный список опубликованных кейсов с возможностью поиска и сортировки.
 ```bash
-curl -X GET http://localhost:8080/api/v1/cases/getAll
+curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25&search=&sort=created_at,desc"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "slug": "some-case",
+      "title": "Название",
+      "titleEn": "Title",
+      "description": "Описание",
+      "fullDescription": "Полное описание",
+      "difficulty": "EASY",
+      "averageSolveMin": 30,
+      "pdfUrl": "cases/pdfs/uuid.pdf",
+      "iconUrl": "cases/icons/uuid.jpg",
+      "viewsCount": 10,
+      "createdAt": "2026-06-25T12:00:00",
+      "updatedAt": "2026-06-25T12:00:00",
+      "tags": [{"id": 1, "name": "Java", "count": 15}]
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 1,
+  "totalPages": 1
+}
 ```
 
 ### Полная информация о кейсе (`GET`)
@@ -194,16 +246,22 @@ curl -X GET http://localhost:8080/api/v1/cases/1
 ```
 
 ### Список активных тегов (`GET`)
-Возвращает список разрешенных тегов, которые можно использовать для фильтрации.
+Возвращает пагинированный список разрешенных тегов, которые можно использовать для фильтрации, с количеством привязанных кейсов.
 ```bash
-curl -X GET http://localhost:8080/api/v1/cases/tags
+curl -X GET "http://localhost:8080/api/v1/cases/tags?page=0&size=25&search=&sort=case_count,desc"
 ```
 **Ответ (JSON):**
 ```json
-[
-  {"id": 1, "name": "Java", "count": 15},
-  {"id": 2, "name": "Spring", "count": 10}
-]
+{
+  "items": [
+    {"id": 1, "name": "Java", "count": 15},
+    {"id": 2, "name": "Spring", "count": 10}
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
 ```
 
 ---
@@ -275,9 +333,38 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 
 ### Управление кейсами
 #### Список всех кейсов (`GET`)
-Возвращает все кейсы, включая неактивные (скрытые).
+Возвращает пагинированный список всех кейсов, включая неактивные (скрытые), с возможностью поиска и сортировки.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/cases?page=0&size=25&search=&sort=created_at,desc"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "slug": "some-case",
+      "title": "Название",
+      "titleEn": "Title",
+      "description": "Описание",
+      "fullDescription": "Полное описание",
+      "difficulty": "EASY",
+      "averageSolveMin": 30,
+      "pdfUrl": "cases/pdfs/uuid.pdf",
+      "iconUrl": "cases/icons/uuid.jpg",
+      "promptContextEn": "Prompt...",
+      "viewsCount": 10,
+      "active": true,
+      "createdAt": "2026-06-25T12:00:00",
+      "updatedAt": "2026-06-25T12:00:00",
+      "tags": []
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 1,
+  "totalPages": 1
+}
 ```
 
 #### Создание нового кейса (`POST`)
@@ -400,16 +487,22 @@ http://localhost:8080/api/text/v1/addScore
 ```
 
 ### История диалога с ИИ (`GET`)
-Отдает микросервису историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса.
+Отдает микросервису пагинированную историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса. Первая страница содержит самые старые сообщения.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/getChatSequence/1
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/getChatSequence/1?page=0&size=25"
 ```
 **Ответ (JSON):**
 ```json
-[
-  { "solutionText": "запрос1", "solutionResponse": "ответ1" },
-  { "solutionText": "запрос2", "solutionResponse": "ответ2" }
-]
+{
+  "items": [
+    { "solutionId": 1, "rating": 8, "solutionText": "запрос1", "solutionResponse": "ответ1" },
+    { "solutionId": 2, "rating": 9, "solutionText": "запрос2", "solutionResponse": "ответ2" }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
 ```
 
 ### Обработка нарушений (`POST`)

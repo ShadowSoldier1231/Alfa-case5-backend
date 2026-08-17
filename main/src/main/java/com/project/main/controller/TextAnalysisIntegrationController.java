@@ -2,6 +2,8 @@ package com.project.main.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.project.main.dto.CasePromptResponse;
+import com.project.main.dto.ChatMessageDto;
+import com.project.main.dto.PageResponse;
 import com.project.main.dto.RegisterResult;
 
 
@@ -18,9 +20,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
-import java.util.List;
 
 
 
@@ -98,24 +97,33 @@ public class TextAnalysisIntegrationController {
         return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
     }
 
-    @JsonView(Views.ChatView.class)
     @GetMapping("/getChatSequence/{caseId}")
-    public ResponseEntity<List<Solution>> getChatSequence(@CookieValue(value = "token", required = false) String token,
-                                                          @PathVariable Long caseId) {
+    public ResponseEntity<PageResponse<ChatMessageDto>> getChatSequence(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
 
         if (token == null) {
             throw new InvalidSessionException("Please login first", token);
         }
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+
         if (!sessionPair.getLeft().getSuccess()) {
             throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();
-        List<Solution> chatSequence = solutionService.getChatSequence(caseId, session.getUserId());
 
-        return ResponseEntity.ok(chatSequence);
+        return ResponseEntity.ok(
+                solutionService.getChatSequence(
+                        caseId,
+                        session.getUserId(),
+                        page,
+                        size
+                )
+        );
     }
 
     @GetMapping("/cases/{id}/prompt")
