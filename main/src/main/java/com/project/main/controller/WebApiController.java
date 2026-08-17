@@ -15,8 +15,6 @@ import com.project.main.repository.CityRepository;
 import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

@@ -22,7 +22,6 @@ import org.springframework.http.MediaType;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
