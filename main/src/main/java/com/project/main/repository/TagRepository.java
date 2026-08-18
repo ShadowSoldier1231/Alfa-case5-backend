@@ -115,7 +115,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     SELECT t.id, t.name, t.is_active, COUNT(ct.case_id) AS case_count
     FROM tags t
     LEFT JOIN case_tags ct ON t.id = ct.tag_id
-    WHERE t.id IN (:ids)
+    WHERE t.id IN (:ids) AND t.is_active = true
     GROUP BY t.id, t.name, t.is_active
     """, nativeQuery = true)
     List<Object[]> findTagsWithCaseCountByIds(@Param("ids") List<Long> ids);

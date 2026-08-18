@@ -16,35 +16,37 @@ public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCa
 
     @Query(
             value = """
-        SELECT c.id, c.slug, c.title, c.title_en, c.description, c.full_description, 
-               c.difficulty, c.average_solve_min, c.pdf_url, c.icon_url, 
-               c.views_count, c.created_at, c.updated_at, ufc.added_at
-        FROM favourite_cases ufc
-        INNER JOIN cases c ON ufc.case_id = c.id
-        WHERE ufc.user_id = :userId
-          AND (
-                CAST(:search AS text) IS NULL
-             OR CAST(:search AS text) = ''
-             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-          )
-        """,
+    SELECT c.id, c.slug, c.title, c.title_en, c.description, c.full_description,
+           c.difficulty, c.average_solve_min, c.pdf_url, c.icon_url,
+           c.views_count, c.created_at, c.updated_at, ufc.added_at
+    FROM favourite_cases ufc
+    INNER JOIN cases c ON ufc.case_id = c.id
+    WHERE ufc.user_id = :userId
+      AND c.is_active = true
+      AND (
+            CAST(:search AS text) IS NULL
+         OR CAST(:search AS text) = ''
+         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+      )
+    """,
             countQuery = """
-        SELECT COUNT(ufc.id)
-        FROM favourite_cases ufc
-        INNER JOIN cases c ON ufc.case_id = c.id
-        WHERE ufc.user_id = :userId
-          AND (
-                CAST(:search AS text) IS NULL
-             OR CAST(:search AS text) = ''
-             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-          )
-        """,
+    SELECT COUNT(ufc.id)
+    FROM favourite_cases ufc
+    INNER JOIN cases c ON ufc.case_id = c.id
+    WHERE ufc.user_id = :userId
+      AND c.is_active = true
+      AND (
+            CAST(:search AS text) IS NULL
+         OR CAST(:search AS text) = ''
+         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+      )
+    """,
             nativeQuery = true
     )
     Page<Object[]> findFavoriteCases(

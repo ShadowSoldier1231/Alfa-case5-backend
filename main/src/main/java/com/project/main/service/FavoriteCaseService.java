@@ -10,6 +10,7 @@ import com.project.main.enums.Difficulty;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
+import com.project.main.model.CaseEntity;
 import com.project.main.model.UserFavoriteCase;
 import com.project.main.repository.CaseRepository;
 import com.project.main.repository.UserFavoriteCaseRepository;
@@ -43,9 +44,17 @@ public class FavoriteCaseService {
         if(favoriteCaseRepository.existsByUserIdAndCaseId(userId, caseId)){
             throw new ConflictException("this case is already in your favourites");
         }
-        caseRepository.findById(caseId).orElseThrow(() -> new NotFoundException("Case not found"));
+        CaseEntity caseEntity = caseRepository.findById(caseId)
+                .orElseThrow(() -> new NotFoundException("Case not found"));
+
+        if (!Boolean.TRUE.equals(caseEntity.getActive())) {
+            throw new BadRequestException("Case is not active");
+        }
+
         favoriteCaseRepository.save(new UserFavoriteCase(userId, caseId));
     }
+
+
     @Transactional
     public void removeFavorite(Long userId, Long caseId){
         if(!favoriteCaseRepository.existsByUserIdAndCaseId(userId, caseId)){
