@@ -7,7 +7,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.telegram.telegrambots.longpolling.starter.TelegramBotStarterConfiguration;
 
 
-@SpringBootApplication(exclude = {TelegramBotStarterConfiguration.class})
+
+
+@SpringBootApplication(exclude = {
+        TelegramBotStarterConfiguration.class,
+})
 @ComponentScan
 @EnableScheduling
 public class MainApplication {
