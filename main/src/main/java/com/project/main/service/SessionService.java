@@ -76,6 +76,16 @@ public class SessionService {
         }
     }
 
+    public Long getUserIdOrThrow(String token) {
+        if (token == null) throw new InvalidSessionException("Please login first", token);
+
+        UserSession session = sessionRepository.findByToken(token).orElse(null);
+        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidSessionException("Session expired", token);
+        }
+        return session.getUserId();
+    }
+
     public ResponseCookie createPreAuthSession(Long userId) {
         String token = JWT.create()
                 .withClaim("userId", userId)

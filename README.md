@@ -333,6 +333,81 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 ```
 
 ---
+
+## Избранное (`/api/v1/site/me/favorites`)
+*Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя.*
+
+### Список избранных кейсов (`GET`)
+Возвращает пагинированный список кейсов, добавленных текущим пользователем в избранное. Поддерживает текстовый поиск и сортировку.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/v1/site/me/favorites?page=0&size=25&search=&sort=added_at,desc"
+```
+> **Примечание:** Параметр `sort` по умолчанию равен `added_at,desc` (сначала самые недавно добавленные). Доступные поля для сортировки: `added_at`, `title`, `views_count`, `difficulty`, `created_at`.
+
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "id": 42,
+      "slug": "spring-security-case",
+      "title": "Настройка Spring Security",
+      "titleEn": "Spring Security Setup",
+      "description": "Краткое описание кейса",
+      "fullDescription": "Полное описание...",
+      "difficulty": "MEDIUM",
+      "averageSolveMin": 45,
+      "pdfUrl": "cases/pdfs/uuid.pdf",
+      "iconUrl": "cases/icons/uuid.jpg",
+      "viewsCount": 120,
+      "createdAt": "2026-06-25T12:00:00",
+      "updatedAt": "2026-06-25T12:00:00",
+      "addedAt": "2026-08-18T10:30:00",
+      "tags": [
+        {"id": 1, "name": "Java", "count": 15},
+        {"id": 2, "name": "Spring", "count": 10}
+      ]
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+### Добавление кейса в избранное (`POST`)
+Добавляет указанный кейс в список избранных текущего пользователя.
+```bash
+curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/favorites/42
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+
+### Удаление кейса из избранного (`DELETE`)
+Удаляет указанный кейс из списка избранных текущего пользователя.
+```bash
+curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/favorites/42
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+```
+
+
+
+---
 ## Администрирование (`/api/admin/v1`)
 *Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя с ролью `ADMIN`.*
 
@@ -622,3 +697,6 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Failed to update email` | Внутренняя ошибка сервера при обновлении email. |
 | &nbsp; | `Invalid validation method provided` | Передан некорректный метод верификации (ожидается EMAIL или TELEGRAM). |
 | &nbsp; | `Internal server error` | Внутренняя ошибка сервера (Crash / Unhandled exception). |
+| **Избранное (Favorites)** | `this case is already in your favourites` | Попытка добавить в избранное кейс, который там уже есть (HTTP 409 Conflict). |
+| &nbsp; | `this case is not in your favourites` | Попытка удалить из избранного кейс, которого там нет (HTTP 400 Bad Request). |
+| &nbsp; | `Case not found` | Указанный `caseId` не существует в системе (HTTP 404 Not Found). |

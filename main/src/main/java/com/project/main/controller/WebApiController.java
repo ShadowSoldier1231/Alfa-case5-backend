@@ -11,7 +11,8 @@ import com.project.main.model.City;
 
 import com.project.main.model.UserSession;
 import com.project.main.model.Views;
-import com.project.main.repository.CityRepository;
+
+import com.project.main.service.FavoriteCaseService;
 import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,14 +25,15 @@ import java.util.List;
 public class WebApiController {
 
     private final FetchingService fetchingService;
-    private final CityRepository cityRepository;
+    private final FavoriteCaseService favoriteCaseService;
     private final SessionService sessionService;
 
-    public WebApiController(CityRepository cityRepository, FetchingService fetchingService,
-                            SessionService sessionService) {
-        this.cityRepository = cityRepository;
+    public WebApiController(FetchingService fetchingService,
+                            SessionService sessionService,
+                            FavoriteCaseService favoriteCaseService) {
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
+        this.favoriteCaseService = favoriteCaseService;
     }
 
     @GetMapping("/user/{id}/city")
@@ -127,9 +129,38 @@ public class WebApiController {
         return ResponseEntity.ok(top5);
     }
 
+    @GetMapping("/me/favorites")
+    public ResponseEntity<PageResponse<FavoriteCaseDto>> getMyFavourites(
+            @CookieValue(value = "token", required = false) String token,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "added_at,desc") String sort
+    ){
+        Long userId = sessionService.getUserIdOrThrow(token);
+        return  ResponseEntity.ok(favoriteCaseService.getFavorites(userId, page, size, search, sort));
 
+    }
 
+    @PostMapping("/me/favorites/{caseId}")
+    @JsonView(Views.RegisterResultPartial.class)
+    public ResponseEntity<RegisterResult> addFavourite(@CookieValue(value = "token", required = false) String token,
+                                                       @PathVariable("caseId") Long caseId){
+        Long userId = sessionService.getUserIdOrThrow(token);
+        favoriteCaseService.addFavorite(userId, caseId);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
 
+    }
+
+    @DeleteMapping("/me/favorites/{caseId}")
+    @JsonView(Views.RegisterResultPartial.class)
+    public ResponseEntity<RegisterResult> removeFavourite(@CookieValue(value = "token", required = false) String token,
+                                                       @PathVariable("caseId") Long caseId){
+        Long userId = sessionService.getUserIdOrThrow(token);
+        favoriteCaseService.removeFavorite(userId, caseId);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
+
+    }
 }
 
 
