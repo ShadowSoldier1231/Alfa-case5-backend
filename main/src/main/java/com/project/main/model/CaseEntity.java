@@ -221,25 +221,5 @@ public class CaseEntity {
         this.difficulty = difficulty;
     }
 
-    public void addTag(Tag tag) {
-        CaseTag caseTag = new CaseTag();
-        caseTag.setCaseEntity(this);
-        caseTag.setTag(tag);
-        this.caseTags.add(caseTag);
-        tag.getCaseTags().add(caseTag);
-    }
 
-
-    public void removeTag(Tag tag) {
-        CaseTag toRemove = caseTags.stream()
-                .filter(ct -> ct.getTag().equals(tag))
-                .findFirst()
-                .orElse(null);
-        if (toRemove != null) {
-            this.caseTags.remove(toRemove);
-            tag.getCaseTags().remove(toRemove);
-            toRemove.setCaseEntity(null);
-            toRemove.setTag(null);
-        }
-    }
 }

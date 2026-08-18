@@ -295,25 +295,18 @@ public class UserService {
             throw new BadRequestException("Page cannot be negative");
         }
 
-        Sort sortBy = Sort.unsorted();
-        if (sort != null && !sort.isBlank()) {
-            String[] sortParts = sort.split(",");
-            String property = sortParts[0];
-            Sort.Direction direction = Sort.Direction.ASC;
-            if (sortParts.length > 1 && sortParts[1].equalsIgnoreCase("desc")) {
-                direction = Sort.Direction.DESC;
-            }
-
-            String sortProperty = property;
-            if ("createdAt".equalsIgnoreCase(property)) {
-                sortProperty = "creation_date";
-            }
-
-            sortBy = Sort.by(direction, sortProperty);
-        }
+        Sort sortBy = buildAdminUserSort(sort);
 
         Pageable pageable = PageRequest.of(page, size, sortBy);
-        String searchTerm = (search != null && !search.isBlank()) ? search.trim() : null;
+        String searchTerm = null;
+
+        if (search != null && !search.isBlank()) {
+            searchTerm = escapeLikeWildcards(search.trim());
+        }
+
+        if (searchTerm != null && searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
+        }
 
 
         Page<Object[]> userPage = userRepository.findUsersForAdmin(searchTerm, pageable);
@@ -396,5 +389,46 @@ public class UserService {
         );
     }
 
+
+    private Sort buildAdminUserSort(String sort) {
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "creation_date");
+
+        if (sort == null || sort.isBlank()) {
+            return sortBy;
+        }
+
+        String[] sortParts = sort.split(",");
+        String property = sortParts[0].trim();
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
+            direction = Sort.Direction.DESC;
+        }
+
+        String sortColumn = switch (property.toLowerCase()) {
+            case "id" -> "id";
+            case "username" -> "username";
+            case "email" -> "email";
+            case "nickname", "nick_name", "nick" -> "nick_name";
+            case "role" -> "role";
+            case "status" -> "status";
+            case "verified", "isverified", "is_verified" -> "is_verified";
+            case "banneduntil", "banned_until", "banned" -> "banned_until";
+            case "createdat", "created_at", "creationdate", "creation_date" -> "creation_date";
+            default -> "creation_date";
+        };
+
+        return Sort.by(direction, sortColumn);
+    }
+    private String escapeLikeWildcards(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+    }
 
 }

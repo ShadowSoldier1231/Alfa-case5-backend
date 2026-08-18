@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import java.util.LinkedHashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -167,8 +167,12 @@ public class CaseService {
         }
 
         String searchTerm = null;
+
         if (search != null && !search.isBlank()) {
-            searchTerm = search.trim();
+            searchTerm = escapeLikeWildcards(search.trim());
+        }
+        if (searchTerm != null && searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
         }
 
         Pageable pageable = PageRequest.of(page, size, buildPublicCaseSort(sort));
@@ -304,8 +308,12 @@ public class CaseService {
         Pageable pageable = PageRequest.of(page, size, sortBy);
 
         String searchTerm = null;
+
         if (search != null && !search.isBlank()) {
-            searchTerm = search.trim();
+            searchTerm = escapeLikeWildcards(search.trim());
+        }
+        if (searchTerm != null && searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
         }
 
         Page<Object[]> tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
@@ -382,8 +390,12 @@ public class CaseService {
         }
 
         String searchTerm = null;
+
         if (search != null && !search.isBlank()) {
-            searchTerm = search.trim();
+            searchTerm = escapeLikeWildcards(search.trim());
+        }
+        if (searchTerm != null && searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
         }
 
         Pageable pageable = PageRequest.of(page, size, buildPublicTagSort(sort));
@@ -418,8 +430,12 @@ public class CaseService {
         }
 
         String searchTerm = null;
+
         if (search != null && !search.isBlank()) {
-            searchTerm = search.trim();
+            searchTerm = escapeLikeWildcards(search.trim());
+        }
+        if (searchTerm != null && searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
         }
 
         Pageable pageable = PageRequest.of(page, size, buildCaseSort(sort));
@@ -559,5 +575,16 @@ public class CaseService {
         return "true".equalsIgnoreCase(value.toString());
     }
 
+
+    private String escapeLikeWildcards(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+    }
 
 }

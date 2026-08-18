@@ -601,6 +601,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
 | **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |
+| &nbsp; | `Search query is too long` | Поисковый запрос превышает максимально допустимую длину. |
 | &nbsp; | `Size must be between 1 and 100` | Размер страницы должен быть от 1 до 100 элементов. |
 | **Системные / Общие / Профиль** | `Invalid input data` | Переданы некорректные входные данные. |
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |

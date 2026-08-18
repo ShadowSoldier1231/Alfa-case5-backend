@@ -51,7 +51,11 @@ public class FetchingService {
     public PageResponse<City> searchCities(String cityName, int page, int size, String sort) {
         validatePagination(page, size);
 
-        String searchTerm = cityName == null ? "" : cityName.trim();
+        String searchTerm = cityName == null ? "" : escapeLikeWildcards(cityName.trim());
+
+        if (searchTerm.length() > 200) {
+            throw new BadRequestException("Search query is too long");
+        }
 
         if (searchTerm.isEmpty()) {
             return new PageResponse<>(
@@ -277,6 +281,17 @@ public class FetchingService {
         };
 
         return Sort.by(direction, sortColumn);
+    }
+
+    private String escapeLikeWildcards(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
     }
 
 }
