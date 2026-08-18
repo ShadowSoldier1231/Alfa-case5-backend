@@ -3,9 +3,7 @@ package com.project.main.service;
 
 import com.project.main.dto.UserDeletedEvent;
 import com.project.main.model.UserData;
-import com.project.main.repository.AchievementRepository;
-import com.project.main.repository.SolutionRepository;
-import com.project.main.repository.UserDataRepository;
+import com.project.main.repository.*;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,15 +17,27 @@ public class UserDataCleanupListener {
     private final  S3StorageService s3StorageService;
     private final SolutionRepository solutionRepository;
     private final AchievementRepository achievementRepository;
+    private final UserFavoriteCaseRepository favoriteCaseRepository;
+    private final UserPreferenceRepository preferenceRepository;
+    private final LeaderboardRepository leaderboardRepository;
+    private final UserVerificationRepository verificationRepository;
 
     public UserDataCleanupListener(UserDataRepository userDataRepository,
                                    S3StorageService s3StorageService,
                                    SolutionRepository solutionRepository,
-                                   AchievementRepository achievementRepository) {
+                                   AchievementRepository achievementRepository,
+                                   UserFavoriteCaseRepository favoriteCaseRepository,
+                                   UserPreferenceRepository preferenceRepository,
+                                   LeaderboardRepository leaderboardRepository,
+                                   UserVerificationRepository verificationRepository) {
         this.userDataRepository = userDataRepository;
         this.s3StorageService = s3StorageService;
         this.solutionRepository = solutionRepository;
         this.achievementRepository = achievementRepository;
+        this.favoriteCaseRepository =favoriteCaseRepository;
+        this.preferenceRepository = preferenceRepository;
+        this.leaderboardRepository = leaderboardRepository;
+        this.verificationRepository = verificationRepository;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -40,7 +50,10 @@ public class UserDataCleanupListener {
             s3StorageService.deleteFile(userData.getAvatarUrl());
         }
 
-
+        verificationRepository.deleteByUserId(userId);
+        leaderboardRepository.deleteById(userId);
+        preferenceRepository.deleteById(userId);
+        favoriteCaseRepository.deleteByUserId(userId);
         userDataRepository.deleteById(userId);
         solutionRepository.deleteAllByUserId(userId);
         achievementRepository.deleteAllByUserId(userId);

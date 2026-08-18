@@ -54,6 +54,7 @@ public class UserModerationService {
 
         if (leaderboardUser.getBanCount() >= 3) {
             eventPublisher.publishEvent(new UserDeletedEvent(leaderboardUser.getUserId()));
+            userRepository.deleteById(leaderboardUser.getUserId());
             return "User no longer exists";
         }
 

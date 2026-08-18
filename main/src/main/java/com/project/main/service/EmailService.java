@@ -1,6 +1,8 @@
 package com.project.main.service;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,6 +17,7 @@ public class EmailService {
 
     private final String senderEmail;
     private final JavaMailSender mailSender;
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     public EmailService(@Value("${spring.mail.username}") String senderEmail, JavaMailSender mailSender) {
         this.senderEmail = senderEmail;
@@ -55,7 +58,7 @@ public class EmailService {
     @Recover
     public void recoverFailedEmail(MailException e, String toEmail, long code) {
 
-        System.err.printf("Критическая ошибка: Не удалось отправить код %d на email %s после 3 попыток. Причина: %s%n",
+        logger.error("Критическая ошибка: Не удалось отправить код %d на email %s после 3 попыток. Причина: %s%n",
                 code, toEmail, e.getMessage());
 
     }

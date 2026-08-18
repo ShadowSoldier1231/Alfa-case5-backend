@@ -35,7 +35,7 @@ public class UserPreferenceService {
             return new UserPreferenceDto(null, Collections.emptyList(), userId);
         }
         UserPreferenceDto result = new UserPreferenceDto(preference.getPreferredDifficulty(), Collections.emptyList(), userId);
-        if(!preference.getPreferredTagIds().isEmpty()){
+        if(preference.getPreferredTagIds() != null && !preference.getPreferredTagIds().isEmpty()){
             List<TagListItem> tags = tagRepository.findTagsWithCaseCountByIds(preference.getPreferredTagIds()).stream().map(
                     row -> {
                         Long id = row[0] != null ? ((Number) row[0]).longValue() : null;

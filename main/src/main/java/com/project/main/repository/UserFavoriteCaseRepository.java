@@ -1,12 +1,13 @@
 package com.project.main.repository;
 
-import com.project.main.model.CaseEntity;
 import com.project.main.model.UserFavoriteCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCase, Long> {
 
@@ -51,5 +52,10 @@ public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCa
             @Param("userId") Long userId,
             Pageable pageable
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserFavoriteCase u WHERE u.userId = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 
 }
