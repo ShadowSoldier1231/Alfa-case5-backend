@@ -562,17 +562,6 @@ public class CaseService {
         return Sort.by(direction, sortColumn);
     }
 
-    private Boolean toBoolean(Object value) {
-        if (value == null) {
-            return false;
-        }
-
-        if (value instanceof Boolean b) {
-            return b;
-        }
-
-        return "true".equalsIgnoreCase(value.toString());
-    }
 
 
     private String escapeLikeWildcards(String value) {

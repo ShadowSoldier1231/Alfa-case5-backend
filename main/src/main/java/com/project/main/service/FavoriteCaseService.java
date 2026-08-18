@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,7 @@ public class FavoriteCaseService {
         this.caseRepository = caseRepository;
     }
 
+    @Transactional
     public void addFavorite(Long userId, Long caseId){
         if(favoriteCaseRepository.existsByUserIdAndCaseId(userId, caseId)){
             throw new ConflictException("this case is already in your favourites");
@@ -44,6 +46,7 @@ public class FavoriteCaseService {
         caseRepository.findById(caseId).orElseThrow(() -> new NotFoundException("Case not found"));
         favoriteCaseRepository.save(new UserFavoriteCase(userId, caseId));
     }
+    @Transactional
     public void removeFavorite(Long userId, Long caseId){
         if(!favoriteCaseRepository.existsByUserIdAndCaseId(userId, caseId)){
             throw new BadRequestException("this case is not in your favourites");

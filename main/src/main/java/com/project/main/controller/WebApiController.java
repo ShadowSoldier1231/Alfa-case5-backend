@@ -15,6 +15,7 @@ import com.project.main.model.Views;
 import com.project.main.service.FavoriteCaseService;
 import com.project.main.service.FetchingService;
 import com.project.main.service.SessionService;
+import com.project.main.service.UserPreferenceService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,13 +28,16 @@ public class WebApiController {
     private final FetchingService fetchingService;
     private final FavoriteCaseService favoriteCaseService;
     private final SessionService sessionService;
+    private final UserPreferenceService preferenceService;
 
     public WebApiController(FetchingService fetchingService,
                             SessionService sessionService,
-                            FavoriteCaseService favoriteCaseService) {
+                            FavoriteCaseService favoriteCaseService,
+                            UserPreferenceService preferenceService) {
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
         this.favoriteCaseService = favoriteCaseService;
+        this.preferenceService = preferenceService;
     }
 
     @GetMapping("/user/{id}/city")
@@ -160,6 +164,22 @@ public class WebApiController {
         favoriteCaseService.removeFavorite(userId, caseId);
         return ResponseEntity.ok(new RegisterResult(true, "", userId));
 
+    }
+    @GetMapping("/me/preferences")
+    public ResponseEntity<UserPreferenceDto> getPreferences(@CookieValue(value = "token", required = false) String token) {
+        
+        Long userId = sessionService.getUserIdOrThrow(token);
+        
+        return ResponseEntity.ok(preferenceService.getPreferences(userId));
+    }
+
+    @PatchMapping("/me/preferences")
+    public ResponseEntity<RegisterResult> updatePreferences(@CookieValue(value = "token", required = false) String token,
+                                                            @RequestBody UserPreferenceUpdateRequest request) {
+
+        Long userId = sessionService.getUserIdOrThrow(token);
+        preferenceService.updatePreferences(request, userId);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 }
 

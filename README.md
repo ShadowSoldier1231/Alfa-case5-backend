@@ -403,8 +403,56 @@ curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/fav
   "id": 8
 }
 ```
+
+
+---
+## Предпочтения пользователя (`/api/v1/site/me/preferences`)
+*Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя.*
+
+### Получение предпочтений (`GET`)
+Возвращает текущие настройки предпочтений пользователя (выбранная сложность и список любимых тегов с их статистикой). Если пользователь еще не настраивал предпочтения, вернется объект с `null` сложностью и пустым списком тегов.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:999/api/v1/site/me/preferences
+```
+**Ответ (JSON):**
+```json
+{
+  "userId": 8,
+  "preferredDifficulty": "MEDIUM",
+  "preferredTags": [
+    {
+      "id": 1,
+      "name": "Java",
+      "active": true,
+      "caseCount": 15
+    },
+    {
+      "id": 3,
+      "name": "Spring",
+      "active": true,
+      "caseCount": 8
+    }
+  ]
+}
 ```
 
+### Обновление предпочтений (`PATCH`)
+Позволяет изменить предпочитаемую сложность и список тегов. 
+* Если нужно просто обновить значения, передайте новые данные в полях `preferredDifficulty` и `preferredTags`.
+* Если нужно **сбросить** (удалить) сохраненную сложность или теги, используйте флаги `removeDifficulty: true` и `removeTags: true` соответственно.
+```bash
+curl -X PATCH -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
+-d '{"preferredDifficulty": "HARD", "preferredTags": [1, 3], "removeDifficulty": false, "removeTags": false}' \
+http://localhost:999/api/v1/site/me/preferences
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
 
 
 ---
@@ -700,3 +748,4 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | **Избранное (Favorites)** | `this case is already in your favourites` | Попытка добавить в избранное кейс, который там уже есть (HTTP 409 Conflict). |
 | &nbsp; | `this case is not in your favourites` | Попытка удалить из избранного кейс, которого там нет (HTTP 400 Bad Request). |
 | &nbsp; | `Case not found` | Указанный `caseId` не существует в системе (HTTP 404 Not Found). |
+| **Предпочтения (Preferences)** | `One or more tags are invalid or inactive` | В запросе обновления переданы ID несуществующих или деактивированных тегов (HTTP 400). |
