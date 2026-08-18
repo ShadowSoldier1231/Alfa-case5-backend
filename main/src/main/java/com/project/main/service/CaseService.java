@@ -145,8 +145,7 @@ public class CaseService {
     @Transactional
     public CasePublicDto getCaseByIdAndIncrementViews(Long id) {
         caseRepository.incrementViewsCount(id);
-        CaseEntity c = caseRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Кейс не найден"));
+        CaseEntity c = caseRepository.findById(id).orElseThrow(() -> new NotFoundException("Case not found"));
         return CasePublicDto.from(c,
                 loadTags(List.of(c)).getOrDefault(id, List.of())
         );

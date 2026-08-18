@@ -63,6 +63,32 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redisContainer
+    restart: unless-stopped
+    ports:
+       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - app-network
+
+
   app:
     build:
       context: .
@@ -74,6 +100,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      redis:
+          condition: service_healthy
     environment:
       PROXY_ENABLED: ${APP_PROXY_ENABLED}
       PROXY_HOST: ${APP_PROXY_HOST}
@@ -144,6 +172,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  redis_data:
 
 networks:
   app-network:

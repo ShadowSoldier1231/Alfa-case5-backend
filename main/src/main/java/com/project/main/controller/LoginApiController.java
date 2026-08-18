@@ -9,10 +9,8 @@ import com.project.main.dto.RegisterResult;
 
 import com.project.main.exception.*;
 import com.project.main.model.*;
-import com.project.main.service.FetchingService;
-import com.project.main.service.SessionService;
-import com.project.main.service.UserService;
-import com.project.main.service.UserValidationService;
+import com.project.main.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,15 +34,18 @@ public class LoginApiController {
     private final UserValidationService validationService;
     private final FetchingService fetchingService;
     private final SessionService sessionService;
+    private final VerificationRateLimitService rateLimitService;
 
     public LoginApiController(UserService userService,
                               UserValidationService validationService,
                               FetchingService fetchingService,
-                              SessionService sessionService) {
+                              SessionService sessionService,
+                              VerificationRateLimitService rateLimitService) {
         this.userService = userService;
         this.validationService = validationService;
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
+        this.rateLimitService = rateLimitService;
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -188,7 +189,8 @@ public class LoginApiController {
     @PostMapping("/register")
     public ResponseEntity<RegisterResult> registerUser(
             @Valid @RequestBody RegisterRequest registerRequest,
-            BindingResult bindingResult) {
+            BindingResult bindingResult,
+            HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
             String errorMsg = bindingResult.getFieldError("email") != null
@@ -196,6 +198,9 @@ public class LoginApiController {
                     : "Invalid input data";
             throw new BadRequestException(errorMsg);
         }
+
+        String clientIp = request.getRemoteAddr();
+        rateLimitService.checkCanSendEmail(clientIp);
 
         switch (validationService.checkPassword(registerRequest.getPassword())) {
             case EMPTY:
@@ -244,6 +249,9 @@ public class LoginApiController {
         Pair<String, Long> authResult = userService.registerNewUser(registerRequest, hashedPassword);
 
         Long userId = authResult.getRight();
+
+        rateLimitService.recordEmailSent(clientIp, userId);
+
         ResponseCookie preAuthCookie = sessionService.createPreAuthSession(userId);
 
         return ResponseEntity.ok()
@@ -336,6 +344,7 @@ public class LoginApiController {
     public ResponseEntity<RegisterResult> verifyUser(
             @PathVariable("code") Long verificationCode,
             @CookieValue(value = "token", required = false) String token,
+            HttpServletRequest request,
             HttpServletResponse response) {
 
         if (token == null) {
@@ -347,12 +356,21 @@ public class LoginApiController {
             throw new InvalidSessionException("Invalid or expired verification session.", token);
         }
 
-        userService.verifyUser(tokenUserId, verificationCode);
+        String clientIp = request.getRemoteAddr();
+        rateLimitService.checkCanVerifyCode(clientIp, tokenUserId);
 
-        ResponseCookie clearCookie = sessionService.deleteCookie(token, false);
-        response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
+        try {
+            userService.verifyUser(tokenUserId, verificationCode);
 
-        return ResponseEntity.ok(new RegisterResult(true, "", null, tokenUserId));
+            rateLimitService.clearVerifyAttemptsOnSuccess(tokenUserId);
+
+            ResponseCookie clearCookie = sessionService.deleteCookie(token, false);
+            response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
+            return ResponseEntity.ok(new RegisterResult(true, "", null, tokenUserId));
+        } catch (BadRequestException e) {
+            rateLimitService.recordFailedVerifyAttempt(clientIp, tokenUserId);
+            throw e;
+        }
     }
 }
 

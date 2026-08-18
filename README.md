@@ -39,12 +39,17 @@ curl -X POST -H "Content-Type: application/json" \
 http://localhost:8080/api/v1/auth/register
 ```
 > **Примечание:** Поле `validationMethod` обязательно и принимает значения `EMAIL` или `TELEGRAM`.
+> **Защита от спама:** Действует ограничение на отправку писем — не более 3 запросов в час с одного IP-адреса.
 
 ### Верификация аккаунта (`POST`)
 Подтверждение регистрации через код, отправленный на Email. Код передается в URL (path variable).
 ```bash
 curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/verify/818018
 ```
+> **Защита от перебора:** 
+> - Не более 5 неверных попыток ввода кода для одного аккаунта (после этого аккаунт блокируется на 15 минут).
+> - Не более 20 попыток верификации с одного IP-адреса в час.
+
 **Ответ (JSON):**
 ```json
 {
@@ -538,6 +543,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 ```
 
 ### Сводная таблица всех ошибок
+
 | Категория | Текст ошибки (`errorText`) | Описание / Причина |
 | :--- | :--- | :--- |
 | **Успешно** | *(пустая строка)* | Запрос выполнен успешно (`"success": true`). |
@@ -552,6 +558,9 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
 | &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек. |
+| **Лимиты и защита от перебора** | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку email (макс. 3 в час с одного IP). |
+| &nbsp; | `Too many failed attempts. Try again later.` | Превышено количество неверных попыток ввода кода. Аккаунт временно заблокирован (на 15 минут). |
+| &nbsp; | `Too many verification attempts from your IP. Try again later.` | Превышен лимит попыток верификации с текущего IP-адреса (макс. 20 в час). |
 | **Статус, Модерация и Баны** | `User does not exist` | Пользователь не найден в системе (или в таблице лидеров). |
 | &nbsp; | `User is now banned` | Пользователь получил бан (на 2 месяца) после накопления >2 предупреждений. |
 | &nbsp; | `User no longer exists` | Аккаунт окончательно удален, так как количество банов достигло 3 и более. |
