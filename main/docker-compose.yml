@@ -4,11 +4,13 @@ services:
     image: postgres:16-alpine
     container_name: MainContainer
     restart: unless-stopped
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=32MB
     environment:
-      POSTGRES_SHARED_BUFFERS: 128MB
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 256MB
-      POSTGRES_WORK_MEM: 16MB
-      POSTGRES_MAINTENANCE_WORK_MEM: 32MB
       POSTGRES_DB: ${POSTGRES_DB:-main}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-user1}

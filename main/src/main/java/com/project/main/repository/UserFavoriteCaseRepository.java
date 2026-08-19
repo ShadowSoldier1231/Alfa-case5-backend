@@ -26,10 +26,10 @@ public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCa
       AND (
             CAST(:search AS text) IS NULL
          OR CAST(:search AS text) = ''
-         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
       )
     """,
             countQuery = """
@@ -41,10 +41,10 @@ public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCa
       AND (
             CAST(:search AS text) IS NULL
          OR CAST(:search AS text) = ''
-         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+         OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+         OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
       )
     """,
             nativeQuery = true

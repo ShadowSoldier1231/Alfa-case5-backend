@@ -1,29 +1,30 @@
 package com.project.main.dto;
 
 import com.project.main.enums.Difficulty;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public class CaseCreateRequest {
 
+    @NotBlank(message = "Slug cannot be empty")
     @Pattern(regexp = "^[a-z0-9-]+$", message = "Invalid slug format")
     @Size(max = 100, message = "Slug too long (max 100)")
     private String slug;
 
+    @NotBlank(message = "Title cannot be empty")
     @Size(max = 255, message = "Title too long (max 255)")
     private String title;
 
     @Size(max = 255, message = "TitleEn too long (max 255)")
     private String titleEn;
 
+    @NotBlank(message = "Description cannot be empty")
     @Size(max = 1000, message = "Description too long (max 1000)")
     private String description;
 
     @Size(max = 5000, message = "Full description too long (max 5000)")
     private String fullDescription;
 
+    @NotNull(message = "Difficulty is required")
     private Difficulty difficulty;
 
     @Min(value = 1, message = "Solve time must be at least 1 min")
@@ -32,6 +33,7 @@ public class CaseCreateRequest {
 
     @Size(max = 2000, message = "Prompt context too long (max 2000)")
     private String promptContextEn;
+
     private Boolean isActive;
 
 

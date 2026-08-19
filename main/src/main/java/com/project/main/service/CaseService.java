@@ -113,6 +113,10 @@ public class CaseService {
                            MultipartFile pdfFile,
                            MultipartFile iconFile) {
 
+        if (caseRepository.existsBySlug(request.getSlug())) {
+            throw new ConflictException("Case with this slug already exists");
+        }
+
         String pdfKey = null;
         if (pdfFile != null && !pdfFile.isEmpty()) {
             pdfKey = s3StorageService.uploadFile(pdfFile, "cases/pdfs");
@@ -203,12 +207,11 @@ public class CaseService {
 
 
         if (pdfFile != null && !pdfFile.isEmpty()) {
-
+            String newPdfKey = s3StorageService.uploadFile(pdfFile, "cases/pdfs");
             if (existingCase.getPdfUrl() != null) {
                 s3StorageService.deleteFile(existingCase.getPdfUrl());
             }
-            existingCase.setPdfUrl(s3StorageService.uploadFile(pdfFile, "cases/pdfs"));
-
+            existingCase.setPdfUrl(newPdfKey);
         } else if (Boolean.TRUE.equals(req.getRemovePdf())) {
 
             if (existingCase.getPdfUrl() != null) {
@@ -219,10 +222,11 @@ public class CaseService {
 
 
         if (iconFile != null && !iconFile.isEmpty()) {
+            String newIconKey = s3StorageService.uploadFile(iconFile, "cases/icons");
             if (existingCase.getIconUrl() != null) {
                 s3StorageService.deleteFile(existingCase.getIconUrl());
             }
-            existingCase.setIconUrl(s3StorageService.uploadFile(iconFile, "cases/icons"));
+            existingCase.setIconUrl(newIconKey);
 
         } else if (Boolean.TRUE.equals(req.getRemoveIcon())) {
             if (existingCase.getIconUrl() != null) {

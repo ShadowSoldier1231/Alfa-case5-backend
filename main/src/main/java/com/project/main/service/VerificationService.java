@@ -8,6 +8,7 @@ import com.project.main.model.UserSetup;
 import com.project.main.model.UserVerification;
 import com.project.main.repository.UserRepository;
 import com.project.main.repository.UserVerificationRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,16 +20,19 @@ import java.util.concurrent.ThreadLocalRandom;
 public class VerificationService {
 
 
+    private final String botName;
     private final ApplicationEventPublisher eventPublisher;
     private final UserVerificationRepository verificationRepository;
     private final UserRepository userRepository;
 
 
     VerificationService(UserVerificationRepository verificationRepository, UserRepository userRepository,
-                        ApplicationEventPublisher eventPublisher){
+                        ApplicationEventPublisher eventPublisher,
+                        @Value("${telegram.bot.username}") String botName){
         this.verificationRepository = verificationRepository;
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
+        this.botName = botName;
     }
 
     @Transactional
@@ -43,7 +47,7 @@ public class VerificationService {
                 verification.setTelegramVerificationToken(token);
 
 
-                yield "https://t.me/alfa_auth_verification_bot?start=" + token;
+                yield "https://t.me/" + botName + "?start=" + token;
             }
             case EMAIL -> {
                 long code = ThreadLocalRandom.current().nextLong(100_000, 1_000_000);

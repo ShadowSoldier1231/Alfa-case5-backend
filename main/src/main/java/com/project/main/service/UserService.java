@@ -76,12 +76,12 @@ public class UserService {
         UserData userData = userDataRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (userData.getAvatarUrl() != null && !userData.getAvatarUrl().isBlank()) {
-            s3StorageService.deleteFile(userData.getAvatarUrl());
-        }
 
         String avatarKey = s3StorageService.uploadFile(file, "avatars");
 
+        if (userData.getAvatarUrl() != null && !userData.getAvatarUrl().isBlank()) {
+            s3StorageService.deleteFile(userData.getAvatarUrl());
+        }
         userData.setAvatarUrl(avatarKey);
         userDataRepository.save(userData);
     }

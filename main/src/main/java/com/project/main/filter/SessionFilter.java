@@ -1,5 +1,6 @@
 package com.project.main.filter;
 
+import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.UserSession;
 import com.project.main.model.UserSetup;
 import com.project.main.repository.UserRepository;
@@ -61,7 +62,7 @@ public class SessionFilter extends OncePerRequestFilter {
 
                 if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(LocalDateTime.now())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    return;
+                    throw new InvalidSessionException("User is still banned", token);
                 }
 
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

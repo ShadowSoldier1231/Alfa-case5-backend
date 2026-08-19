@@ -115,7 +115,7 @@ public class FetchingService {
         Long placement = leaderboardRepository.getGlobalUserPlacement(userId);
         Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
 
-        return new LeaderboardInfo(placement,  total);
+        return new LeaderboardInfo(placement != null ? placement : 0L, total);
     }
 
     public LeaderboardInfo getLocalPlacementInfo(Long userId, Long caseId) {
@@ -132,7 +132,7 @@ public class FetchingService {
         Long placement = leaderboardRepository.getUserPlacementInCase(caseId, userId);
         Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
 
-        return new LeaderboardInfo(placement,  total);
+        return new LeaderboardInfo(placement != null ? placement : 0L, total);
     }
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {

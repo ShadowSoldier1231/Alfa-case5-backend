@@ -29,6 +29,10 @@ public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Lo
     List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
 
 
+    @Modifying
+    @Query(value = "UPDATE leaderboard_user SET score = (SELECT COALESCE(SUM(max_rating), 0) FROM (SELECT MAX(rating) as max_rating FROM solution WHERE user_id = :userId GROUP BY case_id) as sub) WHERE user_id = :userId", nativeQuery = true)
+    void recalculateAndSetScore(@Param("userId") Long userId);
+
     @Query(value = "SELECT l.user_id, MAX(s.rating) as case_score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
             "FROM leaderboard_user l " +
             "JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId " +

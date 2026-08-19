@@ -36,7 +36,8 @@ public class UserModerationService {
         LeaderboardUser user = leaderboardRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User does not exist"));
 
-        user.setWarningsCount(user.getWarningsCount() + 1);
+        user.setWarningsCount( (user.getWarningsCount() != null ? user.getWarningsCount() : 0L)
+                + 1);
 
         if (user.getWarningsCount() > 2) {
             return this.banUser(user);

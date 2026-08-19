@@ -45,9 +45,10 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
 
     @Query(value = "SELECT * FROM tags t " +
-            "WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+            "WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '!' " +
             "AND t.is_active = true", nativeQuery = true)
     List<Tag> searchByName(@Param("query") String query);
+
 
     @Query(
             value = """
@@ -60,7 +61,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
                 LEFT JOIN case_tags ct ON t.id = ct.tag_id
                 WHERE CAST(:search AS text) IS NULL
                    OR CAST(:search AS text) = ''
-                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
                 GROUP BY t.id, t.name, t.is_active, t.created_at
                 """,
             countQuery = """
@@ -68,7 +69,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
                 FROM tags t
                 WHERE CAST(:search AS text) IS NULL
                    OR CAST(:search AS text) = ''
-                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
                 """,
             nativeQuery = true
     )
@@ -76,6 +77,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             @Param("search") String search,
             Pageable pageable
     );
+
 
 
     @Query(
@@ -89,7 +91,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
           AND (
                 CAST(:search AS text) IS NULL
              OR CAST(:search AS text) = ''
-             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
           )
         GROUP BY t.id, t.name
         """,
@@ -100,7 +102,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
           AND (
                 CAST(:search AS text) IS NULL
              OR CAST(:search AS text) = ''
-             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+             OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
           )
         """,
             nativeQuery = true

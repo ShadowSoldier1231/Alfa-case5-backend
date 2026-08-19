@@ -52,20 +52,20 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
         FROM cases c
         WHERE CAST(:search AS text) IS NULL
            OR CAST(:search AS text) = ''
-           OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+           OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
         """,
             countQuery = """
         SELECT COUNT(c.id)
         FROM cases c
         WHERE CAST(:search AS text) IS NULL
            OR CAST(:search AS text) = ''
-           OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-           OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+           OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+           OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
         """,
             nativeQuery = true
     )
@@ -73,6 +73,8 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
             @Param("search") String search,
             Pageable pageable
     );
+
+    boolean existsBySlug(String slug);
 
     @Query(
             value = """
@@ -82,10 +84,10 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
           AND (
                 CAST(:search AS text) IS NULL
              OR CAST(:search AS text) = ''
-             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
           )
         """,
             countQuery = """
@@ -95,10 +97,10 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
           AND (
                 CAST(:search AS text) IS NULL
              OR CAST(:search AS text) = ''
-             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
-             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+             OR LOWER(c.slug) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.title_en) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+             OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
           )
         """,
             nativeQuery = true

@@ -35,6 +35,7 @@ public class VerificationRateLimitService {
         incrementWithTtl("rate:email:user:" + userId, EMAIL_TTL);
     }
 
+
     public void checkCanVerifyCode(String ip, Long userId) {
         String userLockKey = "lock:verify:user:" + userId;
         String userKey = "rate:verify:user:" + userId;
@@ -46,7 +47,7 @@ public class VerificationRateLimitService {
 
         Long userCount = getCount(userKey);
         if (userCount != null && userCount >= MAX_VERIFY_WRONG_ATTEMPTS) {
-            redisTemplate.opsForValue().set(userLockKey, "locked", USER_LOCK_TTL);
+            redisTemplate.opsForValue().setIfAbsent(userLockKey, "locked", USER_LOCK_TTL);
             throw new TooManyRequestsException("Too many failed attempts. Try again later.");
         }
 

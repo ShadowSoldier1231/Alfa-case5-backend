@@ -70,8 +70,8 @@ public class S3StorageService {
 
     private void validateFileContent(MultipartFile file, String extension, boolean allowPdf) {
         try (InputStream is = file.getInputStream()) {
-            byte[] header = new byte[12];
-            int read = is.read(header);
+            byte[] header = is.readNBytes(12);
+            int read = header.length;
             if (read < 4) {
                 throw new BadRequestException("Invalid file content");
             }

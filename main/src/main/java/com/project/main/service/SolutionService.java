@@ -42,9 +42,7 @@ public class SolutionService {
         solution.setUserId(userId);
         solutionRepository.save(solution);
 
-        Long score = solutionRepository.getSumOfMaxRatingsByUserId(userId);
-
-        leaderboardRepository.updateScore(userId, score != null ? score : 0L);
+        leaderboardRepository.recalculateAndSetScore(userId);
     }
 
 

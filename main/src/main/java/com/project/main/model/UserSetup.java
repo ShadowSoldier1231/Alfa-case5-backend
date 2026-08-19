@@ -35,6 +35,7 @@ public class UserSetup {
     private LocalDateTime bannedUntil;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private UserRole role;
 
 
@@ -125,10 +126,11 @@ public class UserSetup {
     }
 
 
-    public void setEmail(String  email) {
-        if(EmailValidator.getInstance(true).isValid(email)) {
-            this.email = email;
+    public void setEmail(String email) {
+        if(email != null && !EmailValidator.getInstance(true).isValid(email)) {
+            throw new IllegalArgumentException("This email address is invalid");
         }
+        this.email = email;
     }
 
 

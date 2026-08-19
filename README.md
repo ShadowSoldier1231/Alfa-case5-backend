@@ -679,6 +679,8 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `You are already logged in` | Сессия уже активна для этого пользователя. |
 | &nbsp; | `Session expired` | Срок действия текущей сессии истек. |
 | &nbsp; | `Access denied: ADMIN role required` | У пользователя нет прав администратора (HTTP 403). |
+| &nbsp; | `Unauthorized: <message>` | **HTTP 401.** Ответ при обращении к защищённому ресурсу без валидной сессии (вместо `<message>` — текст исключения). |
+| &nbsp; | `Access Denied: <message>` | **HTTP 403.** Ответ при нехватке прав доступа (вместо `<message>` — текст исключения). |
 | **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
@@ -738,6 +740,10 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Solve time must be at least 1 min` | Время решения должно быть не менее 1 минуты. |
 | &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
+| &nbsp; | `Slug cannot be empty` | Slug не может быть пустым. |
+| &nbsp; | `Title cannot be empty` | Название кейса не может быть пустым. |
+| &nbsp; | `Difficulty is required` | Сложность кейса обязательна для заполнения. |
+| &nbsp; | `Description cannot be empty` | Описание обязательно для заполнения. |
 | **Системные / Маршрутизация (Новое)** | `Resource not found` | **HTTP 404.** Запрос к несуществующему URL-адресу (эндпоинту). |
 | &nbsp; | `Method not allowed` | **HTTP 405.** Использован неверный HTTP-метод (например, POST вместо GET) для существующего URL. |
 | **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |

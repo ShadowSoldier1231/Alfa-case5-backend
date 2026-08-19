@@ -13,7 +13,8 @@ public class UserData {
     @Id
     private Long id;
     private Long cityId;
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private UserStatus status;
     @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
@@ -21,7 +22,8 @@ public class UserData {
     private String middleName;
     private String lastName;
     private String nickName;
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private GenderCode gender;
     private String avatarUrl;
 

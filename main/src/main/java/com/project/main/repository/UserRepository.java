@@ -26,15 +26,15 @@ public interface UserRepository extends JpaRepository<UserSetup, Long> {
             "FROM user_setup u " +
             "LEFT JOIN user_data d ON u.id = d.id " +
             "WHERE (:search IS NULL OR :search = '' OR " +
-            "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')))",
+            "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
+            "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!')",
             countQuery = "SELECT COUNT(u.id) FROM user_setup u " +
                     "LEFT JOIN user_data d ON u.id = d.id " +
                     "WHERE (:search IS NULL OR :search = '' OR " +
-                    "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-                    "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-                    "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')))",
+                    "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
+                    "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
+                    "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!')",
             nativeQuery = true)
     Page<Object[]> findUsersForAdmin(@Param("search") String search, Pageable pageable);
 

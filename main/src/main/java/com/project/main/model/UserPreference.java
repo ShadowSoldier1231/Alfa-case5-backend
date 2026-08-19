@@ -14,7 +14,7 @@ public class UserPreference {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true, length = 10)
+    @Column(length = 10)
     private Difficulty preferredDifficulty;
 
     @ElementCollection
