@@ -2,6 +2,7 @@ package com.project.main.service;
 
 import com.project.main.dto.ChatMessageDto;
 import com.project.main.dto.PageResponse;
+import com.project.main.dto.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.model.Solution;
 import com.project.main.repository.LeaderboardRepository;
@@ -29,7 +30,15 @@ public class SolutionService {
     }
 
     @Transactional
-    public void submitSolution(Long userId, Solution solution) {
+    public void submitSolution(Long userId, SubmitSolutionRequest request) {
+        Solution solution = new Solution();
+
+        solution.setSolutionText(request.getSolutionText());
+        solution.setSolutionResponse(request.getSolutionResponse());
+
+        solution.setRating(request.getRating());
+
+        solution.setCaseId(request.getCaseId());
         solution.setUserId(userId);
         solutionRepository.save(solution);
 

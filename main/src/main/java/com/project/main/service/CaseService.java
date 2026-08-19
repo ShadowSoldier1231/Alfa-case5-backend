@@ -134,7 +134,7 @@ public class CaseService {
                 pdfKey,
                 iconKey,
                 request.getPromptContextEn(),
-                true,
+                request.getActive() != null ? request.getActive() : true,
                 0
         );
 

@@ -57,7 +57,7 @@ public interface UserFavoriteCaseRepository extends JpaRepository<UserFavoriteCa
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UserFavoriteCase u WHERE u.userId = :userId")
+    @Query(value = "DELETE FROM favourite_cases WHERE user_id = :userId", nativeQuery = true)
     void deleteByUserId(@Param("userId") Long userId);
 
 }

@@ -1,10 +1,7 @@
 package com.project.main.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.CasePromptResponse;
-import com.project.main.dto.ChatMessageDto;
-import com.project.main.dto.PageResponse;
-import com.project.main.dto.RegisterResult;
+import com.project.main.dto.*;
 
 
 import com.project.main.exception.BadRequestException;
@@ -78,22 +75,22 @@ public class TextAnalysisIntegrationController {
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
     public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token,
-                                                   @RequestBody Solution solution) {
+                                                   @RequestBody SubmitSolutionRequest request) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
             throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
 
-        if (solution.getCaseId() == null || solution.getSolutionText() == null ||
-                solution.getSolutionResponse() == null || solution.getRating() == null) {
+        if (request.getCaseId() == null || request.getSolutionText() == null ||
+                request.getSolutionResponse() == null || request.getRating() == null) {
             throw new BadRequestException("Invalid request");
         }
-        if (solution.getSolutionText().isBlank() || solution.getSolutionResponse().isBlank()) {
+        if (request.getSolutionText().isBlank() || request.getSolutionResponse().isBlank()) {
             throw new BadRequestException("Invalid request");
         }
 
-        solutionService.submitSolution(session.getUserId(), solution);
+        solutionService.submitSolution(session.getUserId(), request);
         return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
     }
 

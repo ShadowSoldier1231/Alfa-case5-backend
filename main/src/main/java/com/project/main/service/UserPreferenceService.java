@@ -81,6 +81,9 @@ public class UserPreferenceService {
         }
 
         if (Boolean.TRUE.equals(request.getRemoveTags()) || request.getPreferredTags() != null) {
+            if (preference.getPreferredTagIds() == null) {
+                preference.setPreferredTagIds(new ArrayList<>());
+            }
             preference.getPreferredTagIds().clear();
             if (request.getPreferredTags() != null && !request.getPreferredTags().isEmpty()) {
                 preference.getPreferredTagIds().addAll(request.getPreferredTags());

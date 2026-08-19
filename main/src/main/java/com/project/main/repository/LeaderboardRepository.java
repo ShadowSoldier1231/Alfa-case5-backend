@@ -13,7 +13,7 @@ import java.util.List;
 public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Long> {
 
     @Modifying
-    @Query("UPDATE LeaderboardUser l SET l.score = :score WHERE l.userId = :userId")
+    @Query(value = "UPDATE leaderboard_user SET score = :score WHERE user_id = :userId", nativeQuery = true)
     void updateScore(@Param("userId") Long userId, @Param("score") Long score);
 
     @Query(value = "SELECT l.user_id, l.score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +

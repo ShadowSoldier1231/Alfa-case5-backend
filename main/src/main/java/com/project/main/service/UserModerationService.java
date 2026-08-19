@@ -61,7 +61,8 @@ public class UserModerationService {
         UserSetup user = userRepository.findById(leaderboardUser.getUserId())
                 .orElseThrow(() -> new NotFoundException("User does not exist"));
 
-        leaderboardUser.setBanCount(leaderboardUser.getBanCount() + 1L);
+        leaderboardUser.setBanCount( (leaderboardUser.getBanCount() != null ? leaderboardUser.getBanCount() : 0L)
+                + 1L);
         leaderboardUser.setWarningsCount(0L);
         user.setBannedUntil(LocalDateTime.now().plusMonths(2));
 

@@ -46,7 +46,7 @@ public class UserSetup {
         this.email = email;
         this.role = role;
         this.bannedUntil = bannedUntil;
-
+        this.isVerified = isVerified;
 
 
     }

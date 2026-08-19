@@ -2,7 +2,6 @@ package com.project.main.model;
 
 public class Views {
 
-    public interface ChatView {}
 
     public interface RegisterResultId {}
     public interface RegisterResultPartial extends RegisterResultId {}

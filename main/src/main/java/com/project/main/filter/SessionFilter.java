@@ -1,5 +1,7 @@
 package com.project.main.filter;
 
+import com.project.main.model.UserSession;
+import com.project.main.model.UserSetup;
 import com.project.main.repository.UserRepository;
 import com.project.main.repository.UserSessionRepository;
 import jakarta.servlet.FilterChain;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 
 @Component
@@ -43,29 +46,32 @@ public class SessionFilter extends OncePerRequestFilter {
 
         String token = (request.getCookies() == null) ? null :
                 Arrays.stream(request.getCookies())
-                .filter(c -> "token".equals(c.getName()))
-                .map(Cookie::getValue)
-                .findFirst().orElse(null);
+                        .filter(c -> "token".equals(c.getName()))
+                        .map(Cookie::getValue)
+                        .findFirst().orElse(null);
 
         if (token != null) {
-
-            sessionRepository.findByToken(token)
+            Optional<UserSetup> userOpt = sessionRepository.findByToken(token)
                     .filter(s -> s.getExpiryDate().isAfter(LocalDateTime.now()))
-                    .ifPresent(session -> {
-                        Long userId = session.getUserId();
+                    .map(UserSession::getUserId)
+                    .flatMap(userRepository::findById);
 
-                        if (userId != null) {
-                            userRepository.findById(userId).ifPresent(user -> {
-                                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                        user, null, List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
-                                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                                SecurityContextHolder.getContext().setAuthentication(auth);
-                            });
-                        }
-                    });
+            if (userOpt.isPresent()) {
+                UserSetup user = userOpt.get();
+
+                if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(LocalDateTime.now())) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
+
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                        user, null, List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+
+
+            filterChain.doFilter(request, response);
         }
-
-
-        filterChain.doFilter(request, response);
     }
 }
