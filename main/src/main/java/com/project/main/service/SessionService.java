@@ -139,7 +139,7 @@ public class SessionService {
     @Transactional
     public ResponseCookie deleteCookie(String token, boolean deleteToken){
 
-        if(deleteToken){
+        if(deleteToken && token != null){
             sessionRepository.deleteByToken(token);
         }
 
@@ -153,6 +153,7 @@ public class SessionService {
                 .build();
     }
 
+    @Transactional
     public ResponseCookie deleteCookie(String token){
 
         return deleteCookie(token, true);

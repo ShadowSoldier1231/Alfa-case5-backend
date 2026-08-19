@@ -79,7 +79,7 @@ public class GlobalExceptionHandler {
     @JsonView(Views.RegisterResultPartial.class)
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<RegisterResult> handleMaxSizeException(MaxUploadSizeExceededException ex) {
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
                 .body(new RegisterResult(false, "File size exceeds the maximum allowed limit"));
     }
 
