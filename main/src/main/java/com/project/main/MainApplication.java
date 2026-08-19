@@ -10,7 +10,7 @@ import org.telegram.telegrambots.longpolling.starter.TelegramBotStarterConfigura
 
 
 @SpringBootApplication(exclude = {
-        TelegramBotStarterConfiguration.class,
+        TelegramBotStarterConfiguration.class
 })
 @ComponentScan
 @EnableScheduling
