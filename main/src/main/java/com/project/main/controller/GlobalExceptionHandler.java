@@ -10,8 +10,12 @@ import com.project.main.service.SessionService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 
 @RestControllerAdvice
@@ -50,6 +54,35 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RegisterResult(false, errorMsg));
     }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<RegisterResult> handleNotFound(NoHandlerFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new RegisterResult(false, "Resource not found"));
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<RegisterResult> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new RegisterResult(false, "Method not allowed"));
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<RegisterResult> handleMissingParams(MissingServletRequestParameterException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new RegisterResult(false, "Missing required parameter: " + ex.getParameterName()));
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<RegisterResult> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new RegisterResult(false, "File size exceeds the maximum allowed limit"));
+    }
+
 
     @JsonView(Views.RegisterResultPartial.class)
     @ExceptionHandler(ApiException.class)

@@ -25,9 +25,9 @@ curl -X GET http://localhost:8080/health
 
 ---
 ## Безопасность и доступ
-- **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными).
+- **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными, где проверяется Cookie).
 - **`/api/text/v1/**`** — **Требует Cookie**. На уровне Spring Security эндпоинты открыты (`permitAll`), но контроллеры вручную проверяют наличие и валидность заголовка `Cookie: token=ТОКЕН`.
-- **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN` (проверяется Spring Security).
+- **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN`. При отсутствии прав возвращается стандартизированный JSON-ответ с HTTP 403.
 
 ---
 ## Профиль и Аутентификация (`/api/v1/auth`)
@@ -655,17 +655,19 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 
 ---
 ## Примеры ответов API и ошибок
-Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`. При ошибках валидации (`@Valid`) возвращается HTTP 400 с текстом ошибки в формате `"<поле>: <сообщение>"` (например, `"name: Tag name cannot be empty"`).
+Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`. 
 
-**Базовый формат ответа:**
+**Базовый формат ответа при ошибке:**
 ```json
 {
   "success": false,
-  "errorText": "Текст ошибки"
+  "errorText": "Текст ошибки на английском языке"
 }
 ```
+> **Важно:** Благодаря глобальной обработке ошибок, даже системные сбои (401, 403, 404, 405, 413) возвращают этот единый формат
 
 ### Сводная таблица всех ошибок
+
 
 | Категория | Текст ошибки (`errorText`) | Описание / Причина |
 | :--- | :--- | :--- |
@@ -704,9 +706,13 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Password cannot be longer than 30 characters` | Слишком длинный пароль (максимум 30 символов). |
 | &nbsp; | `Password must contain at least 1 digit` | Пароль должен содержать хотя бы одну цифру. |
 | &nbsp; | `Password must contain at least 1 special character` | Пароль должен содержать хотя бы один спецсимвол. |
-| **Загрузка файлов (S3)** | `File cannot be empty` | Отправлен пустой файл. |
+|| **Валидация запроса** | `Missing required parameter: <имя>` | **HTTP 400.** В запросе отсутствует обязательный `@RequestParam`. |
+| &nbsp; | `Invalid input data format` | **HTTP 400.** Ошибка парсинга JSON или несовпадение типов (например, строка вместо enum). |
+| **Загрузка файлов (S3)** | `File size exceeds the maximum allowed limit` | **HTTP 413.** Размер файла превышает лимит |
+| &nbsp; | `File cannot be empty` | Отправлен пустой файл. |
+| &nbsp; | `File size cannot exceed 5 MB` | **HTTP 400.** Размер файла превышает бизнес-лимит в 5 МБ |
+| &nbsp; | `File cannot be empty` | Отправлен пустой файл. |
 | &nbsp; | `Invalid file extension. Allowed Extensions: [.pdf, .jpg, .jpeg, .png, .webp]` | Загружен файл с недопустимым расширением. |
-| &nbsp; | `File size cannot exceed 5 MB` | Размер загружаемого файла превышает 5 МБ. |
 | &nbsp; | `Invalid file content` | Файл поврежден или слишком мал для проверки заголовка. |
 | &nbsp; | `File content does not match allowed formats` | Магические байты файла не соответствуют разрешенным форматам. |
 | &nbsp; | `File extension does not match content` | Расширение файла не совпадает с его фактическим содержимым. |
@@ -732,6 +738,8 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Solve time must be at least 1 min` | Время решения должно быть не менее 1 минуты. |
 | &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
+| **Системные / Маршрутизация (Новое)** | `Resource not found` | **HTTP 404.** Запрос к несуществующему URL-адресу (эндпоинту). |
+| &nbsp; | `Method not allowed` | **HTTP 405.** Использован неверный HTTP-метод (например, POST вместо GET) для существующего URL. |
 | **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |
 | &nbsp; | `Search query is too long` | Поисковый запрос превышает максимально допустимую длину. |
 | &nbsp; | `Size must be between 1 and 100` | Размер страницы должен быть от 1 до 100 элементов. |
