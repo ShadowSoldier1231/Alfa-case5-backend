@@ -21,10 +21,10 @@ public class CaseEntity {
     @Column(unique = true, nullable = false, length = 100)
     private String slug;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String title;
 
-    @Column(name = "title_en", length = 255)
+    @Column(name = "title_en")
     private String titleEn;
 
     @Column(length = 500)

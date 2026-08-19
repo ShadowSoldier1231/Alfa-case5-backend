@@ -62,7 +62,7 @@ public class UserPreferenceService {
             }
 
             for (Object[] row : tags) {
-                Boolean isActive = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
+                boolean isActive = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
                 if (!isActive) {
                     throw new BadRequestException("One or more tags are invalid or inactive");
                 }

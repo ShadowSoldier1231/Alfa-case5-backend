@@ -1,6 +1,7 @@
 package com.project.main.repository;
 
 import com.project.main.model.*;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,6 +23,7 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
 
 
+    @NotNull
     @Query(value = "SELECT * FROM cases WHERE id = :id", nativeQuery = true)
     Optional<CaseEntity> findById(@Param("id") Long id);
 
