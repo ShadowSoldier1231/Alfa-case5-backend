@@ -134,6 +134,28 @@ curl -v -F "file=@/path/to/image.jpeg" -H "Cookie: token=TOKEN" \
 http://localhost:8080/api/v1/auth/setProfilePicture
 ```
 
+### Повторная отправка кода верификации и смена email (`POST`)
+Позволяет запросить новый код или ссылку для верификации, если пользователь еще не подтвердил аккаунт. Если переданный email отличается от того, что указан в базе, email будет обновлен (удобно, если при регистрации была допущена опечатка). Требует ввода логина и пароля. В ответе возвращается новая pre-auth сессия (Cookie).
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{"username":"1234","password":"tea_tea1","email":"corrected_email@gmail.com","validationMethod":"EMAIL"}' \
+http://localhost:8080/api/v1/auth/resendEmail
+```
+> **Примечание:** Если аккаунт уже верифицирован, пользователь забанен или введен неверный пароль, запрос будет отклонен.
+
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "verification": "Verification code sent to your email",
+  "id": 8
+}
+```
+*(Если выбран метод `TELEGRAM`, в поле `verification` будет ссылка вида `https://t.me/bot_name?start=token`)*.
+
+---
+
 ### Выход (`GET`) *(Требует Cookie)*
 Удаление сессионной куки пользователя.
 ```bash
@@ -683,6 +705,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Access Denied: <message>` | **HTTP 403.** Ответ при нехватке прав доступа (вместо `<message>` — текст исключения). |
 | **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
+| &nbsp; | `Account is already verified` | Аккаунт уже прошел верификацию, повторная отправка кода невозможна. |
 | &nbsp; | `Verification code is required` | Не передан код для верификации. |
 | &nbsp; | `Invalid or expired verification code` | Код неверный, не существует или срок его действия истек. |
 | **Лимиты и защита от перебора** | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку email (макс. 3 в час с одного IP). |
@@ -699,6 +722,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Username cannot be longer than 20 characters` | Слишком длинное имя (максимум 20 символов). |
 | &nbsp; | `Username is already taken` | Имя пользователя уже занято. |
 | **Валидация Email** | `Email cannot be blank` | Поле email не может быть пустым. |
+| &nbsp; | `Email is required` | Поле email не было передано в запросе на повторную отправку. |
 | &nbsp; | `This email address is invalid` | Некорректный формат email-адреса. |
 | &nbsp; | `This email address is already taken` | Данный email уже зарегистрирован. |
 | &nbsp; | `Invalid email format` | Некорректный формат email (при создании пользователя администратором). |
@@ -708,7 +732,10 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Password cannot be longer than 30 characters` | Слишком длинный пароль (максимум 30 символов). |
 | &nbsp; | `Password must contain at least 1 digit` | Пароль должен содержать хотя бы одну цифру. |
 | &nbsp; | `Password must contain at least 1 special character` | Пароль должен содержать хотя бы один спецсимвол. |
-|| **Валидация запроса** | `Missing required parameter: <имя>` | **HTTP 400.** В запросе отсутствует обязательный `@RequestParam`. |
+| &nbsp; | `Password is required` | Поле password не было передано в запросе. |
+| **Валидация запроса** | `Missing required parameter: <имя>` | **HTTP 400.** В запросе отсутствует обязательный `@RequestParam`. |
+| &nbsp; | `Validation method is required` | Не указан метод верификации (ожидается EMAIL или TELEGRAM). |
+| &nbsp; | `Username is required` | Поле username не было передано в запросе. |
 | &nbsp; | `Invalid input data format` | **HTTP 400.** Ошибка парсинга JSON или несовпадение типов (например, строка вместо enum). |
 | **Загрузка файлов (S3)** | `File size exceeds the maximum allowed limit` | **HTTP 413.** Размер файла превышает лимит |
 | &nbsp; | `File cannot be empty` | Отправлен пустой файл. |
