@@ -23,7 +23,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 
 import org.springframework.web.multipart.MultipartFile;
 
-
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -56,10 +56,7 @@ public class LoginApiController {
             @CookieValue(value = "token", required = false) String token) {
 
         if (bindingResult.hasErrors()) {
-            String errorMsg = bindingResult.getFieldError("email") != null
-                    ? bindingResult.getFieldError("email").getDefaultMessage()
-                    : "Invalid input data";
-            throw new BadRequestException(errorMsg);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
@@ -72,11 +69,11 @@ public class LoginApiController {
             throw new BadRequestException("Email cannot be blank");
         }
 
-        if (userService.userExistsByEmail(changeRequest.getEmail())) {
+        String lowerEmail = changeRequest.getEmail().toLowerCase();
+        if (userService.userExistsByEmail(lowerEmail)) {
             throw new ConflictException("This email address is already taken");
         }
-
-        if (!EmailValidator.getInstance(true).isValid(changeRequest.getEmail())) {
+        if (!EmailValidator.getInstance(true).isValid(lowerEmail)) {
             throw new BadRequestException("This email address is invalid");
         }
 
@@ -95,7 +92,12 @@ public class LoginApiController {
     @PostMapping("/changeparams")
     public ResponseEntity<RegisterResult> changeParams(
             @Valid @RequestBody ChangeParamsRequest changeRequest,
-            @CookieValue(value = "token", required = false) String token) {
+            @CookieValue(value = "token", required = false) String token,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
 
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
         if (!sessionPair.getLeft().getSuccess()) {
@@ -193,10 +195,7 @@ public class LoginApiController {
             HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
-            String errorMsg = bindingResult.getFieldError("email") != null
-                    ? bindingResult.getFieldError("email").getDefaultMessage()
-                    : "Invalid input data";
-            throw new BadRequestException(errorMsg);
+            throw new BadRequestException(getValidationErrors(bindingResult));
         }
 
         String clientIp = request.getRemoteAddr();
@@ -258,6 +257,72 @@ public class LoginApiController {
                 .header(HttpHeaders.SET_COOKIE, preAuthCookie.toString())
                 .body(new RegisterResult(true, "", authResult.getLeft(), userId));
     }
+
+
+    @JsonView(Views.RegisterResultFull.class)
+    @PostMapping("/resendEmail")
+    public ResponseEntity<RegisterResult> resendEmail(
+            @Valid @RequestBody ResendEmailRequest resendEmailRequest,
+            BindingResult bindingResult,
+            HttpServletRequest request,
+            @CookieValue(value = "token", required = false) String token) {
+
+        sessionService.reverseCheckCookieOrThrow(token);
+
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
+
+        String clientIp = request.getRemoteAddr();
+        rateLimitService.checkCanSendEmail(clientIp);
+
+        switch (validationService.checkPassword(resendEmailRequest.getPassword())) {
+            case EMPTY:
+                throw new BadRequestException("Password cannot be empty");
+            case TOO_LONG:
+                throw new BadRequestException("Password cannot be longer than 30 characters");
+            case TOO_SHORT:
+                throw new BadRequestException("Password cannot be shorter than 8 characters");
+            case NO_DIGITS:
+                throw new BadRequestException("Password must contain at least 1 digit");
+            case NO_SPECIAL_SYMBOL:
+                throw new BadRequestException("Password must contain at least 1 special character");
+            case OK:
+            default:
+                break;
+        }
+
+        switch (validationService.checkUsername(resendEmailRequest.getUsername())) {
+            case TOO_LONG:
+                throw new BadRequestException("Username cannot be longer than 20 characters");
+            case TOO_SHORT:
+                throw new BadRequestException("Username cannot be shorter than 3 characters");
+            case EMPTY:
+                throw new BadRequestException("Username cannot be empty");
+            case SPACE:
+                throw new BadRequestException("Username cannot contain spaces");
+            case OK:
+            default:
+                break;
+        }
+
+        if (!EmailValidator.getInstance(true).isValid(resendEmailRequest.getEmail())) {
+            throw new BadRequestException("This email address is invalid");
+        }
+
+        Pair<String, Long> result = userService.resendEmailOrThrow(resendEmailRequest);
+
+        Long userId = result.getRight();
+        rateLimitService.recordEmailSent(clientIp, userId);
+
+        ResponseCookie preAuthCookie = sessionService.createPreAuthSession(userId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, preAuthCookie.toString())
+                .body(new RegisterResult(true, "", result.getLeft(), userId));
+    }
+
+
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/login")
@@ -371,6 +436,12 @@ public class LoginApiController {
             rateLimitService.recordFailedVerifyAttempt(clientIp, tokenUserId);
             throw e;
         }
+    }
+
+    private String getValidationErrors(BindingResult bindingResult) {
+        return bindingResult.getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
     }
 }
 

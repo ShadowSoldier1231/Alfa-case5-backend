@@ -127,8 +127,11 @@ public class UserSetup {
 
 
     public void setEmail(String email) {
-        if(email != null && !EmailValidator.getInstance(true).isValid(email)) {
-            throw new IllegalArgumentException("This email address is invalid");
+        if (email != null) {
+            email = email.toLowerCase();
+            if (!EmailValidator.getInstance(true).isValid(email)) {
+                throw new IllegalArgumentException("This email address is invalid");
+            }
         }
         this.email = email;
     }

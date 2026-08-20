@@ -6,6 +6,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.project.main.dto.RegisterResult;
 import com.project.main.dto.UserDeletedEvent;
 import com.project.main.exception.ApiException;
+import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.UserSession;
 import com.project.main.repository.UserSessionRepository;
@@ -73,6 +74,15 @@ public class SessionService {
         UserSession session = sessionRepository.findByToken(token).orElse(null);
         if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new InvalidSessionException("Session expired", token);
+        }
+    }
+
+    public void reverseCheckCookieOrThrow(String token) {
+        if (token == null) return;
+
+        UserSession session = sessionRepository.findByToken(token).orElse(null);
+        if (session != null && session.getExpiryDate().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("You are already logged in");
         }
     }
 

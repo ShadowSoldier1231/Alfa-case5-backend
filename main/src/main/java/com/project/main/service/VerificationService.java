@@ -37,6 +37,8 @@ public class VerificationService {
 
     @Transactional
     public String generateVerification(Long userId, ValidationMethod method, String email) {
+        verificationRepository.deleteByUserId(userId);
+
         UserVerification verification = new UserVerification();
         verification.setUserId(userId);
 

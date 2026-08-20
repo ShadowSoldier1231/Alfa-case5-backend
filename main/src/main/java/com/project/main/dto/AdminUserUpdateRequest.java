@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import com.project.main.enums.*;
 import java.time.LocalDateTime;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 public class AdminUserUpdateRequest {
 
@@ -14,6 +15,7 @@ public class AdminUserUpdateRequest {
     private LocalDateTime bannedUntil;
     private Boolean isVerified;
 
+    @NotBlank(message = "Email is required")
     @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", message = "Invalid email format")
     private String email;
 

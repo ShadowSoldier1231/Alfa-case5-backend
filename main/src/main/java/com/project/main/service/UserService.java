@@ -101,7 +101,7 @@ public class UserService {
     public void updateEmail(Long id, String email) {
         UserSetup user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        user.setEmail(email);
+        user.setEmail(email.toLowerCase());
     }
 
     public boolean passwordValidator(Long id, String password) {
@@ -136,7 +136,7 @@ public class UserService {
         UserSetup validUser = new UserSetup(
                 hashedPassword,
                 registerRequest.getUsername(),
-                registerRequest.getEmail(),
+                registerRequest.getEmail().toLowerCase(),
                 UserRole.USER,
                 null,
                 false
@@ -175,14 +175,15 @@ public class UserService {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new ConflictException("Username is already taken");
         }
-        if (userRepository.existsByEmail(req.getEmail())) {
+        String lowerEmail = req.getEmail().toLowerCase();
+        if (userRepository.existsByEmail(lowerEmail)) {
             throw new ConflictException("Email is already taken");
         }
 
         UserSetup newUser = new UserSetup(
                 hashedPassword,
                 req.getUsername(),
-                req.getEmail(),
+                lowerEmail,
                 req.getRole() != null ? req.getRole() : UserRole.USER,
                 null,
                 true
@@ -221,10 +222,11 @@ public class UserService {
         if (req.getBannedUntil() != null) user.setBannedUntil(req.getBannedUntil());
         if (req.getIsVerified() != null) user.setVerified(req.getIsVerified());
         if (req.getEmail() != null) {
-            if (!req.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(req.getEmail())) {
+            String lowerEmail = req.getEmail().toLowerCase();
+            if (!lowerEmail.equals(user.getEmail()) && userRepository.existsByEmail(lowerEmail)) {
                 throw new ConflictException("Email is already taken");
             }
-            user.setEmail(req.getEmail());
+            user.setEmail(lowerEmail);
         }
 
         if (req.getFirstName() != null) userData.setFirstName(req.getFirstName());
@@ -285,7 +287,51 @@ public class UserService {
     }
 
 
+    @Transactional
+    public Pair<String, Long> resendEmailOrThrow(ResendEmailRequest request) {
+        UserSetup realUser = userRepository.findByUsername(request.getUsername()).orElse(null);
 
+        if (realUser == null) {
+            performDummyCheck();
+            throw new InvalidCredentialsException("Invalid username or password");
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), realUser.getPassword())) {
+            performDummyCheck();
+            throw new InvalidCredentialsException("Invalid username or password");
+        }
+
+        if (realUser.isVerified()) {
+            throw new BadRequestException("Account is already verified");
+        }
+
+        if (realUser.getBannedUntil() != null) {
+            if (realUser.getBannedUntil().isAfter(LocalDateTime.now())) {
+                throw new InvalidCredentialsException("User is still banned");
+            }
+            realUser.setBannedUntil(null);
+        }
+
+
+        String newEmail = request.getEmail().toLowerCase();
+
+        if (!newEmail.equalsIgnoreCase(realUser.getEmail())) {
+            if (userRepository.existsByEmail(newEmail)) {
+                throw new ConflictException("This email address is already taken");
+            }
+            realUser.setEmail(newEmail);
+        }
+
+        userRepository.save(realUser);
+
+        String verification = verificationService.generateVerification(
+                realUser.getId(),
+                request.getValidationMethod(),
+                realUser.getEmail()
+        );
+
+        return Pair.of(verification, realUser.getId());
+    }
 
 
     public PageResponse<UserListItem> getAdminUsers(int page, int size, String search, String sort) {
