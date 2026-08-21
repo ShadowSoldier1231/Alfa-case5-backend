@@ -1,0 +1,72 @@
+package com.project.main.model.common;
+
+
+import jakarta.persistence.*;
+
+
+@Entity
+public class Solution {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long solutionId;
+
+    private Long caseId;
+    private Long userId;
+    private Long rating;
+
+    @Column(columnDefinition = "TEXT")
+    private String solutionText;
+
+    @Column(columnDefinition = "TEXT")
+    private String solutionResponse;
+
+    public Long getSolutionId() {
+        return solutionId;
+    }
+
+    public Long getCaseId() {
+        return caseId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getRating() {
+        return rating;
+    }
+
+    public void setSolutionId(Long solutionId) {
+        this.solutionId = solutionId;
+    }
+
+    public void setCaseId(Long caseId) {
+        this.caseId = caseId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getSolutionResponse() {
+        return solutionResponse;
+    }
+
+    public void setRating(Long rating) {
+        this.rating = rating;
+    }
+
+    public String getSolutionText() {
+        return solutionText;
+    }
+
+    public void setSolutionResponse(String solutionResponse) {
+        this.solutionResponse = solutionResponse;
+    }
+
+    public void setSolutionText(String solutionText) {
+        this.solutionText = solutionText;
+    }
+
+}

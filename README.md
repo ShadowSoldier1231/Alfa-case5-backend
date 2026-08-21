@@ -104,6 +104,55 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/auth/me
 }
 ```
 
+### Восстановление доступа (Забыл логин/пароль)
+*Эндпоинты не требуют авторизации (Cookie). Для защиты от перебора пользователей (User Enumeration) методы инициации всегда возвращают успех, даже если email или username не найдены в базе.*
+
+#### Восстановление username (`POST`)
+Отправляет username на указанный email. Лимит: не более 3 запросов в час с одного IP.
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{"email":"someemail@gmail.com"}' \
+http://localhost:8080/api/v1/auth/forgotUsername
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": ""
+}
+```
+
+#### Инициация сброса пароля (`POST`)
+Запрашивает сброс пароля. Проверяет связку email и username. Если они верны, генерирует 6-значный код и отправляет его на почту. Лимит: не более 3 запросов в час с одного IP.
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{"email":"someemail@gmail.com", "username":"1234"}' \
+http://localhost:8080/api/v1/auth/forgotPassword/init
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": ""
+}
+```
+
+#### Подтверждение сброса пароля (`POST`)
+Устанавливает новый пароль по 6-значному коду из письма. При успехе сбрасывает все активные сессии пользователя (требует повторного входа на всех устройствах). Защита от брутфорса: 5 неудачных попыток блокируют IP на 30 минут.
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{"email":"someemail@gmail.com", "username":"1234", "code":123456, "newPassword":"newTea1!"}' \
+http://localhost:8080/api/v1/auth/forgotPassword/confirm
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+
 ### Смена пароля (`POST`) *(Требует Cookie)*
 Замена текущего пароля на новый.
 ```bash
@@ -230,6 +279,53 @@ curl -X GET "http://localhost:8080/api/v1/site/getAllCities?page=0&size=25&searc
   "totalPages": 1
 }
 ```
+---
+
+### Мои достижения (`GET`) *(Требует Cookie)*
+Возвращает полный список всех достижений системы. Для каждого достижения указывается статус: получено ли оно текущим пользователем (и дата получения), или оно еще заблокировано (`obtainedAt: null`).
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/achievements
+```
+**Ответ (JSON):**
+```json
+[
+  {
+    "id": 1,
+    "name": "Быстрый старт",
+    "description": "Решите первый кейс менее чем за 30 минут",
+    "iconUrl": "/achievements/quick_start.png",
+    "obtainedAt": "2026-07-23T10:15:30.123"
+  },
+  {
+    "id": 2,
+    "name": "Стремительный взлёт",
+    "description": "Решите 5 кейсов",
+    "iconUrl": "/achievements/rapid_rise.png",
+    "obtainedAt": null
+  }
+]
+```
+
+### Достижения пользователя (`GET`)
+Публичный эндпоинт для просмотра статистики достижений любого пользователя по его ID. Возвращает список всех достижений со статусом их получения указанным пользователем.
+```bash
+curl -X GET http://localhost:8080/api/v1/site/1/achievements
+```
+**Ответ (JSON):**
+*(Формат ответа идентичен эндпоинту `/me/achievements`, но отражает прогресс запрашиваемого пользователя. Если ID пользователя некорректен (<= 0), возвращается ошибка `Invalid user ID`. Если пользователь не найден, возвращается `Profile not found`).*
+```json
+[
+  {
+    "id": 1,
+    "name": "Быстрый старт",
+    "description": "Решите первый кейс менее чем за 30 минут",
+    "iconUrl": "/achievements/quick_start.png",
+    "obtainedAt": "2026-07-23T10:15:30.123"
+  }
+]
+```
+
+
 
 ---
 ## Кейсы и Материалы (`/api/v1/cases`)
@@ -703,6 +799,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Access denied: ADMIN role required` | У пользователя нет прав администратора (HTTP 403). |
 | &nbsp; | `Unauthorized: <message>` | **HTTP 401.** Ответ при обращении к защищённому ресурсу без валидной сессии (вместо `<message>` — текст исключения). |
 | &nbsp; | `Access Denied: <message>` | **HTTP 403.** Ответ при нехватке прав доступа (вместо `<message>` — текст исключения). |
+| **Восстановление доступа** | `Invalid email or username` | Неверная связка email и username при подтверждении сброса пароля. |
 | **Верификация** | `Verification session expired.` | Сессия верификации отсутствует или истекла. |
 | &nbsp; | `Invalid or expired verification session.` | Неверная или истекшая сессия верификации. |
 | &nbsp; | `Account is already verified` | Аккаунт уже прошел верификацию, повторная отправка кода невозможна. |
@@ -711,6 +808,8 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | **Лимиты и защита от перебора** | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку email (макс. 3 в час с одного IP). |
 | &nbsp; | `Too many failed attempts. Try again later.` | Превышено количество неверных попыток ввода кода. Аккаунт временно заблокирован (на 15 минут). |
 | &nbsp; | `Too many verification attempts from your IP. Try again later.` | Превышен лимит попыток верификации с текущего IP-адреса (макс. 20 в час). |
+| &nbsp; | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку писем (HTTP 429). |
+| &nbsp; | `Too many failed attempts. Please try again later.` | Превышен лимит неудачных попыток ввода кода сброса пароля, IP заблокирован (HTTP 429). |
 | **Статус, Модерация и Баны** | `User does not exist` | Пользователь не найден в системе (или в таблице лидеров). |
 | &nbsp; | `User is now banned` | Пользователь получил бан (на 2 месяца) после накопления >2 предупреждений. |
 | &nbsp; | `User no longer exists` | Аккаунт окончательно удален, так как количество банов достигло 3 и более. |
@@ -727,7 +826,9 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `This email address is already taken` | Данный email уже зарегистрирован. |
 | &nbsp; | `Invalid email format` | Некорректный формат email (при создании пользователя администратором). |
 | &nbsp; | `Email is already taken` | Email уже зарегистрирован (при создании/обновлении пользователя). |
+| **Валидация Email** | `Email cannot be blank` | Поле email не может быть пустым. |
 | **Валидация Пароля** | `Password cannot be empty` | Пароль не может быть пустым. |
+| &nbsp; | `New password cannot be empty` | Поле нового пароля не может быть пустым. |
 | &nbsp; | `Password cannot be shorter than 8 characters` | Слишком короткий пароль (минимум 8 символов). |
 | &nbsp; | `Password cannot be longer than 30 characters` | Слишком длинный пароль (максимум 30 символов). |
 | &nbsp; | `Password must contain at least 1 digit` | Пароль должен содержать хотя бы одну цифру. |

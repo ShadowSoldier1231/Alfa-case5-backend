@@ -1,10 +1,10 @@
 package com.project.main.filter;
 
 import com.project.main.exception.InvalidSessionException;
-import com.project.main.model.UserSession;
-import com.project.main.model.UserSetup;
-import com.project.main.repository.UserRepository;
-import com.project.main.repository.UserSessionRepository;
+import com.project.main.model.user.UserSession;
+import com.project.main.model.user.UserSetup;
+import com.project.main.repository.user.UserRepository;
+import com.project.main.repository.user.UserSessionRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;

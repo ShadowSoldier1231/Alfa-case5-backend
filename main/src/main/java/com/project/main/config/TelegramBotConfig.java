@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
-import com.project.main.service.TelegramAuthBot;
+import com.project.main.service.common.TelegramAuthBot;
 
 import java.io.IOException;
 import java.net.*;
