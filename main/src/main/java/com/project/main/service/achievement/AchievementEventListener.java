@@ -8,7 +8,10 @@ import com.project.main.model.user.UserAchievement;
 import com.project.main.repository.user.AchievementRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.event.TransactionPhase;
 
@@ -40,6 +43,8 @@ public class AchievementEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Async("taskExecutor")
     public void onWarningReceived(WarningReceivedEvent event) {
         Long userId = event.userId();
         Long achievementId = Achievement.SCOUNDREL.getId();
