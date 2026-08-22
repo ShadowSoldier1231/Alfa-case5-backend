@@ -44,7 +44,6 @@ public class SessionFilter extends OncePerRequestFilter {
                                     @NotNull FilterChain filterChain)
             throws ServletException, IOException {
 
-
         String token = (request.getCookies() == null) ? null :
                 Arrays.stream(request.getCookies())
                         .filter(c -> "token".equals(c.getName()))
@@ -70,9 +69,8 @@ public class SessionFilter extends OncePerRequestFilter {
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
-
-
-            filterChain.doFilter(request, response);
         }
+
+        filterChain.doFilter(request, response);
     }
 }
