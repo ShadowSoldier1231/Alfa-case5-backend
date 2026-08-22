@@ -1,11 +1,13 @@
 package com.project.main.dto.user;
 
 import com.project.main.enums.Difficulty;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
 public class UserPreferenceUpdateRequest {
     private Difficulty preferredDifficulty;
+    @Size(max = 15, message = "Preferred tags list cannot exceed 15 items")
     private List<Long> preferredTags;
     Boolean removeDifficulty;
     Boolean removeTags;
