@@ -47,7 +47,7 @@ public class TagAchievementChecker implements AchievementChecker {
     private void awardIfNotExists(Long userId, Achievement achievement) {
         if (!achievementRepository.existsByUserIdAndAchievementId(userId, achievement.getId())) {
             try {
-                achievementRepository.save(new UserAchievement(userId, achievement.getId(), LocalDateTime.now()));
+                achievementRepository.save(new UserAchievement(userId, achievement.getId()));
                 logger.info("User {} unlocked achievement: {}", userId, achievement.getName());
             } catch (Exception e) {
                 logger.debug("Achievement {} already exists for user {}", achievement.getId(), userId);

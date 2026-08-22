@@ -46,7 +46,7 @@ public class AchievementEventListener {
 
         if (!achievementRepository.existsByUserIdAndAchievementId(userId, achievementId)) {
             try {
-                achievementRepository.save(new UserAchievement(userId, achievementId, LocalDateTime.now()));
+                achievementRepository.save(new UserAchievement(userId, achievementId));
                 logger.info("User {} unlocked achievement: {}", userId, Achievement.SCOUNDREL.getName());
             } catch (Exception e) {
                 logger.debug("Achievement {} already exists for user {}", achievementId, userId);

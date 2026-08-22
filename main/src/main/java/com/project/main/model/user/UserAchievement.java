@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "user_achievement", uniqueConstraints = {
@@ -26,16 +27,16 @@ public class UserAchievement {
     @Column(name = "achievement_id", nullable = false)
     private Long achievementId;
 
+    @CreationTimestamp
     @Column(name = "obtained_at", nullable = false)
     private LocalDateTime obtainedAt;
 
     public UserAchievement() {
     }
 
-    public UserAchievement(Long userId, Long achievementId, LocalDateTime obtainedAt) {
+    public UserAchievement(Long userId, Long achievementId) {
         this.userId = userId;
         this.achievementId = achievementId;
-        this.obtainedAt = obtainedAt;
     }
 
     public Long getId() {
