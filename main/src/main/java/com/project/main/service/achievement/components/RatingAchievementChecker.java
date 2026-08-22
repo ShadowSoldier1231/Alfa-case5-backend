@@ -23,6 +23,8 @@ public class RatingAchievementChecker implements AchievementChecker {
     private final AchievementRepository achievementRepository;
     private final SolutionRepository solutionRepository;
 
+    private static final Long SOLVE_THRESHOLD = 70L;
+
     public RatingAchievementChecker(AchievementRepository achievementRepository, SolutionRepository solutionRepository) {
         this.achievementRepository = achievementRepository;
         this.solutionRepository = solutionRepository;
@@ -35,12 +37,12 @@ public class RatingAchievementChecker implements AchievementChecker {
         if (event.getRating() != null && event.getRating() == 100L) {
             awardIfNotExists(userId, Achievement.PERFECT_SOLUTION);
         }
-        Long solvedCount = solutionRepository.countDistinctCasesSolvedByUserId(userId);
+        Long solvedCount = solutionRepository.countDistinctCasesSolvedByUserId(userId, SOLVE_THRESHOLD);
         if (solvedCount >= 5) awardIfNotExists(userId, Achievement.RAPID_RISE);
 
         if (solvedCount >= 20) awardIfNotExists(userId, Achievement.COLLECTOR);
 
-        Long hardSolvedCount = solutionRepository.countDistinctHardCasesSolvedByUserId(userId);
+        Long hardSolvedCount = solutionRepository.countDistinctHardCasesSolvedByUserId(userId, SOLVE_THRESHOLD);
         if (hardSolvedCount >= 3) awardIfNotExists(userId, Achievement.HARDCORE_SOLVER);
 
         Long perfectCasesCount = solutionRepository.countCasesWithMaxRatingByUserId(userId);

@@ -2,6 +2,7 @@ package com.project.main.service.user;
 
 
 import com.project.main.dto.event.UserDeletedEvent;
+import com.project.main.dto.event.WarningReceivedEvent;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.user.LeaderboardUser;
 import com.project.main.model.user.UserSetup;
@@ -44,6 +45,7 @@ public class UserModerationService {
         }
 
         leaderboardRepository.save(user);
+        eventPublisher.publishEvent(new WarningReceivedEvent(userId));
         return null;
     }
 

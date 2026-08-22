@@ -1,4 +1,4 @@
-package com.project.main.model.common;
+package com.project.main.model.cases;
 
 
 import jakarta.persistence.*;

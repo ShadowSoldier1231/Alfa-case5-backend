@@ -23,6 +23,8 @@ public class TagAchievementChecker implements AchievementChecker {
     private final AchievementRepository achievementRepository;
     private final SolutionRepository solutionRepository;
 
+    private static final Long SOLVE_THRESHOLD = 70L;
+
     public TagAchievementChecker(AchievementRepository achievementRepository, SolutionRepository solutionRepository) {
         this.achievementRepository = achievementRepository;
         this.solutionRepository = solutionRepository;
@@ -32,13 +34,13 @@ public class TagAchievementChecker implements AchievementChecker {
     @Async("taskExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void checkAndAward(Long userId, SolutionSubmittedEvent event) {
-        Long dataScienceCount = solutionRepository.countSolvedCasesByTagName(userId, "Data Science");
+        Long dataScienceCount = solutionRepository.countSolvedCasesByTagName(userId, "Data Science", SOLVE_THRESHOLD);
         if (dataScienceCount >= 5) awardIfNotExists(userId, Achievement.DATA_MASTER);
 
-        Long businessCount = solutionRepository.countSolvedCasesByTagName(userId, "Бизнес-стратегия");
+        Long businessCount = solutionRepository.countSolvedCasesByTagName(userId, "Бизнес-стратегия", SOLVE_THRESHOLD);
         if (businessCount >= 5) awardIfNotExists(userId, Achievement.BUSINESS_LEADER);
 
-        Long uniqueTagsCount = solutionRepository.countUniqueTagsInSolvedCases(userId);
+        Long uniqueTagsCount = solutionRepository.countUniqueTagsInSolvedCases(userId, SOLVE_THRESHOLD);
         if (uniqueTagsCount >= 5) awardIfNotExists(userId, Achievement.TAG_MASTER);
     }
 

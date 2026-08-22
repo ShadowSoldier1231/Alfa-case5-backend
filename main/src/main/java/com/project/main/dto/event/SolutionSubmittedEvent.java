@@ -4,15 +4,24 @@ public class SolutionSubmittedEvent {
     private Long userId;
     private Long caseId;
     private Long rating;
+    private Integer solvedMin;
 
     public SolutionSubmittedEvent(){
 
     }
-    public SolutionSubmittedEvent(Long userId, Long caseId, Long rating){
+
+    public SolutionSubmittedEvent(Long userId, Long caseId, Long rating, Integer solvedMin) {
         this.userId = userId;
         this.caseId = caseId;
         this.rating = rating;
+        this.solvedMin = solvedMin;
+    }
+    public Integer getSolvedMin() {
+        return solvedMin;
+    }
 
+    public void setSolvedMin(Integer solvedMin) {
+        this.solvedMin = solvedMin;
     }
 
     public void setRating(Long rating) {

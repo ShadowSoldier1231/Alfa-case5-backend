@@ -12,7 +12,7 @@ public enum Achievement {
     HARDCORE_SOLVER(9L, "Хардкорщик", "Решите 3 кейса высокого уровня сложности", "/achievements/hardcore_solver.png"),
     SPRINTER(10L, "Спринтер", "Решите кейс быстрее среднего времени выполнения", "/achievements/sprinter.png"),
     MARATHONER(11L, "Марафонец", "Решите 3 кейса без пропусков дней (1 кейс - 1 день)", "/achievements/marathoner.png"),
-    EXPLORER(12L, "Исследователь", "Просмотрите 15 уникальных кейсов", "/achievements/explorer.png"),
+    SCOUNDREL(12L, "Поганец", "Получи 1 предупреждение от бота", "/achievements/scoundrel.png"),
     PERFECTIONIST(13L, "Перфекционист", "Получите максимальный балл за 3 разных кейса", "/achievements/perfectionist.png"),
     OPINION_LEADER(14L, "Лидер мнений", "Попадите в топ-3 рейтинга", "/achievements/opinion_leader.png");
 

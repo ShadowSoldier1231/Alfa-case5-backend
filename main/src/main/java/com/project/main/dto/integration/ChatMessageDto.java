@@ -1,6 +1,6 @@
 package com.project.main.dto.integration;
 
-import com.project.main.model.common.Solution;
+import com.project.main.model.cases.Solution;
 
 public record ChatMessageDto(
         Long solutionId,

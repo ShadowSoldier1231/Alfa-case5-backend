@@ -6,7 +6,7 @@ import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.NotFoundException;
-import com.project.main.model.common.Solution;
+import com.project.main.model.cases.Solution;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
@@ -62,7 +62,8 @@ public class SolutionService {
         eventPublisher.publishEvent(new SolutionSubmittedEvent(
                 userId,
                 request.getCaseId(),
-                request.getRating()
+                request.getRating(),
+                request.getSolvedMin()
         ));
 
     }
