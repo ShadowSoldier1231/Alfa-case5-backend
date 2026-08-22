@@ -22,6 +22,7 @@ import com.project.main.service.auth.VerificationRateLimitService;
 import com.project.main.service.auth.VerificationService;
 import com.project.main.service.common.FetchingService;
 import com.project.main.service.common.S3StorageService;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
 
@@ -57,6 +58,9 @@ public class UserService {
     private final VerificationRateLimitService rateLimitService;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
+    private static String DUMMY_HASHED_PASSWORD = "$2a$10$0MB4zN/nNgjOwWGR4vddk.2CDWaOMZAUdWAJ0p4XC9VS.9aWkW5bu";
+    private static final String DUMMY_PASSWORD = "aLongCharSequence";
+
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        UserDataRepository userDataRepository,
                        LeaderboardRepository leaderboardRepository, VerificationService verificationService,
@@ -74,12 +78,19 @@ public class UserService {
         this.rateLimitService = rateLimitService;
     }
 
+    @PostConstruct
+    private void initDummyHash() {
+        DUMMY_HASHED_PASSWORD = passwordEncoder.matches(DUMMY_PASSWORD, DUMMY_HASHED_PASSWORD)
+                ? DUMMY_HASHED_PASSWORD
+                : passwordEncoder.encode(DUMMY_PASSWORD);
+    }
+
     public String hashPassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
 
     private void performDummyCheck() {
-        passwordEncoder.matches("!@#$%^^&*()word", "##just##key##mash");
+        passwordEncoder.matches(DUMMY_PASSWORD, DUMMY_HASHED_PASSWORD);
     }
 
     @Transactional
