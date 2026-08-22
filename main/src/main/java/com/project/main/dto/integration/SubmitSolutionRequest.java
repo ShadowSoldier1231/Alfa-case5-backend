@@ -8,9 +8,18 @@ public class SubmitSolutionRequest {
     private Long rating;
     private String solutionText;
     private String solutionResponse;
+    private Integer solvedMin;
 
     public SubmitSolutionRequest(){
 
+    }
+
+    public void setSolvedMin(Integer solvedMin) {
+        this.solvedMin = solvedMin;
+    }
+
+    public Integer getSolvedMin() {
+        return solvedMin;
     }
 
     public void setCaseId(Long caseId) {

@@ -2,6 +2,9 @@ package com.project.main.model.common;
 
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -20,6 +23,24 @@ public class Solution {
 
     @Column(columnDefinition = "TEXT")
     private String solutionResponse;
+
+    private Integer solvedMin;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    public Integer getSolvedMin() {
+        return solvedMin;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setSolvedMin(Integer solvedMin) {
+        this.solvedMin = solvedMin;
+    }
 
     public Long getSolutionId() {
         return solutionId;

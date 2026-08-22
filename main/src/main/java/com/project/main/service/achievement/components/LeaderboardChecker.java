@@ -24,14 +24,11 @@ public class LeaderboardChecker implements AchievementChecker {
     private static final Logger logger = LoggerFactory.getLogger(LeaderboardChecker.class);
     private final AchievementRepository achievementRepository;
     private final LeaderboardRepository leaderboardRepository;
-    private final SolutionRepository solutionRepository;
 
     public LeaderboardChecker(AchievementRepository achievementRepository,
-                                        LeaderboardRepository leaderboardRepository,
-                                        SolutionRepository solutionRepository) {
+                                        LeaderboardRepository leaderboardRepository) {
         this.achievementRepository = achievementRepository;
         this.leaderboardRepository = leaderboardRepository;
-        this.solutionRepository = solutionRepository;
     }
 
     @Override

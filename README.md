@@ -6,6 +6,10 @@
 
 Спецификация серверных эндпоинтов приложения.
 
+> **Базовый адрес:** в примерах используется `http://localhost:8080` (локальный запуск без Docker).  
+> При запуске через `docker-compose` приложение обычно доступно на внешнем порту `999`: `http://localhost:999`.  
+> Nginx на порту `2479` проксирует только `/storage/...` и не используется для `/api/**`.
+
 ---
 ## Системные эндпоинты
 ### Проверка работоспособности (`GET`)
@@ -313,19 +317,6 @@ curl -X GET http://localhost:8080/api/v1/site/1/achievements
 ```
 **Ответ (JSON):**
 *(Формат ответа идентичен эндпоинту `/me/achievements`, но отражает прогресс запрашиваемого пользователя. Если ID пользователя некорректен (<= 0), возвращается ошибка `Invalid user ID`. Если пользователь не найден, возвращается `Profile not found`).*
-```json
-[
-  {
-    "id": 1,
-    "name": "Быстрый старт",
-    "description": "Решите первый кейс менее чем за 30 минут",
-    "iconUrl": "/achievements/quick_start.png",
-    "obtainedAt": "2026-07-23T10:15:30.123"
-  }
-]
-```
-
-
 
 ---
 ## Кейсы и Материалы (`/api/v1/cases`)
@@ -522,7 +513,6 @@ curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/fav
 }
 ```
 
-
 ---
 ## Предпочтения пользователя (`/api/v1/site/me/preferences`)
 *Все эндпоинты в этом разделе требуют валидную сессионную Cookie пользователя.*
@@ -530,7 +520,7 @@ curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/fav
 ### Получение предпочтений (`GET`)
 Возвращает текущие настройки предпочтений пользователя (выбранная сложность и список любимых тегов с их статистикой). Если пользователь еще не настраивал предпочтения, вернется объект с `null` сложностью и пустым списком тегов.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:999/api/v1/site/me/preferences
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/me/preferences
 ```
 **Ответ (JSON):**
 ```json
@@ -561,7 +551,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:999/api/v1/site/me/prefere
 ```bash
 curl -X PATCH -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"preferredDifficulty": "HARD", "preferredTags": [1, 3], "removeDifficulty": false, "removeTags": false}' \
-http://localhost:999/api/v1/site/me/preferences
+http://localhost:8080/api/v1/site/me/preferences
 ```
 **Ответ (JSON):**
 ```json
@@ -571,7 +561,6 @@ http://localhost:999/api/v1/site/me/preferences
   "id": 8
 }
 ```
-
 
 ---
 ## Администрирование (`/api/admin/v1`)
@@ -728,9 +717,10 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/checkCook
 Принимает от микросервиса данные о решении кейса и обновляет суммарный рейтинг (score) игрока на основном сервере.
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
--d '{"caseId": 4, "rating": 150, "solutionText": "текст запроса", "solutionResponse": "ответ ИИ"}' \
+-d '{"caseId": 4, "rating": 100, "solutionText": "текст запроса", "solutionResponse": "ответ ИИ"}' \
 http://localhost:8080/api/text/v1/addScore
 ```
+> **Ограничения:** `rating` должен быть от `0` до `100`. `caseId`, `solutionText` и `solutionResponse` обязательны и не могут быть пустыми.
 
 ### История диалога с ИИ (`GET`)
 Отдает микросервису пагинированную историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса. Первая страница содержит самые старые сообщения.
@@ -782,10 +772,9 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
   "errorText": "Текст ошибки на английском языке"
 }
 ```
-> **Важно:** Благодаря глобальной обработке ошибок, даже системные сбои (401, 403, 404, 405, 413) возвращают этот единый формат
+> **Важно:** Благодаря глобальной обработке ошибок, даже системные сбои (401, 403, 404, 405, 413) возвращают этот единый формат.
 
 ### Сводная таблица всех ошибок
-
 
 | Категория | Текст ошибки (`errorText`) | Описание / Причина |
 | :--- | :--- | :--- |
@@ -808,7 +797,6 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | **Лимиты и защита от перебора** | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку email (макс. 3 в час с одного IP). |
 | &nbsp; | `Too many failed attempts. Try again later.` | Превышено количество неверных попыток ввода кода. Аккаунт временно заблокирован (на 15 минут). |
 | &nbsp; | `Too many verification attempts from your IP. Try again later.` | Превышен лимит попыток верификации с текущего IP-адреса (макс. 20 в час). |
-| &nbsp; | `Too many email requests. Try again later.` | Превышен лимит запросов на отправку писем (HTTP 429). |
 | &nbsp; | `Too many failed attempts. Please try again later.` | Превышен лимит неудачных попыток ввода кода сброса пароля, IP заблокирован (HTTP 429). |
 | **Статус, Модерация и Баны** | `User does not exist` | Пользователь не найден в системе (или в таблице лидеров). |
 | &nbsp; | `User is now banned` | Пользователь получил бан (на 2 месяца) после накопления >2 предупреждений. |
@@ -820,13 +808,13 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Username cannot be shorter than 3 characters` | Слишком короткое имя (минимум 3 символа). |
 | &nbsp; | `Username cannot be longer than 20 characters` | Слишком длинное имя (максимум 20 символов). |
 | &nbsp; | `Username is already taken` | Имя пользователя уже занято. |
+| &nbsp; | `Username is required` | Поле username не было передано в запросе. |
 | **Валидация Email** | `Email cannot be blank` | Поле email не может быть пустым. |
 | &nbsp; | `Email is required` | Поле email не было передано в запросе на повторную отправку. |
 | &nbsp; | `This email address is invalid` | Некорректный формат email-адреса. |
 | &nbsp; | `This email address is already taken` | Данный email уже зарегистрирован. |
 | &nbsp; | `Invalid email format` | Некорректный формат email (при создании пользователя администратором). |
 | &nbsp; | `Email is already taken` | Email уже зарегистрирован (при создании/обновлении пользователя). |
-| **Валидация Email** | `Email cannot be blank` | Поле email не может быть пустым. |
 | **Валидация Пароля** | `Password cannot be empty` | Пароль не может быть пустым. |
 | &nbsp; | `New password cannot be empty` | Поле нового пароля не может быть пустым. |
 | &nbsp; | `Password cannot be shorter than 8 characters` | Слишком короткий пароль (минимум 8 символов). |
@@ -836,17 +824,16 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Password is required` | Поле password не было передано в запросе. |
 | **Валидация запроса** | `Missing required parameter: <имя>` | **HTTP 400.** В запросе отсутствует обязательный `@RequestParam`. |
 | &nbsp; | `Validation method is required` | Не указан метод верификации (ожидается EMAIL или TELEGRAM). |
-| &nbsp; | `Username is required` | Поле username не было передано в запросе. |
 | &nbsp; | `Invalid input data format` | **HTTP 400.** Ошибка парсинга JSON или несовпадение типов (например, строка вместо enum). |
-| **Загрузка файлов (S3)** | `File size exceeds the maximum allowed limit` | **HTTP 413.** Размер файла превышает лимит |
+| **Загрузка файлов (S3)** | `File size exceeds the maximum allowed limit` | **HTTP 413.** Размер файла превышает глобальный лимит Spring. |
 | &nbsp; | `File cannot be empty` | Отправлен пустой файл. |
-| &nbsp; | `File size cannot exceed 5 MB` | **HTTP 400.** Размер файла превышает бизнес-лимит в 5 МБ |
-| &nbsp; | `File cannot be empty` | Отправлен пустой файл. |
+| &nbsp; | `File size cannot exceed 5 MB` | **HTTP 400.** Размер файла превышает бизнес-лимит в 5 МБ. |
 | &nbsp; | `Invalid file extension. Allowed Extensions: [.pdf, .jpg, .jpeg, .png, .webp]` | Загружен файл с недопустимым расширением. |
 | &nbsp; | `Invalid file content` | Файл поврежден или слишком мал для проверки заголовка. |
 | &nbsp; | `File content does not match allowed formats` | Магические байты файла не соответствуют разрешенным форматам. |
 | &nbsp; | `File extension does not match content` | Расширение файла не совпадает с его фактическим содержимым. |
 | &nbsp; | `PDF files are not allowed for this upload` | Попытка загрузить PDF в поле, предназначенное только для изображений. |
+| &nbsp; | `Failed to read file content` | Не удалось прочитать содержимое файла для проверки. |
 | &nbsp; | `Could not upload file: ...` | Ошибка сети или S3 при загрузке. |
 | **Управление тегами** | `Tag name cannot be empty` | Имя тега не может быть пустым. |
 | &nbsp; | `Tag name must be between 1 and 100 characters` | Имя тега должно быть от 1 до 100 символов. |
@@ -857,37 +844,42 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Request cannot be empty` | Тело запроса обновления тега пустое. |
 | &nbsp; | `No fields to update` | В запросе обновления тега не передано ни имени, ни статуса активности. |
 | **Управление кейсами** | `Case not found` | Указанный ID кейса не найден (общая ошибка). |
-| &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров  |
+| &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров. |
 | &nbsp; | `Case with ID: X is not found` | Указанный ID кейса не найден в базе данных (вместо X будет реальный ID). |
+| &nbsp; | `Case with this slug already exists` | Кейс с таким `slug` уже существует. |
+| &nbsp; | `Case is not active` | Попытка добавить неактивный кейс в избранное. |
 | &nbsp; | `Invalid slug format` | Slug содержит недопустимые символы (только строчные буквы, цифры и дефис). |
 | &nbsp; | `Slug too long (max 100)` | Slug превышает 100 символов. |
+| &nbsp; | `Slug cannot be empty` | Slug не может быть пустым. |
 | &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |
+| &nbsp; | `Title cannot be empty` | Название кейса не может быть пустым. |
 | &nbsp; | `TitleEn too long (max 255)` | Английское название превышает 255 символов. |
 | &nbsp; | `Description too long (max 1000)` | Краткое описание превышает 1000 символов. |
+| &nbsp; | `Description cannot be empty` | Описание обязательно для заполнения. |
 | &nbsp; | `Full description too long (max 5000)` | Полное описание превышает 5000 символов. |
+| &nbsp; | `Difficulty is required` | Сложность кейса обязательна для заполнения. |
 | &nbsp; | `Solve time must be at least 1 min` | Время решения должно быть не менее 1 минуты. |
 | &nbsp; | `Solve time cannot exceed 10000 min` | Время решения не может превышать 10000 минут. |
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
-| &nbsp; | `Slug cannot be empty` | Slug не может быть пустым. |
-| &nbsp; | `Title cannot be empty` | Название кейса не может быть пустым. |
-| &nbsp; | `Difficulty is required` | Сложность кейса обязательна для заполнения. |
-| &nbsp; | `Description cannot be empty` | Описание обязательно для заполнения. |
-| **Системные / Маршрутизация (Новое)** | `Resource not found` | **HTTP 404.** Запрос к несуществующему URL-адресу (эндпоинту). |
-| &nbsp; | `Method not allowed` | **HTTP 405.** Использован неверный HTTP-метод (например, POST вместо GET) для существующего URL. |
+| **Интеграция ИИ** | `Invalid rating value` | Рейтинг отсутствует, меньше 0 или больше 100. |
+| &nbsp; | `Invalid case ID` | Некорректный ID кейса в истории диалога. |
+| **Системные / Маршрутизация** | `Resource not found` | **HTTP 404.** Запрос к несуществующему URL-адресу (эндпоинту). |
+| &nbsp; | `Method not allowed` | **HTTP 405.** Использован неверный HTTP-метод для существующего URL. |
 | **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |
-| &nbsp; | `Search query is too long` | Поисковый запрос превышает максимально допустимую длину. |
+| &nbsp; | `Search query is too long` | Поисковый запрос превышает максимально допустимую длину (200 символов). |
 | &nbsp; | `Size must be between 1 and 100` | Размер страницы должен быть от 1 до 100 элементов. |
 | **Системные / Общие / Профиль** | `Invalid input data` | Переданы некорректные входные данные. |
 | &nbsp; | `Invalid request` | Неверно сформированный HTTP-запрос (или null в объекте запроса). |
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
 | &nbsp; | `Invalid user ID` | Передан некорректный ID пользователя (например, <= 0). |
 | &nbsp; | `Profile not found` | Профиль пользователя не найден. |
+| &nbsp; | `Profile could not be loaded` | Внутренняя ошибка при загрузке детального профиля пользователя. |
 | &nbsp; | `User not found` | Пользователь не найден в базе данных. |
 | &nbsp; | `User data not found` | Расширенные данные пользователя не найдены. |
 | &nbsp; | `Failed to update email` | Внутренняя ошибка сервера при обновлении email. |
 | &nbsp; | `Invalid validation method provided` | Передан некорректный метод верификации (ожидается EMAIL или TELEGRAM). |
 | &nbsp; | `Internal server error` | Внутренняя ошибка сервера (Crash / Unhandled exception). |
-| **Избранное (Favorites)** | `this case is already in your favourites` | Попытка добавить в избранное кейс, который там уже есть (HTTP 409 Conflict). |
-| &nbsp; | `this case is not in your favourites` | Попытка удалить из избранного кейс, которого там нет (HTTP 400 Bad Request). |
-| &nbsp; | `Case not found` | Указанный `caseId` не существует в системе (HTTP 404 Not Found). |
-| **Предпочтения (Preferences)** | `One or more tags are invalid or inactive` | В запросе обновления переданы ID несуществующих или деактивированных тегов (HTTP 400). |
+| **Избранное (Favorites)** | `this case is already in your favourites` | Попытка добавить в избранное кейс, который там уже есть (HTTP 409). |
+| &nbsp; | `this case is not in your favourites` | Попытка удалить из избранного кейс, которого там нет (HTTP 400). |
+| **Предпочтения (Preferences)** | `Preferred tags list cannot exceed 15 items` | Передано больше 15 предпочитаемых тегов. |
+| &nbsp; | `One or more tags are invalid or inactive` | В запросе обновления переданы ID несуществующих или деактивированных тегов. |
