@@ -15,7 +15,6 @@ public class AdminUserUpdateRequest {
     private LocalDateTime bannedUntil;
     private Boolean isVerified;
 
-    @NotBlank(message = "Email is required")
     @Email(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", message = "Invalid email format")
     private String email;
 

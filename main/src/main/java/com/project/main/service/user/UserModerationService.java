@@ -53,7 +53,7 @@ public class UserModerationService {
             throw new NotFoundException("User does not exist");
         }
 
-        if (leaderboardUser.getBanCount() >= 3) {
+        if (leaderboardUser.getBanCount() != null && leaderboardUser.getBanCount() >= 3) {
             eventPublisher.publishEvent(new UserDeletedEvent(leaderboardUser.getUserId()));
             userRepository.deleteById(leaderboardUser.getUserId());
             return "User no longer exists";

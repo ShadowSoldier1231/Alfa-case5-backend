@@ -419,9 +419,7 @@ public class LoginApiController {
             @CookieValue(value = "token", required = false) String token,
             HttpServletResponse response) {
 
-        if (token != null) {
-            throw new BadRequestException("You are already logged in");
-        }
+        sessionService.reverseCheckCookieOrThrow(token);
 
         if (loginRequest.getUsername() == null || loginRequest.getUsername().isBlank()) {
             throw new BadRequestException("Username cannot be empty");

@@ -5,7 +5,9 @@ import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.common.Solution;
+import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,17 +27,25 @@ public class SolutionService {
     private final SolutionRepository solutionRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CaseRepository caseRepository;
 
     public SolutionService(SolutionRepository solutionRepository,
                            LeaderboardRepository leaderboardRepository,
-                           ApplicationEventPublisher eventPublisher) {
+                           ApplicationEventPublisher eventPublisher,
+                           CaseRepository caseRepository) {
         this.solutionRepository = solutionRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
+        this.caseRepository = caseRepository;
     }
 
     @Transactional
     public void submitSolution(Long userId, SubmitSolutionRequest request) {
+
+        if (!caseRepository.existsById(request.getCaseId())) {
+            throw new NotFoundException("Case not found");
+        }
+
         Solution solution = new Solution();
 
         solution.setSolutionText(request.getSolutionText());

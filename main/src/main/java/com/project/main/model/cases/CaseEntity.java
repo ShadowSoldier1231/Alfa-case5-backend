@@ -27,7 +27,7 @@ public class CaseEntity {
     @Column(name = "title_en")
     private String titleEn;
 
-    @Column(length = 500)
+    @Column(length = 1000)
     private String description;
 
     @Column(name = "full_description", columnDefinition = "TEXT")

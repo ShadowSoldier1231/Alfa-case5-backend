@@ -56,6 +56,14 @@ public class VerificationRateLimitService {
             throw new TooManyRequestsException("Too many failed attempts. Please try again later.");
         }
     }
+    public void checkCanSendEmailForUser(Long userId) {
+        if (userId == null) return;
+        String userKey = "rate:email:user:" + userId;
+        Long count = getCount(userKey);
+        if (count != null && count >= MAX_EMAIL_SEND_PER_HOUR) {
+            throw new TooManyRequestsException("Too many email requests. Try again later.");
+        }
+    }
 
     public void recordFailedPasswordResetAttempt(String ip) {
         incrementWithTtl("rate:reset:ip:" + ip, RESET_TTL);
@@ -98,8 +106,13 @@ public class VerificationRateLimitService {
     }
 
     private Long getCount(String key) {
-        String val = redisTemplate.opsForValue().get(key);
-        return val != null ? Long.parseLong(val) : 0L;
+        try {
+            String val = redisTemplate.opsForValue().get(key);
+            return val != null ? Long.parseLong(val) : 0L;
+        } catch (Exception e){
+            return  0L;
+        }
+
     }
 
     private void incrementWithTtl(String key, Duration ttl) {

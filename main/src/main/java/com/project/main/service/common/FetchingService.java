@@ -48,6 +48,9 @@ public class FetchingService {
 
 
     public boolean cityExistsById(Long cityId){
+        if(cityId == null){
+            return false;
+        }
         if(cityId == -1){
             return false;
         }
@@ -202,9 +205,9 @@ public class FetchingService {
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
                             .birthdate((LocalDate) actualRow[4])
-                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
+                            .status(parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
-                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
+                            .gender(parseGender(actualRow[7]))
                             .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
                             .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
                             .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
@@ -227,9 +230,9 @@ public class FetchingService {
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
                             .birthdate((LocalDate) actualRow[4])
-                            .status(UserStatus.values()[((Number) actualRow[5]).intValue()])
+                            .status(parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
-                            .gender(GenderCode.values()[((Number) actualRow[7]).intValue()])
+                            .gender(parseGender(actualRow[7]))
                             .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
                             .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
                             .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
@@ -305,4 +308,21 @@ public class FetchingService {
                 .replace("_", "!_");
     }
 
+    private UserStatus parseStatus(Object value) {
+        if (value == null) return null;
+        try {
+            return UserStatus.valueOf(value.toString());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private GenderCode parseGender(Object value) {
+        if (value == null) return GenderCode.NOT_STATED;
+        try {
+            return GenderCode.valueOf(value.toString());
+        } catch (IllegalArgumentException e) {
+            return GenderCode.NOT_STATED;
+        }
+    }
 }

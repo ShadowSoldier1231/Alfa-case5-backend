@@ -92,10 +92,17 @@ public class EmailService {
     }
 
     @Recover
-    public void recoverFailedEmail(MailException e, String toEmail, long code) {
+    public void recoverFailedEmailWithCode(MailException e, String toEmail, long code) {
 
-        logger.error("Критическая ошибка: Не удалось отправить код %d на email %s после 3 попыток. Причина: %s%n",
-                code, toEmail, e.getMessage());
+        logger.error("Critical error: failed to send code {} to email {} after 3 attempts. Reason: {}",
+                code, toEmail, e.getMessage(), e);
+
+    }
+    @Recover
+    public void recoverFailedEmailWithUsername(MailException e, String toEmail, String username) {
+
+        logger.error("Critical error: failed to send username {} to email {} after 3 attempts. Reason: {}",
+                username, toEmail, e.getMessage(), e);
 
     }
 

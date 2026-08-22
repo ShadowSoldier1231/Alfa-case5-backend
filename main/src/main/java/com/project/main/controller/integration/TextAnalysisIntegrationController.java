@@ -10,9 +10,11 @@ import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
+import com.project.main.exception.NotFoundException;
 import com.project.main.model.user.UserSession;
 import com.project.main.model.common.Views;
 
+import com.project.main.repository.cases.CaseRepository;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 import com.project.main.service.cases.SolutionService;
@@ -87,9 +89,11 @@ public class TextAnalysisIntegrationController {
             throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
         UserSession session = sessionPair.getRight();
-
+        if (request.getRating() == null || request.getRating() < 0 || request.getRating() > 100) {
+            throw new BadRequestException("Invalid rating value");
+        }
         if (request.getCaseId() == null || request.getSolutionText() == null ||
-                request.getSolutionResponse() == null || request.getRating() == null) {
+                request.getSolutionResponse() == null) {
             throw new BadRequestException("Invalid request");
         }
         if (request.getSolutionText().isBlank() || request.getSolutionResponse().isBlank()) {

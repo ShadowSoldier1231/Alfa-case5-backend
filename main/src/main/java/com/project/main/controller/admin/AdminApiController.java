@@ -117,7 +117,15 @@ public class AdminApiController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
-        return ResponseEntity.ok(userService.getAdminUsers(page, size, search, sort));
+        try {
+            return ResponseEntity.ok(userService.getAdminUsers(page, size, search, sort));
+        }catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while fetching users", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -161,7 +169,14 @@ public class AdminApiController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<UserDetailsResponse> getUserDetails(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserDetails(id));
+        try {
+            return ResponseEntity.ok(userService.getUserDetails(id));
+        }catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while fetching a user", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
     }
 
     @JsonView(Views.RegisterResultPartial.class)

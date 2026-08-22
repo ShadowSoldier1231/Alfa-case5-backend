@@ -61,7 +61,9 @@ public class SessionFilter extends OncePerRequestFilter {
 
                 if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(LocalDateTime.now())) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    throw new InvalidSessionException("User is still banned", token);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"success\":false,\"errorText\":\"User is still banned\"}");
+                    return;
                 }
 
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

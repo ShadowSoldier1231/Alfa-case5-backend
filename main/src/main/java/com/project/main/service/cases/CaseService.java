@@ -156,8 +156,12 @@ public class CaseService {
 
     @Transactional
     public CasePublicDto getCaseByIdAndIncrementViews(Long id) {
+        CaseEntity c = caseRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Case not found"));
+        if (!Boolean.TRUE.equals(c.getActive())) {
+            throw new NotFoundException("Case not found");
+        }
         caseRepository.incrementViewsCount(id);
-        CaseEntity c = caseRepository.findById(id).orElseThrow(() -> new NotFoundException("Case not found"));
         return CasePublicDto.from(c,
                 loadTags(List.of(c)).getOrDefault(id, List.of())
         );
@@ -212,7 +216,10 @@ public class CaseService {
     public void updateCase(Long id, CaseUpdateRequest req, MultipartFile pdfFile, MultipartFile iconFile) {
         CaseEntity existingCase = caseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Case with ID: "+ id + " is not found"));
-
+        if (req.getSlug() != null && !req.getSlug().equals(existingCase.getSlug())
+                && caseRepository.existsBySlug(req.getSlug())) {
+            throw new ConflictException("Case with this slug already exists");
+        }
 
         if (pdfFile != null && !pdfFile.isEmpty()) {
             String newPdfKey = s3StorageService.uploadFile(pdfFile, "cases/pdfs");

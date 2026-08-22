@@ -18,6 +18,7 @@ import com.project.main.model.user.UserSetup;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.user.UserDataRepository;
 import com.project.main.repository.user.UserRepository;
+import com.project.main.service.auth.VerificationRateLimitService;
 import com.project.main.service.auth.VerificationService;
 import com.project.main.service.common.FetchingService;
 import com.project.main.service.common.S3StorageService;
@@ -53,13 +54,15 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
     private final FetchingService fetchingService;
+    private final VerificationRateLimitService rateLimitService;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        UserDataRepository userDataRepository,
                        LeaderboardRepository leaderboardRepository, VerificationService verificationService,
                        ApplicationEventPublisher eventPublisher, S3StorageService s3StorageService,
-                       FetchingService fetchingService) {
+                       FetchingService fetchingService,
+                       VerificationRateLimitService rateLimitService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userDataRepository = userDataRepository;
@@ -68,6 +71,7 @@ public class UserService {
         this.eventPublisher = eventPublisher;
         this.s3StorageService = s3StorageService;
         this.fetchingService = fetchingService;
+        this.rateLimitService = rateLimitService;
     }
 
     public String hashPassword(String rawPassword) {
@@ -250,6 +254,7 @@ public class UserService {
         try {
             userRepository.findByEmail(email.toLowerCase()).ifPresent(user -> {
                 if (user.getUsername().equalsIgnoreCase(username)) {
+                    rateLimitService.checkCanSendEmailForUser(user.getId());
                     long code = verificationService.createPasswordResetCode(user.getId());
                     eventPublisher.publishEvent(new ForgotPasswordInitEvent(user.getEmail(), code, clientIp));
                 }
@@ -371,7 +376,7 @@ public class UserService {
         }
 
         userRepository.save(realUser);
-
+        rateLimitService.checkCanSendEmailForUser(realUser.getId());
         String verification = verificationService.generateVerification(
                 realUser.getId(),
                 request.getValidationMethod(),
@@ -416,13 +421,7 @@ public class UserService {
 
             String role = row[4] != null ? row[4].toString() : null;
 
-            String status = null;
-            if (row[5] != null) {
-                int ordinal = ((Number) row[5]).intValue();
-                if (ordinal >= 0 && ordinal < UserStatus.values().length) {
-                    status = UserStatus.values()[ordinal].name();
-                }
-            }
+            String status = row[5] != null ? row[5].toString() : null;;
 
             boolean isVerified = row[6] != null && (Boolean) row[6];
 

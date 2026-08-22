@@ -32,6 +32,7 @@ public class VerificationCodeListener {
     @EventListener
     public void handleForgotUsername(ForgotUsernameEvent event) {
         userRepository.findByEmail(event.getEmail()).ifPresent(user -> {
+            rateLimitService.checkCanSendEmailForUser(user.getId());
             emailService.sendUsernameReminder(user.getEmail(), user.getUsername());
             rateLimitService.recordEmailSentByIp(event.getClientIp());
         });

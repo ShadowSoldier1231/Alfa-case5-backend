@@ -14,6 +14,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -53,6 +54,19 @@ public class GlobalExceptionHandler {
 
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RegisterResult(false, errorMsg));
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<RegisterResult> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body(new RegisterResult(false, "Invalid input data format"));
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<RegisterResult> handleGeneric(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new RegisterResult(false, "Internal server error"));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
