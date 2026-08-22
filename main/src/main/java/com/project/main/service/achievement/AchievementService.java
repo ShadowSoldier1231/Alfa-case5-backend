@@ -33,11 +33,6 @@ public class AchievementService {
     public List<AchievementDto> getAchievementsForUser(Long userId) {
         List<Object[]> obtainedRows = achievementRepository.findObtainedAchievementsByUserId(userId);
 
-        logger.info("Found {} obtained achievements for user {}", obtainedRows.size(), userId);
-        for (Object[] row : obtainedRows) {
-            logger.info("Raw DB row -> achievement_id: {}, obtained_at: {}, class: {}",
-                    row[0], row[1], row[1] != null ? row[1].getClass().getName() : "null");
-        }
 
         Map<Long, LocalDateTime> obtainedMap = obtainedRows.stream()
                 .filter(row -> row[1] != null)

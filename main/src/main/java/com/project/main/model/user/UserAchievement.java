@@ -28,7 +28,7 @@ public class UserAchievement {
     private Long achievementId;
 
     @CreationTimestamp
-    @Column(name = "obtained_at", nullable = false)
+    @Column(name = "obtained_at", nullable = false, updatable = false)
     private LocalDateTime obtainedAt;
 
     public UserAchievement() {
