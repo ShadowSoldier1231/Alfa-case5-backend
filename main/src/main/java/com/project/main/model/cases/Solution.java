@@ -24,22 +24,22 @@ public class Solution {
     @Column(columnDefinition = "TEXT")
     private String solutionResponse;
 
-    private Integer solvedMin;
+    private Integer timeSpentMinutes;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public Integer getSolvedMin() {
-        return solvedMin;
+    public Integer getTimeSpentMinutes() {
+        return timeSpentMinutes;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setSolvedMin(Integer solvedMin) {
-        this.solvedMin = solvedMin;
+    public void setTimeSpentMinutes(Integer timeSpentMinutes) {
+        this.timeSpentMinutes = timeSpentMinutes;
     }
 
     public Long getSolutionId() {

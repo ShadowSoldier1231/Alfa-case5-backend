@@ -761,6 +761,34 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 }
 ```
 
+### Начало решения кейса (`POST`) *(Требует Cookie)*
+Обозначает, что пользователь начал решение кейса. Сервер сохраняет время начала в Redis (запись автоматически удаляется через 24 часа). Это время будет использовано для вычисления затраченных минут при отправке решения (`addScore`).
+```bash
+curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/startSolving/4
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+
+### Отмена/сброс решения кейса (`POST`) *(Требует Cookie)*
+Удаляет запись о начале решения кейса из Redis. Используется, если пользователь передумал решать кейс или хочет сбросить таймер перед новой попыткой.
+```bash
+curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSolving/4
+```
+**Ответ (JSON):**
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+
 ---
 ## Примеры ответов API и ошибок
 Все ответы сервера приходят в формате JSON. При успешном запросе возвращается `"success": true`. 
@@ -873,6 +901,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 | &nbsp; | `Invalid city id` | Передан несуществующий или неверный ID города. |
 | &nbsp; | `Invalid user ID` | Передан некорректный ID пользователя (например, <= 0). |
 | &nbsp; | `Profile not found` | Профиль пользователя не найден. |
+| &nbsp; | `Invalid case ID` | Передан некорректный ID кейса (например, <= 0). |
 | &nbsp; | `Profile could not be loaded` | Внутренняя ошибка при загрузке детального профиля пользователя. |
 | &nbsp; | `User not found` | Пользователь не найден в базе данных. |
 | &nbsp; | `User data not found` | Расширенные данные пользователя не найдены. |

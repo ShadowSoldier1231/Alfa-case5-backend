@@ -10,15 +10,23 @@ import com.project.main.model.cases.Solution;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
+import com.project.main.service.user.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -28,15 +36,21 @@ public class SolutionService {
     private final LeaderboardRepository leaderboardRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final CaseRepository caseRepository;
+    private final StringRedisTemplate redisTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(SolutionService.class);
+
+    private static final String REDIS_START_TIME_PREFIX = "solve:start:";
 
     public SolutionService(SolutionRepository solutionRepository,
                            LeaderboardRepository leaderboardRepository,
                            ApplicationEventPublisher eventPublisher,
-                           CaseRepository caseRepository) {
+                           CaseRepository caseRepository,
+                           StringRedisTemplate redisTemplate) {
         this.solutionRepository = solutionRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
         this.caseRepository = caseRepository;
+        this.redisTemplate = redisTemplate;
     }
 
     @Transactional
@@ -46,15 +60,32 @@ public class SolutionService {
             throw new NotFoundException("Case not found");
         }
 
-        Solution solution = new Solution();
+        Integer timeSpentMinutes = null;
+        String redisKey = REDIS_START_TIME_PREFIX + userId + ":" + request.getCaseId();
+        String startTimeStr = redisTemplate.opsForValue().get(redisKey);
+        if (startTimeStr != null) {
+            try {
+                LocalDateTime startTime = LocalDateTime.parse(startTimeStr);
+                long minutes = Duration.between(startTime, LocalDateTime.now()).toMinutes();
 
+                timeSpentMinutes = (int) Math.max(0, minutes);
+            } catch (DateTimeParseException e) {
+                logger.error("Failed to parse start time from Redis for key: {}", redisKey);
+            }catch (Exception e){
+                logger.error("Unexpected error when parsing date for key: {}, value: {}, error: {}", redisKey, startTimeStr, e.getMessage());
+            }
+        }
+
+
+
+        Solution solution = new Solution();
         solution.setSolutionText(request.getSolutionText());
         solution.setSolutionResponse(request.getSolutionResponse());
-
         solution.setRating(request.getRating());
-
         solution.setCaseId(request.getCaseId());
         solution.setUserId(userId);
+        solution.setTimeSpentMinutes(timeSpentMinutes);
+
         solutionRepository.save(solution);
 
         leaderboardRepository.recalculateAndSetScore(userId);
@@ -63,12 +94,30 @@ public class SolutionService {
                 userId,
                 request.getCaseId(),
                 request.getRating(),
-                request.getSolvedMin()
+                timeSpentMinutes
         ));
 
     }
 
+    public void startSolving(Long userId, Long caseId) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+        if (!caseRepository.existsById(caseId)) {
+            throw new NotFoundException("Case not found");
+        }
+        String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
+        String startTime = LocalDateTime.now().toString();
 
+        redisTemplate.opsForValue().set(key, startTime, 24, TimeUnit.HOURS);
+    }
+    public void cancelSolving(Long userId, Long caseId) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+        String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
+        redisTemplate.delete(key);
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<ChatMessageDto> getChatSequence(

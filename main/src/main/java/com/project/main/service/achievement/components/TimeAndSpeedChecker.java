@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -37,7 +36,7 @@ public class TimeAndSpeedChecker implements AchievementChecker {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void checkAndAward(Long userId, SolutionSubmittedEvent event) {
 
-        if (event.getSolvedMin() != null && event.getSolvedMin() < 30) {
+        if (event.getTimeSpentMinutes() != null && event.getTimeSpentMinutes() < 30) {
             if (solutionRepository.existsFirstSolutionUnder30Min(userId, SOLVE_THRESHOLD)) {
                 awardIfNotExists(userId, Achievement.QUICK_START);
             }

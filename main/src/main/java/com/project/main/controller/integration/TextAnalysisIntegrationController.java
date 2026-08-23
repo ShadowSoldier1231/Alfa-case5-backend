@@ -10,11 +10,9 @@ import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
-import com.project.main.exception.NotFoundException;
 import com.project.main.model.user.UserSession;
 import com.project.main.model.common.Views;
 
-import com.project.main.repository.cases.CaseRepository;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 import com.project.main.service.cases.SolutionService;
@@ -103,6 +101,45 @@ public class TextAnalysisIntegrationController {
         solutionService.submitSolution(session.getUserId(), request);
         return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
     }
+
+    @PostMapping("/startSolving/{caseId}")
+    public ResponseEntity<RegisterResult> startSolving(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId) {
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
+        }
+
+        UserSession session = sessionPair.getRight();
+        if (caseId == null) {
+            throw new BadRequestException("Case ID is required");
+        }
+
+        solutionService.startSolving(session.getUserId(), caseId);
+        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+    }
+
+    @PostMapping("/finishSolving/{caseId}")
+    public ResponseEntity<RegisterResult> cancelSolving(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId) {
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
+        }
+
+        UserSession session = sessionPair.getRight();
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        solutionService.cancelSolving(session.getUserId(), caseId);
+        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+    }
+
 
     @GetMapping("/getChatSequence/{caseId}")
     public ResponseEntity<PageResponse<ChatMessageDto>> getChatSequence(
