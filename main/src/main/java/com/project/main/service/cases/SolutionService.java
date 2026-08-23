@@ -3,6 +3,7 @@ package com.project.main.service.cases;
 import com.project.main.dto.event.SolutionSubmittedEvent;
 import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.common.PageResponse;
+import com.project.main.dto.integration.SolvingStatusResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.NotFoundException;
@@ -23,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -65,13 +68,13 @@ public class SolutionService {
         String startTimeStr = redisTemplate.opsForValue().get(redisKey);
         if (startTimeStr != null) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(startTimeStr);
-                long minutes = Duration.between(startTime, LocalDateTime.now()).toMinutes();
+                Instant startTime = parseTimeToInstant(startTimeStr);
+                long minutes = Duration.between(startTime, Instant.now()).toMinutes();
 
                 timeSpentMinutes = (int) Math.max(0, minutes);
             } catch (DateTimeParseException e) {
                 logger.error("Failed to parse start time from Redis for key: {}", redisKey);
-            }catch (Exception e){
+            } catch (Exception e) {
                 logger.error("Unexpected error when parsing date for key: {}, value: {}, error: {}", redisKey, startTimeStr, e.getMessage());
             }
         }
@@ -99,18 +102,42 @@ public class SolutionService {
 
     }
 
-    public void startSolving(Long userId, Long caseId) {
+    public SolvingStatusResponse startSolving(Long userId, Long caseId) {
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
         }
         if (!caseRepository.existsById(caseId)) {
             throw new NotFoundException("Case not found");
         }
-        String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
-        String startTime = LocalDateTime.now().toString();
 
-        redisTemplate.opsForValue().set(key, startTime, 24, TimeUnit.HOURS);
+        String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
+        String startTime = Instant.now().toString();
+
+        Boolean isSet = redisTemplate.opsForValue().setIfAbsent(key, startTime, 24, TimeUnit.HOURS);
+
+        if (Boolean.FALSE.equals(isSet)) {
+            String existingTimeStr = redisTemplate.opsForValue().get(key);
+            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr));
+        }
+
+        return new SolvingStatusResponse(true, Instant.now());
     }
+
+    public SolvingStatusResponse getSolvingStatus(Long userId, Long caseId) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
+        String timeStr = redisTemplate.opsForValue().get(key);
+
+        if (timeStr != null) {
+            return new SolvingStatusResponse(true, parseTimeToInstant(timeStr));
+        }
+
+        return new SolvingStatusResponse(false, null);
+    }
+
     public void cancelSolving(Long userId, Long caseId) {
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
@@ -165,6 +192,18 @@ public class SolutionService {
                 solutionPage.getTotalElements(),
                 solutionPage.getTotalPages()
         );
+    }
+
+    private Instant parseTimeToInstant(String timeStr) {
+        try {
+            return Instant.parse(timeStr);
+        } catch (DateTimeParseException e) {
+            return LocalDateTime.parse(timeStr).atZone(ZoneOffset.UTC).toInstant();
+        }catch (Exception e) {
+            logger.error("Error when parsing Instant: {}", timeStr);
+            return null;
+        }
+
     }
 
 }

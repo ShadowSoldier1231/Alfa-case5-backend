@@ -7,6 +7,7 @@ import com.project.main.dto.cases.CasePromptResponse;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.integration.ChatMessageDto;
+import com.project.main.dto.integration.SolvingStatusResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
@@ -103,7 +104,7 @@ public class TextAnalysisIntegrationController {
     }
 
     @PostMapping("/startSolving/{caseId}")
-    public ResponseEntity<RegisterResult> startSolving(
+    public ResponseEntity<SolvingStatusResponse> startSolving(
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId) {
 
@@ -117,8 +118,27 @@ public class TextAnalysisIntegrationController {
             throw new BadRequestException("Case ID is required");
         }
 
-        solutionService.startSolving(session.getUserId(), caseId);
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        SolvingStatusResponse response = solutionService.startSolving(session.getUserId(), caseId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/solvingState/{caseId}")
+    public ResponseEntity<SolvingStatusResponse> getSolvingState(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId) {
+
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
+        }
+
+        UserSession session = sessionPair.getRight();
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        SolvingStatusResponse response = solutionService.getSolvingStatus(session.getUserId(), caseId);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/finishSolving/{caseId}")
