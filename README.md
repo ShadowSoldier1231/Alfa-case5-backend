@@ -779,7 +779,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/startSol
 ### Проверка статуса решения (`GET`) *(Требует Cookie)*
 Возвращает текущий статус таймера решения для указанного кейса. Если решение не было начато, таймер истек (прошло 24 часа) или был сброшен, `active` будет `false`, а `timestamp` — `null`.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/solvingStatus/4
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/solvingState/4
 ```
 **Ответ (JSON) при активном таймере:**
 ```json
