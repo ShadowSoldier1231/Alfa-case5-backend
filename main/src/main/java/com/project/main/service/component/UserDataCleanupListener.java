@@ -3,6 +3,7 @@ package com.project.main.service.component;
 
 import com.project.main.dto.event.UserDeletedEvent;
 import com.project.main.model.user.UserData;
+import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.SolutionRepository;
 import com.project.main.repository.user.*;
 import com.project.main.service.common.S3StorageService;
@@ -23,6 +24,7 @@ public class UserDataCleanupListener {
     private final UserPreferenceRepository preferenceRepository;
     private final LeaderboardRepository leaderboardRepository;
     private final UserVerificationRepository verificationRepository;
+    private final CaseCompletionRepository caseCompletionRepository;
 
     public UserDataCleanupListener(UserDataRepository userDataRepository,
                                    S3StorageService s3StorageService,
@@ -31,7 +33,8 @@ public class UserDataCleanupListener {
                                    UserFavoriteCaseRepository favoriteCaseRepository,
                                    UserPreferenceRepository preferenceRepository,
                                    LeaderboardRepository leaderboardRepository,
-                                   UserVerificationRepository verificationRepository) {
+                                   UserVerificationRepository verificationRepository,
+                                   CaseCompletionRepository caseCompletionRepository) {
         this.userDataRepository = userDataRepository;
         this.s3StorageService = s3StorageService;
         this.solutionRepository = solutionRepository;
@@ -40,6 +43,7 @@ public class UserDataCleanupListener {
         this.preferenceRepository = preferenceRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.verificationRepository = verificationRepository;
+        this.caseCompletionRepository = caseCompletionRepository;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -59,5 +63,6 @@ public class UserDataCleanupListener {
         userDataRepository.deleteById(userId);
         solutionRepository.deleteAllByUserId(userId);
         achievementRepository.deleteAllByUserId(userId);
+        caseCompletionRepository.deleteByUserId(userId);
     }
 }

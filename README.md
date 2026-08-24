@@ -900,6 +900,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `Slug too long (max 100)` | Slug превышает 100 символов. |
 | &nbsp; | `Slug cannot be empty` | Slug не может быть пустым. |
 | &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |
+| &nbsp; | `Case is already solved` | Этот кейс уже был решен прежде. |
 | &nbsp; | `Title cannot be empty` | Название кейса не может быть пустым. |
 | &nbsp; | `TitleEn too long (max 255)` | Английское название превышает 255 символов. |
 | &nbsp; | `Description too long (max 1000)` | Краткое описание превышает 1000 символов. |

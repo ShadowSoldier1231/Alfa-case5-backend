@@ -7,7 +7,9 @@ import com.project.main.dto.integration.SolvingStatusResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.NotFoundException;
+import com.project.main.model.cases.CaseCompletion;
 import com.project.main.model.cases.Solution;
+import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
@@ -40,6 +42,8 @@ public class SolutionService {
     private final ApplicationEventPublisher eventPublisher;
     private final CaseRepository caseRepository;
     private final StringRedisTemplate redisTemplate;
+    private final CaseCompletionRepository completionRepository;
+
     private static final Logger logger = LoggerFactory.getLogger(SolutionService.class);
 
     private static final String REDIS_START_TIME_PREFIX = "solve:start:";
@@ -48,12 +52,14 @@ public class SolutionService {
                            LeaderboardRepository leaderboardRepository,
                            ApplicationEventPublisher eventPublisher,
                            CaseRepository caseRepository,
-                           StringRedisTemplate redisTemplate) {
+                           StringRedisTemplate redisTemplate,
+                            CaseCompletionRepository caseCompletionRepository) {
         this.solutionRepository = solutionRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
         this.caseRepository = caseRepository;
         this.redisTemplate = redisTemplate;
+        this.completionRepository = caseCompletionRepository;
     }
 
     @Transactional
@@ -103,17 +109,28 @@ public class SolutionService {
     }
 
     public SolvingStatusResponse startSolving(Long userId, Long caseId) {
-        if (caseId == null || caseId <= 0) {
-            throw new BadRequestException("Invalid case ID");
-        }
+
+            if (userId == null || userId <= 0) {
+                throw new BadRequestException("Invalid user ID");
+            }
+            if (caseId == null || caseId <= 0) {
+                throw new BadRequestException("Invalid case ID");
+            }
+
+
         if (!caseRepository.existsById(caseId)) {
             throw new NotFoundException("Case not found");
+        }
+
+        if (completionRepository.existsByUserIdAndCaseId(userId, caseId)) {
+            throw new BadRequestException("Case is already solved");
         }
 
         String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
         String startTime = Instant.now().toString();
 
-        Boolean isSet = redisTemplate.opsForValue().setIfAbsent(key, startTime, 24, TimeUnit.HOURS);
+        Boolean isSet = redisTemplate.opsForValue()
+                .setIfAbsent(key, startTime, Duration.ofHours(24));
 
         if (Boolean.FALSE.equals(isSet)) {
             String existingTimeStr = redisTemplate.opsForValue().get(key);
@@ -138,10 +155,26 @@ public class SolutionService {
         return new SolvingStatusResponse(false, null);
     }
 
-    public void cancelSolving(Long userId, Long caseId) {
+    @Transactional
+    public void finishSolving(Long userId, Long caseId) {
+        if (userId == null || userId <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
         }
+
+        if (!caseRepository.existsById(caseId)) {
+            throw new NotFoundException("Case not found");
+        }
+
+        boolean alreadyCompleted = completionRepository.existsByUserIdAndCaseId(userId, caseId);
+
+        if (!alreadyCompleted) {
+            CaseCompletion completion = new CaseCompletion(userId, caseId);
+            completionRepository.save(completion);
+        }
+
         String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
         redisTemplate.delete(key);
     }

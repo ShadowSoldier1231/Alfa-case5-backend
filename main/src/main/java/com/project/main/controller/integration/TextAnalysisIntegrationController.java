@@ -106,19 +106,21 @@ public class TextAnalysisIntegrationController {
     @PostMapping("/startSolving/{caseId}")
     public ResponseEntity<SolvingStatusResponse> startSolving(
             @CookieValue(value = "token", required = false) String token,
-            @PathVariable Long caseId) {
-
+            @PathVariable Long caseId
+    ) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+
         if (!sessionPair.getLeft().getSuccess()) {
             throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();
-        if (caseId == null) {
-            throw new BadRequestException("Case ID is required");
-        }
 
-        SolvingStatusResponse response = solutionService.startSolving(session.getUserId(), caseId);
+        SolvingStatusResponse response = solutionService.startSolving(
+                session.getUserId(),
+                caseId
+        );
+
         return ResponseEntity.ok(response);
     }
 
@@ -142,21 +144,23 @@ public class TextAnalysisIntegrationController {
     }
 
     @PostMapping("/finishSolving/{caseId}")
-    public ResponseEntity<RegisterResult> cancelSolving(
+    public ResponseEntity<RegisterResult> finishSolving(
             @CookieValue(value = "token", required = false) String token,
-            @PathVariable Long caseId) {
-
+            @PathVariable Long caseId
+    ) {
         Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+
         if (!sessionPair.getLeft().getSuccess()) {
             throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
         }
 
         UserSession session = sessionPair.getRight();
-        if (caseId == null || caseId <= 0) {
-            throw new BadRequestException("Invalid case ID");
-        }
 
-        solutionService.cancelSolving(session.getUserId(), caseId);
+        solutionService.finishSolving(
+                session.getUserId(),
+                caseId
+        );
+
         return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
     }
 
