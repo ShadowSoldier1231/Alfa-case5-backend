@@ -13,14 +13,18 @@ public record CaseAdminDto(
         Difficulty difficulty, Integer averageSolveMin,
         String pdfUrl, String iconUrl,
         String promptContextEn, Integer viewsCount, boolean active,
+        String perfectSolution,
         LocalDateTime createdAt, LocalDateTime updatedAt,
-        List<CasePublicDto.TagInfo> tags) {
-
+        List<CasePublicDto.TagInfo> tags
+) {
     public static CaseAdminDto from(CaseEntity c, List<CasePublicDto.TagInfo> tags) {
-        return new CaseAdminDto(c.getId(), c.getSlug(), c.getTitle(), c.getTitleEn(),
+        return new CaseAdminDto(
+                c.getId(), c.getSlug(), c.getTitle(), c.getTitleEn(),
                 c.getDescription(), c.getFullDescription(), c.getDifficulty(),
                 c.getAverageSolveMin(), c.getPdfUrl(), c.getIconUrl(),
                 c.getPromptContextEn(), c.getViewsCount(), c.getActive(),
-                c.getCreatedAt(), c.getUpdatedAt(), tags);
+                c.getPerfectSolution(),
+                c.getCreatedAt(), c.getUpdatedAt(), tags
+        );
     }
 }

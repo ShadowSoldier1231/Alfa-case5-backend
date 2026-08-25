@@ -34,6 +34,9 @@ public class CaseCreateRequest {
     @Size(max = 2000, message = "Prompt context too long (max 2000)")
     private String promptContextEn;
 
+    @Size(max = 10000, message = "Perfect solution too long (max 10000)")
+    private String perfectSolution;
+
     private Boolean isActive;
 
 
@@ -42,7 +45,7 @@ public class CaseCreateRequest {
 
     public CaseCreateRequest(String slug, String title, String titleEn, String description,
                              String fullDescription, Difficulty difficulty, Integer averageSolveMin,
-                             String promptContextEn, Boolean isActive) {
+                             String promptContextEn, Boolean isActive, String perfectSolution) {
         this.slug = slug;
         this.title = title;
         this.titleEn = titleEn;
@@ -52,8 +55,12 @@ public class CaseCreateRequest {
         this.averageSolveMin = averageSolveMin;
         this.promptContextEn = promptContextEn;
         this.isActive = isActive;
-
+        this.perfectSolution = perfectSolution;
     }
+
+    public String getPerfectSolution() { return perfectSolution; }
+    public void setPerfectSolution(String perfectSolution) { this.perfectSolution = perfectSolution; }
+
 
     public void setActive(Boolean active) {
         isActive = active;

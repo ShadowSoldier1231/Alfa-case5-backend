@@ -65,6 +65,8 @@ public class CaseEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "perfect_solution", columnDefinition = "TEXT")
+    private String perfectSolution;
 
     @OneToMany(mappedBy = "caseEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CaseTag> caseTags = new ArrayList<>();
@@ -75,7 +77,7 @@ public class CaseEntity {
 
     public CaseEntity(String slug, String title, String titleEn, String description, String fullDescription,
                       Difficulty difficulty, Integer averageSolveMin, String pdfUrl, String iconUrl,
-                      String promptContextEn, Boolean isActive,  Integer viewsCount) {
+                      String promptContextEn, Boolean isActive,  Integer viewsCount, String perfectSolution) {
         this.slug = slug;
         this.title = title;
         this.titleEn = titleEn;
@@ -88,6 +90,15 @@ public class CaseEntity {
         this.promptContextEn = promptContextEn;
         this.isActive = isActive != null ? isActive : true;
         this.viewsCount = viewsCount != null ? viewsCount : 0;
+        this.perfectSolution = perfectSolution;
+    }
+
+    public String getPerfectSolution() {
+        return perfectSolution;
+    }
+
+    public void setPerfectSolution(String perfectSolution) {
+        this.perfectSolution = perfectSolution;
     }
 
     public void setId(Long id) {

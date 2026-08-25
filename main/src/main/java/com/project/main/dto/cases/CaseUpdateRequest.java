@@ -33,6 +33,11 @@ public class CaseUpdateRequest {
     @Size(max = 2000, message = "Prompt context too long (max 2000)")
     private String promptContextEn;
 
+    @Size(max = 10000, message = "Perfect solution too long (max 10000)")
+    private String perfectSolution;
+
+    private Boolean removePerfectSolution;
+
     private Boolean isActive;
     private Boolean removePdf;
     private Boolean removeIcon;
@@ -42,7 +47,7 @@ public class CaseUpdateRequest {
     public CaseUpdateRequest(String slug, String title, String titleEn,
                              String description, String fullDescription, Difficulty difficulty,
                              Integer averageSolveMin, String promptContextEn, Boolean isActive,
-                             Boolean removePdf, Boolean removeIcon)
+                             Boolean removePdf, Boolean removeIcon, String perfectSolution, Boolean removePerfectSolution)
     {
         this.slug = slug;
         this.title = title;
@@ -55,7 +60,15 @@ public class CaseUpdateRequest {
         this.isActive = isActive;
         this.removePdf = removePdf;
         this.removeIcon = removeIcon;
+        this.perfectSolution = perfectSolution;
+        this.removePerfectSolution  =removePerfectSolution;
     }
+
+    public String getPerfectSolution() { return perfectSolution; }
+    public void setPerfectSolution(String perfectSolution) { this.perfectSolution = perfectSolution; }
+
+    public Boolean getRemovePerfectSolution() { return removePerfectSolution; }
+    public void setRemovePerfectSolution(Boolean removePerfectSolution) { this.removePerfectSolution = removePerfectSolution; }
 
     public String getDescription() {
         return description;

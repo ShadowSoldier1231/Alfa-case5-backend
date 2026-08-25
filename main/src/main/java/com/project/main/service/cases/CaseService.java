@@ -12,11 +12,13 @@ import com.project.main.model.cases.CaseEntity;
 import com.project.main.model.cases.CaseTag;
 import com.project.main.model.cases.CaseTagId;
 import com.project.main.model.cases.Tag;
+import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.cases.CaseTagRepository;
 import com.project.main.repository.cases.TagRepository;
 import com.project.main.service.common.S3StorageService;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,15 +37,18 @@ public class CaseService {
     private final TagRepository tagRepository;
     private final CaseTagRepository caseTagRepository;
     private final S3StorageService s3StorageService;
+    private final CaseCompletionRepository completionRepository;
 
     public CaseService(CaseRepository caseRepository,
                        TagRepository tagRepository,
                        CaseTagRepository caseTagRepository,
-                       S3StorageService s3StorageService) {
+                       S3StorageService s3StorageService,
+                       CaseCompletionRepository completionRepository) {
         this.caseRepository = caseRepository;
         this.tagRepository = tagRepository;
         this.caseTagRepository = caseTagRepository;
         this.s3StorageService = s3StorageService;
+        this.completionRepository = completionRepository;
     }
 
 
@@ -147,7 +152,8 @@ public class CaseService {
                 iconKey,
                 request.getPromptContextEn(),
                 request.getActive() != null ? request.getActive() : true,
-                0
+                0,
+                request.getPerfectSolution()
         );
 
         caseRepository.save(newCase);
@@ -259,14 +265,32 @@ public class CaseService {
         if (req.getAverageSolveMin() != null) existingCase.setAverageSolveMin(req.getAverageSolveMin());
         if (req.getPromptContextEn() != null) existingCase.setPromptContextEn(req.getPromptContextEn());
         if (req.getActive() != null) existingCase.setActive(req.getActive());
-
+        if (Boolean.TRUE.equals(req.getRemovePerfectSolution())) {
+            existingCase.setPerfectSolution(null);
+        } else if (req.getPerfectSolution() != null) {
+            existingCase.setPerfectSolution(req.getPerfectSolution());
+        }
         caseRepository.save(existingCase);
     }
 
+    @Transactional(readOnly = true)
+    public String getPerfectSolutionOrThrow(Long caseId, Long userId){
+
+        CaseEntity c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new NotFoundException("Case not found"));
+
+        if (!Boolean.TRUE.equals(c.getActive())) {
+            throw new NotFoundException("Case not found");
+        }
+        if(!completionRepository.existsByUserIdAndCaseId(userId, caseId)){
+            throw new BadRequestException("Case is not solved yet");
+        }
+        return c.getPerfectSolution();
+    }
 
     public CasePromptResponse getCasePrompt(Long id) {
         CaseEntity c = caseRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Case is not found"));
+                .orElseThrow(() -> new NotFoundException("Case not found"));
         return new CasePromptResponse(c.getTitle(), c.getPromptContextEn(),c.getId());
     }
 

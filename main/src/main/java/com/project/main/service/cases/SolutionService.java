@@ -8,6 +8,7 @@ import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.cases.CaseCompletion;
+import com.project.main.model.cases.CaseEntity;
 import com.project.main.model.cases.Solution;
 import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.CaseRepository;
@@ -118,8 +119,8 @@ public class SolutionService {
             throw new BadRequestException("Invalid case ID");
         }
 
-
-        if (!caseRepository.existsById(caseId)) {
+        CaseEntity c = caseRepository.findById(caseId).orElseThrow(() -> new NotFoundException("Case not found"));
+        if (!Boolean.TRUE.equals(c.getActive())) {
             throw new NotFoundException("Case not found");
         }
 
@@ -172,7 +173,8 @@ public class SolutionService {
             throw new BadRequestException("Invalid case ID");
         }
 
-        if (!caseRepository.existsById(caseId)) {
+        CaseEntity c = caseRepository.findById(caseId).orElseThrow(() -> new NotFoundException("Case not found"));
+        if (!Boolean.TRUE.equals(c.getActive())) {
             throw new NotFoundException("Case not found");
         }
 

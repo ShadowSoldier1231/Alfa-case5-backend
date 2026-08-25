@@ -2,10 +2,16 @@ package com.project.main.controller.web;
 
 
 import com.project.main.dto.cases.CasePublicDto;
+import com.project.main.dto.cases.PerfectSolutionResponse;
 import com.project.main.dto.common.PageResponse;
+import com.project.main.dto.common.RegisterResult;
+import com.project.main.exception.InvalidSessionException;
+import com.project.main.model.user.UserSession;
+import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -14,9 +20,12 @@ import org.springframework.web.bind.annotation.*;
 public class CaseController {
 
     private final CaseService caseService;
+    private final SessionService sessionService;
 
-    public CaseController(CaseService caseService) {
+    public CaseController(CaseService caseService,
+                          SessionService sessionService) {
         this.caseService = caseService;
+        this.sessionService = sessionService;
     }
 
     @GetMapping("/getAll")
@@ -42,5 +51,15 @@ public class CaseController {
             @RequestParam(defaultValue = "case_count,desc") String sort) {
 
         return ResponseEntity.ok(caseService.getPublicTags(page, size, search, sort));
+    }
+
+    @GetMapping("/{id}/perfectSolution")
+    public ResponseEntity<PerfectSolutionResponse> getPerfectSolution(
+            @PathVariable("id") Long caseId,
+            @CookieValue(value = "token", required = false) String token) {
+
+        Long userId = sessionService.getUserIdOrThrow(token);
+        String solution = caseService.getPerfectSolutionOrThrow(caseId, userId);
+        return ResponseEntity.ok(new PerfectSolutionResponse(caseId, solution));
     }
 }

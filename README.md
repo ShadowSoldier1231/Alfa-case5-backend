@@ -378,6 +378,31 @@ curl -X GET "http://localhost:8080/api/v1/cases/tags?page=0&size=25&search=&sort
 }
 ```
 
+### Получение идеального решения кейса (`GET`) *(Требует Cookie)*
+
+Возвращает `caseId` и `perfectSolution` для текущего пользователя.
+
+Идеальное решение доступно только если пользователь завершил кейс. Завершение кейса фиксируется через `POST /api/text/v1/finishSolving/{caseId}`.
+
+Если кейс не найден или скрыт (`isActive = false`), возвращается ошибка `Case not found`.  
+Если пользователь еще не завершил кейс, возвращается ошибка `Case is not solved yet`.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/cases/1/perfectSolution
+```
+
+**Ответ (JSON):**
+
+```json
+{
+  "caseId": 1,
+  "perfectSolution": "Текст идеального решения"
+}
+```
+
+> **Примечание:** Если администратор не заполнил поле `perfectSolution`, значение `perfectSolution` может быть `null`.
+
+
 ---
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 ### Топ-5 игроков лидерборда (`GET`)
@@ -611,12 +636,22 @@ curl -X POST -H "Cookie: token=TOKEN" \
 -F 'iconFile=@/path/to/icon.jpg' \
 http://localhost:8080/api/admin/v1/createCase
 ```
+> **Примечание:** В JSON-части `case` при создании можно дополнительно передать поле `perfectSolution` — текст идеального решения кейса. Максимальная длина — 10000 символов.
+
 
 #### Обновление кейса (`PUT`)
+
 Обновляет данные кейса. Для удаления существующих файлов передайте `"removePdf": true` или `"removeIcon": true` в JSON-части `case`.
+
+Для добавления или обновления идеального решения передайте поле `perfectSolution`.
+
+Для удаления идеального решения передайте `"removePerfectSolution": true`.
+
+Если одновременно переданы `"removePerfectSolution": true` и `"perfectSolution"`, поле `perfectSolution` будет удалено.
+
 ```bash
 curl -X PUT -H "Cookie: token=TOKEN" \
--F 'case={"title":"Обновленное название","removePdf":true};type=application/json' \
+-F 'case={"title":"Обновленное название","perfectSolution":"Текст идеального решения"};type=application/json' \
 -F 'iconFile=@/path/to/new_icon.jpg' \
 http://localhost:8080/api/admin/v1/cases/42
 ```
@@ -987,6 +1022,8 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `Slug cannot be empty` | Slug не может быть пустым. |
 | &nbsp; | `Title too long (max 255)` | Название превышает 255 символов. |
 | &nbsp; | `Case is already solved` | Этот кейс уже был решен прежде. |
+| &nbsp; | `Perfect solution too long (max 10000)` | Поле `perfectSolution` превышает 10000 символов. |
+| &nbsp; | `Case is not solved yet` | Пользователь еще не завершил кейс, поэтому идеальное решение недоступно. |
 | &nbsp; | `Title cannot be empty` | Название кейса не может быть пустым. |
 | &nbsp; | `TitleEn too long (max 255)` | Английское название превышает 255 символов. |
 | &nbsp; | `Description too long (max 1000)` | Краткое описание превышает 1000 символов. |
