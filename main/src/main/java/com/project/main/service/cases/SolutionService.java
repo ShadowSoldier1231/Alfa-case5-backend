@@ -133,8 +133,9 @@ public class SolutionService {
                 .setIfAbsent(key, startTime, Duration.ofHours(24));
 
         if (Boolean.FALSE.equals(isSet)) {
+            Long bestRating = solutionRepository.getMaxRatingByCaseIdAndUserId(caseId, userId);
             String existingTimeStr = redisTemplate.opsForValue().get(key);
-            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr), false, 0L);
+            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr), false, bestRating);
         }
 
         return new SolvingStatusResponse(true, Instant.now(), false, 0L);
