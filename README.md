@@ -703,6 +703,69 @@ http://localhost:8080/api/admin/v1/users/42
 curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/users/42
 ```
 
+### Просмотр решений пользователей (История диалогов)
+*Эндпоинты для просмотра истории взаимодействия пользователя с ИИ (сохраненные решения).*
+
+#### Все решения пользователя (`GET`)
+Возвращает пагинированный список всех решений (историю диалогов с ИИ) конкретного пользователя по всем кейсам, отсортированных по времени (от старых к новым).
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users/42/solutions?page=0&size=25"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "solutionId": 101,
+      "rating": 85,
+      "solutionText": "Текст первого запроса пользователя к ИИ",
+      "solutionResponse": "Текст первого ответа ИИ",
+      "caseId": 5
+    },
+    {
+      "solutionId": 102,
+      "rating": 92,
+      "solutionText": "Текст второго запроса",
+      "solutionResponse": "Текст второго ответа",
+      "caseId": 12
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
+
+#### Решения пользователя по конкретному кейсу (`GET`)
+Возвращает пагинированный список решений (историю диалога) конкретного пользователя в рамках указанного кейса.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users/42/solutions/case/5?page=0&size=25"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "solutionId": 101,
+      "rating": 85,
+      "solutionText": "Текст первого запроса пользователя к ИИ",
+      "solutionResponse": "Текст первого ответа ИИ",
+      "caseId": 5
+    },
+    {
+      "solutionId": 102,
+      "rating": 92,
+      "solutionText": "Текст второго запроса",
+      "solutionResponse": "Текст второго ответа",
+      "caseId": 12
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
+
 ---
 ## Геймификация и ИИ (`/api/text/v1`)
 *Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса. Для всех запросов обязательна валидная Cookie сессии пользователя.*
@@ -731,15 +794,26 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/getChatS
 ```json
 {
   "items": [
-    { "solutionId": 1, "rating": 8, "solutionText": "запрос1", "solutionResponse": "ответ1" },
-    { "solutionId": 2, "rating": 9, "solutionText": "запрос2", "solutionResponse": "ответ2" }
+    {
+      "solutionId": 101,
+      "rating": 85,
+      "solutionText": "Текст первого запроса пользователя к ИИ",
+      "solutionResponse": "Текст первого ответа ИИ",
+      "caseId": 5
+    },
+    {
+      "solutionId": 102,
+      "rating": 92,
+      "solutionText": "Текст второго запроса",
+      "solutionResponse": "Текст второго ответа",
+      "caseId": 12
+    }
   ],
   "page": 0,
   "size": 25,
   "totalElements": 2,
   "totalPages": 1
 }
-```
 
 ### Обработка нарушений (`POST`)
 Микросервис сообщает о токсичном поведении пользователя. Запрос увеличивает счетчик предупреждений; при достижении лимита удаляет аккаунт.

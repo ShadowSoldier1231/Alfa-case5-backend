@@ -6,6 +6,7 @@ import com.project.main.dto.cases.CaseCreateRequest;
 import com.project.main.dto.cases.CaseUpdateRequest;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
+import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -17,7 +18,9 @@ import com.project.main.exception.ApiException;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.dto.cases.CaseAdminDto;
+import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.common.Views;
+import com.project.main.service.cases.SolutionService;
 import com.project.main.service.user.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -40,11 +43,14 @@ public class AdminApiController {
 
     private final CaseService caseService;
     private final UserService userService;
+    private final SolutionService solutionService;
     private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
-    public AdminApiController(CaseService caseService, UserService userService) {
+    public AdminApiController(CaseService caseService, UserService userService,
+                              SolutionService solutionService) {
         this.caseService = caseService;
         this.userService = userService;
+        this.solutionService = solutionService;
     }
 
     @GetMapping("/cases")
@@ -177,6 +183,38 @@ public class AdminApiController {
             logger.error("Internal server error while fetching a user", e);
             throw new InternalServerErrorException("Internal server error");
         }
+    }
+
+    @GetMapping("/users/{userId}/solutions/case/{caseId}")
+    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForCase(
+            @PathVariable("caseId") Long caseId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @PathVariable("userId") Long userId) {
+
+        return ResponseEntity.ok(
+                solutionService.getChatSequence(
+                        caseId,
+                        userId,
+                        page,
+                        size
+                )
+        );
+    }
+
+    @GetMapping("/users/{userId}/solutions")
+    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @PathVariable("userId") Long userId) {
+
+        return ResponseEntity.ok(
+                solutionService.getAllSolutionsForUser(
+                        userId,
+                        page,
+                        size
+                )
+        );
     }
 
     @JsonView(Views.RegisterResultPartial.class)

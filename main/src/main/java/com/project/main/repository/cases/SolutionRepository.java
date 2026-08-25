@@ -42,7 +42,7 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
           AND user_id = :userId
         """,
             countQuery = """
-        SELECT COUNT(solution_id)
+        SELECT COUNT(*)
         FROM solution
         WHERE case_id = :caseId
           AND user_id = :userId
@@ -51,6 +51,24 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
     )
     Page<Solution> findChatSequence(
             @Param("caseId") Long caseId,
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+        SELECT *
+        FROM solution
+        WHERE user_id = :userId
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+        FROM solution
+        WHERE user_id = :userId
+        """,
+            nativeQuery = true
+    )
+    Page<Solution> getAllSolutionsForUser(
             @Param("userId") Long userId,
             Pageable pageable
     );
