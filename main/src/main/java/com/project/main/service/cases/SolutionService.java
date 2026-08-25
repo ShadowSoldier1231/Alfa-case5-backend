@@ -110,12 +110,12 @@ public class SolutionService {
 
     public SolvingStatusResponse startSolving(Long userId, Long caseId) {
 
-            if (userId == null || userId <= 0) {
-                throw new BadRequestException("Invalid user ID");
-            }
-            if (caseId == null || caseId <= 0) {
-                throw new BadRequestException("Invalid case ID");
-            }
+        if (userId == null || userId <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
 
 
         if (!caseRepository.existsById(caseId)) {
@@ -134,29 +134,35 @@ public class SolutionService {
 
         if (Boolean.FALSE.equals(isSet)) {
             String existingTimeStr = redisTemplate.opsForValue().get(key);
-            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr));
+            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr), false, 0L);
         }
 
-        return new SolvingStatusResponse(true, Instant.now());
+        return new SolvingStatusResponse(true, Instant.now(), false, 0L);
     }
 
     public SolvingStatusResponse getSolvingStatus(Long userId, Long caseId) {
+        if (userId == null || userId <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
         }
+
+        boolean isCompleted = completionRepository.existsByUserIdAndCaseId(userId, caseId);
+        Long bestRating = solutionRepository.getMaxRatingByCaseIdAndUserId(caseId, userId);
 
         String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
         String timeStr = redisTemplate.opsForValue().get(key);
 
         if (timeStr != null) {
-            return new SolvingStatusResponse(true, parseTimeToInstant(timeStr));
+            return new SolvingStatusResponse(true, parseTimeToInstant(timeStr), isCompleted, bestRating);
         }
 
-        return new SolvingStatusResponse(false, null);
+        return new SolvingStatusResponse(false, null, isCompleted, bestRating);
     }
 
     @Transactional
-    public void finishSolving(Long userId, Long caseId) {
+    public SolvingStatusResponse finishSolving(Long userId, Long caseId) {
         if (userId == null || userId <= 0) {
             throw new BadRequestException("Invalid user ID");
         }
@@ -177,6 +183,10 @@ public class SolutionService {
 
         String key = REDIS_START_TIME_PREFIX + userId + ":" + caseId;
         redisTemplate.delete(key);
+
+        Long bestRating = solutionRepository.getMaxRatingByCaseIdAndUserId(caseId, userId);
+
+        return new SolvingStatusResponse(false, null, true, bestRating);
     }
 
     @Transactional(readOnly = true)

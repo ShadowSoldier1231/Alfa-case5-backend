@@ -144,7 +144,7 @@ public class TextAnalysisIntegrationController {
     }
 
     @PostMapping("/finishSolving/{caseId}")
-    public ResponseEntity<RegisterResult> finishSolving(
+    public ResponseEntity<SolvingStatusResponse> finishSolving(
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId
     ) {
@@ -156,12 +156,12 @@ public class TextAnalysisIntegrationController {
 
         UserSession session = sessionPair.getRight();
 
-        solutionService.finishSolving(
+        SolvingStatusResponse response =  solutionService.finishSolving(
                 session.getUserId(),
                 caseId
         );
 
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        return ResponseEntity.ok(response);
     }
 
 
