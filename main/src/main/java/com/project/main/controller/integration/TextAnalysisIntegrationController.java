@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 
 
 import com.project.main.dto.cases.CasePromptResponse;
+import com.project.main.dto.cases.RateCaseRequest;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.integration.ChatMessageDto;
@@ -164,6 +165,28 @@ public class TextAnalysisIntegrationController {
         return ResponseEntity.ok(response);
     }
 
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @PostMapping("/rateCase/{caseId}")
+    public ResponseEntity<RegisterResult> rateCase(
+            @CookieValue(value = "token", required = false) String token,
+            @PathVariable Long caseId,
+            @RequestBody(required = false) RateCaseRequest request
+    ) {
+        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+
+        if (!sessionPair.getLeft().getSuccess()) {
+            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
+        }
+
+        UserSession session = sessionPair.getRight();
+
+        Long rating = request != null ? request.getRating() : null;
+
+        caseService.rateCase(session.getUserId(), caseId, rating);
+
+        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+    }
 
     @GetMapping("/getChatSequence/{caseId}")
     public ResponseEntity<PageResponse<ChatMessageDto>> getChatSequence(

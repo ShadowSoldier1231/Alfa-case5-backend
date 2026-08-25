@@ -12,6 +12,7 @@ import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.cases.CaseEntity;
 import com.project.main.model.user.UserFavoriteCase;
+import com.project.main.repository.cases.CaseRatingRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.UserFavoriteCaseRepository;
 import org.springframework.data.domain.Page;
@@ -32,11 +33,14 @@ public class FavoriteCaseService {
 
     private final UserFavoriteCaseRepository favoriteCaseRepository;
     private final CaseRepository caseRepository;
+    private final CaseRatingRepository caseRatingRepository;
 
     public FavoriteCaseService(UserFavoriteCaseRepository favoriteCaseRepository,
-                               CaseRepository caseRepository){
+                               CaseRepository caseRepository,
+                               CaseRatingRepository caseRatingRepository) {
         this.favoriteCaseRepository = favoriteCaseRepository;
         this.caseRepository = caseRepository;
+        this.caseRatingRepository = caseRatingRepository;
     }
 
     @Transactional
@@ -90,6 +94,14 @@ public class FavoriteCaseService {
                 .map(row -> row[0] != null ? ((Number) row[0]).longValue() : null)
                 .filter(Objects::nonNull)
                 .toList();
+        Map<Long, Double> ratingsMap = caseIds.isEmpty()
+                ? Map.of()
+                : caseRatingRepository.findAverageRatingsByCaseIds(caseIds).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> row[1] == null ? 0.0 : ((Number) row[1]).doubleValue(),
+                        (existing, replacement) -> existing
+                ));
 
 
         Map<Long, List<CasePublicDto.TagInfo>> tagsMap = loadTags(caseIds);
@@ -115,11 +127,15 @@ public class FavoriteCaseService {
                     LocalDateTime addedAt = toLocalDateTime(row[13]);
                     List<CasePublicDto.TagInfo> tags = tagsMap.getOrDefault(id, List.of());
 
-                    return new FavoriteCaseDto(
+                    FavoriteCaseDto dto = new FavoriteCaseDto(
                             id, slug, title, titleEn, description, fullDescription,
                             difficulty, averageSolveMin, pdfUrl, iconUrl, viewsCount,
                             createdAt, updatedAt, addedAt, tags
                     );
+
+                    dto.setCaseRating(ratingsMap.getOrDefault(id, 0.0));
+
+                    return dto;
                 })
                 .toList();
 

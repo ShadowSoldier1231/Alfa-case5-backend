@@ -8,14 +8,8 @@ import com.project.main.dto.tags.TagUpdateRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
-import com.project.main.model.cases.CaseEntity;
-import com.project.main.model.cases.CaseTag;
-import com.project.main.model.cases.CaseTagId;
-import com.project.main.model.cases.Tag;
-import com.project.main.repository.cases.CaseCompletionRepository;
-import com.project.main.repository.cases.CaseRepository;
-import com.project.main.repository.cases.CaseTagRepository;
-import com.project.main.repository.cases.TagRepository;
+import com.project.main.model.cases.*;
+import com.project.main.repository.cases.*;
 import com.project.main.service.common.S3StorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.parameters.P;
@@ -38,17 +32,20 @@ public class CaseService {
     private final CaseTagRepository caseTagRepository;
     private final S3StorageService s3StorageService;
     private final CaseCompletionRepository completionRepository;
+    private final CaseRatingRepository caseRatingRepository;
 
     public CaseService(CaseRepository caseRepository,
                        TagRepository tagRepository,
                        CaseTagRepository caseTagRepository,
                        S3StorageService s3StorageService,
-                       CaseCompletionRepository completionRepository) {
+                       CaseCompletionRepository completionRepository,
+                       CaseRatingRepository caseRatingRepository) {
         this.caseRepository = caseRepository;
         this.tagRepository = tagRepository;
         this.caseTagRepository = caseTagRepository;
         this.s3StorageService = s3StorageService;
         this.completionRepository = completionRepository;
+        this.caseRatingRepository = caseRatingRepository;
     }
 
 
@@ -164,12 +161,21 @@ public class CaseService {
     public CasePublicDto getCaseByIdAndIncrementViews(Long id) {
         CaseEntity c = caseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Case not found"));
+
         if (!Boolean.TRUE.equals(c.getActive())) {
             throw new NotFoundException("Case not found");
         }
+
         caseRepository.incrementViewsCount(id);
-        return CasePublicDto.from(c,
-                loadTags(List.of(c)).getOrDefault(id, List.of())
+
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(List.of(c));
+        Double caseRating = loadRatings(List.of(c.getId()))
+                .getOrDefault(c.getId(), 0.0);
+
+        return CasePublicDto.from(
+                c,
+                tags.getOrDefault(c.getId(), List.of()),
+                caseRating
         );
     }
 
@@ -200,12 +206,21 @@ public class CaseService {
 
         Page<CaseEntity> casePage = caseRepository.findPublicCases(searchTerm, pageable);
 
-        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(casePage.getContent());
+        List<CaseEntity> cases = casePage.getContent();
 
-        List<CasePublicDto> items = casePage.getContent().stream()
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
+
+        Map<Long, Double> ratings = loadRatings(
+                cases.stream()
+                        .map(CaseEntity::getId)
+                        .toList()
+        );
+
+        List<CasePublicDto> items = cases.stream()
                 .map(c -> CasePublicDto.from(
                         c,
-                        tags.getOrDefault(c.getId(), List.of())
+                        tags.getOrDefault(c.getId(), List.of()),
+                        ratings.getOrDefault(c.getId(), 0.0)
                 ))
                 .toList();
 
@@ -311,8 +326,54 @@ public class CaseService {
 
 
 
+    @Transactional
+    public void rateCase(Long userId, Long caseId, Long rating) {
+        if (userId == null || userId <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
 
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
 
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new BadRequestException("Invalid rating value");
+        }
+
+        CaseEntity caseEntity = caseRepository.findById(caseId)
+                .orElseThrow(() -> new NotFoundException("Case not found"));
+
+        if (!Boolean.TRUE.equals(caseEntity.getActive())) {
+            throw new NotFoundException("Case not found");
+        }
+
+        CaseRating caseRating = caseRatingRepository
+                .findByUserIdAndCaseId(userId, caseId)
+                .orElse(null);
+
+        if (caseRating == null) {
+            caseRating = new CaseRating();
+            caseRating.setUserId(userId);
+            caseRating.setCaseId(caseId);
+        }
+
+        caseRating.setRating(rating);
+
+        caseRatingRepository.save(caseRating);
+    }
+
+    private Map<Long, Double> loadRatings(List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return caseRatingRepository.findAverageRatingsByCaseIds(caseIds).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> row[1] == null ? 0.0 : ((Number) row[1]).doubleValue(),
+                        (existing, replacement) -> existing
+                ));
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<TagListItem> getAdminTags(int page, int size, String search, String sort) {
@@ -484,12 +545,21 @@ public class CaseService {
 
         Page<CaseEntity> casePage = caseRepository.findAdminCases(searchTerm, pageable);
 
-        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(casePage.getContent());
+        List<CaseEntity> cases = casePage.getContent();
 
-        List<CaseAdminDto> items = casePage.getContent().stream()
+        Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(cases);
+
+        Map<Long, Double> ratings = loadRatings(
+                cases.stream()
+                        .map(CaseEntity::getId)
+                        .toList()
+        );
+
+        List<CaseAdminDto> items = cases.stream()
                 .map(c -> CaseAdminDto.from(
                         c,
-                        tags.getOrDefault(c.getId(), List.of())
+                        tags.getOrDefault(c.getId(), List.of()),
+                        ratings.getOrDefault(c.getId(), 0.0)
                 ))
                 .toList();
 

@@ -21,6 +21,7 @@ public class FavoriteCaseDto {
     private LocalDateTime updatedAt;
     private LocalDateTime addedAt;
     private List<CasePublicDto.TagInfo> tags;
+    private Double caseRating;
 
     public FavoriteCaseDto() {
 
@@ -45,6 +46,14 @@ public class FavoriteCaseDto {
         this.updatedAt = updatedAt;
         this.addedAt = addedAt;
         this.tags = tags != null ? List.copyOf(tags) : null;
+    }
+
+    public Double getCaseRating() {
+        return caseRating;
+    }
+
+    public void setCaseRating(Double caseRating) {
+        this.caseRating = caseRating;
     }
 
     public void setId(Long id) {

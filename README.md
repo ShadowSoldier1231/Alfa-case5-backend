@@ -321,29 +321,44 @@ curl -X GET http://localhost:8080/api/v1/site/1/achievements
 ---
 ## Кейсы и Материалы (`/api/v1/cases`)
 ### Список всех активных кейсов (`GET`)
-Возвращает пагинированный список опубликованных кейсов с возможностью поиска и сортировки.
+
+Возвращает список опубликованных кейсов, отсортированных по дате создания.
+
+Каждый кейс в ответе содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
+
+Если у кейса нет оценок, возвращается `0.0`.
+
 ```bash
-curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25&search=&sort=created_at,desc"
+curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25"
 ```
+
 **Ответ (JSON):**
+
 ```json
 {
   "items": [
     {
       "id": 1,
-      "slug": "some-case",
-      "title": "Название",
-      "titleEn": "Title",
-      "description": "Описание",
+      "slug": "case-slug",
+      "title": "Название кейса",
+      "titleEn": "Case title",
+      "description": "Краткое описание",
       "fullDescription": "Полное описание",
       "difficulty": "EASY",
-      "averageSolveMin": 30,
+      "averageSolveMin": 60,
       "pdfUrl": "cases/pdfs/uuid.pdf",
       "iconUrl": "cases/icons/uuid.jpg",
       "viewsCount": 10,
-      "createdAt": "2026-06-25T12:00:00",
-      "updatedAt": "2026-06-25T12:00:00",
-      "tags": [{"id": 1, "name": "Java", "count": 15}]
+      "createdAt": "2026-07-23T10:15:30",
+      "updatedAt": "2026-07-23T10:15:30",
+      "caseRating": 4.25,
+      "tags": [
+        {
+          "id": 1,
+          "name": "Java",
+          "count": 15
+        }
+      ]
     }
   ],
   "page": 0,
@@ -354,27 +369,42 @@ curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25&search=&so
 ```
 
 ### Полная информация о кейсе (`GET`)
+
 Возвращает детальную информацию о кейсе по его ID, включая полное описание и ссылки на файлы. Автоматически увеличивает счетчик просмотров.
+
+Ответ дополнительно содержит поле `caseRating` — средний рейтинг кейса по всем пользовательским оценкам.
+
+Если у кейса нет оценок, возвращается `0.0`.
+
 ```bash
 curl -X GET http://localhost:8080/api/v1/cases/1
 ```
 
-### Список активных тегов (`GET`)
-Возвращает пагинированный список разрешенных тегов, которые можно использовать для фильтрации, с количеством привязанных кейсов.
-```bash
-curl -X GET "http://localhost:8080/api/v1/cases/tags?page=0&size=25&search=&sort=case_count,desc"
-```
 **Ответ (JSON):**
+
 ```json
 {
-  "items": [
-    {"id": 1, "name": "Java", "count": 15},
-    {"id": 2, "name": "Spring", "count": 10}
-  ],
-  "page": 0,
-  "size": 25,
-  "totalElements": 2,
-  "totalPages": 1
+  "id": 1,
+  "slug": "case-slug",
+  "title": "Название кейса",
+  "titleEn": "Case title",
+  "description": "Краткое описание",
+  "fullDescription": "Полное описание",
+  "difficulty": "EASY",
+  "averageSolveMin": 60,
+  "pdfUrl": "cases/pdfs/uuid.pdf",
+  "iconUrl": "cases/icons/uuid.jpg",
+  "viewsCount": 11,
+  "createdAt": "2026-07-23T10:15:30",
+  "updatedAt": "2026-07-23T10:15:30",
+  "caseRating": 4.25,
+  "tags": [
+    {
+      "id": 1,
+      "name": "Java",
+      "count": 15
+    }
+  ]
 }
 ```
 
@@ -476,30 +506,40 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/v1/site/me/favorites?page=0&size=25&search=&sort=added_at,desc"
 ```
+
+Каждый элемент содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
+
+Если у кейса нет оценок, возвращается `0.0`.
+
 > **Примечание:** Параметр `sort` по умолчанию равен `added_at,desc` (сначала самые недавно добавленные). Доступные поля для сортировки: `added_at`, `title`, `views_count`, `difficulty`, `created_at`.
 
 **Ответ (JSON):**
+
 ```json
 {
   "items": [
     {
-      "id": 42,
-      "slug": "spring-security-case",
-      "title": "Настройка Spring Security",
-      "titleEn": "Spring Security Setup",
-      "description": "Краткое описание кейса",
-      "fullDescription": "Полное описание...",
-      "difficulty": "MEDIUM",
-      "averageSolveMin": 45,
+      "id": 1,
+      "slug": "case-slug",
+      "title": "Название кейса",
+      "titleEn": "Case title",
+      "description": "Краткое описание",
+      "fullDescription": "Полное описание",
+      "difficulty": "EASY",
+      "averageSolveMin": 60,
       "pdfUrl": "cases/pdfs/uuid.pdf",
       "iconUrl": "cases/icons/uuid.jpg",
-      "viewsCount": 120,
-      "createdAt": "2026-06-25T12:00:00",
-      "updatedAt": "2026-06-25T12:00:00",
-      "addedAt": "2026-08-18T10:30:00",
+      "viewsCount": 10,
+      "createdAt": "2026-07-23T10:15:30",
+      "updatedAt": "2026-07-23T10:15:30",
+      "addedAt": "2026-07-23T12:00:00",
+      "caseRating": 4.25,
       "tags": [
-        {"id": 1, "name": "Java", "count": 15},
-        {"id": 2, "name": "Spring", "count": 10}
+        {
+          "id": 1,
+          "name": "Java",
+          "count": 15
+        }
       ]
     }
   ],
@@ -593,31 +633,47 @@ http://localhost:8080/api/v1/site/me/preferences
 
 ### Управление кейсами
 #### Список всех кейсов (`GET`)
-Возвращает пагинированный список всех кейсов, включая неактивные (скрытые), с возможностью поиска и сортировки.
+
+Возвращает все кейсы, включая неактивные (скрытые).
+
+Каждый кейс в ответе содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
+
+Если у кейса нет оценок, возвращается `0.0`.
+
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/cases?page=0&size=25&search=&sort=created_at,desc"
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases
 ```
+
 **Ответ (JSON):**
+
 ```json
 {
   "items": [
     {
       "id": 1,
-      "slug": "some-case",
-      "title": "Название",
-      "titleEn": "Title",
-      "description": "Описание",
+      "slug": "case-slug",
+      "title": "Название кейса",
+      "titleEn": "Case title",
+      "description": "Краткое описание",
       "fullDescription": "Полное описание",
       "difficulty": "EASY",
-      "averageSolveMin": 30,
+      "averageSolveMin": 60,
       "pdfUrl": "cases/pdfs/uuid.pdf",
       "iconUrl": "cases/icons/uuid.jpg",
-      "promptContextEn": "Prompt...",
+      "promptContextEn": "Ты опытный разработчик. Твоя задача...",
       "viewsCount": 10,
       "active": true,
-      "createdAt": "2026-06-25T12:00:00",
-      "updatedAt": "2026-06-25T12:00:00",
-      "tags": []
+      "perfectSolution": "Эталонное решение кейса",
+      "createdAt": "2026-07-23T10:15:30",
+      "updatedAt": "2026-07-23T10:15:30",
+      "caseRating": 4.25,
+      "tags": [
+        {
+          "id": 1,
+          "name": "Java",
+          "count": 15
+        }
+      ]
     }
   ],
   "page": 0,
@@ -770,6 +826,7 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users/4
   "totalElements": 2,
   "totalPages": 1
 }
+```
 
 #### Решения пользователя по конкретному кейсу (`GET`)
 Возвращает пагинированный список решений (историю диалога) конкретного пользователя в рамках указанного кейса.
@@ -800,6 +857,7 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users/4
   "totalElements": 2,
   "totalPages": 1
 }
+```
 
 ---
 ## Геймификация и ИИ (`/api/text/v1`)
@@ -819,6 +877,35 @@ curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 http://localhost:8080/api/text/v1/addScore
 ```
 > **Ограничения:** `rating` должен быть от `0` до `100`. `caseId`, `solutionText` и `solutionResponse` обязательны и не могут быть пустыми.
+
+### Оценка кейса (`POST`)
+
+Позволяет авторизованному пользователю поставить оценку кейсу.
+
+Оценка возможна независимо от того, решал пользователь этот кейс или нет.
+
+Допустимые значения оценки: от `1` до `5`.
+
+Если пользователь уже оценивал этот кейс, повторный запрос обновляет предыдущую оценку.
+
+Кейс должен существовать и быть активным. Если кейс неактивен, возвращается ошибка `Case not found`.
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
+-d '{"rating": 5}' \
+http://localhost:8080/api/text/v1/rateCase/1
+```
+
+**Ответ (JSON):**
+
+```json
+{
+  "success": true,
+  "errorText": "",
+  "id": 8
+}
+```
+
 
 ### История диалога с ИИ (`GET`)
 Отдает микросервису пагинированную историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса. Первая страница содержит самые старые сообщения.
@@ -849,6 +936,7 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/getChatS
   "totalElements": 2,
   "totalPages": 1
 }
+```
 
 ### Обработка нарушений (`POST`)
 Микросервис сообщает о токсичном поведении пользователя. Запрос увеличивает счетчик предупреждений; при достижении лимита удаляет аккаунт.
@@ -1012,6 +1100,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `Tag is not attached to this case` | Попытка отвязать тег, который не был привязан к этому кейсу. |
 | &nbsp; | `Request cannot be empty` | Тело запроса обновления тега пустое. |
 | &nbsp; | `No fields to update` | В запросе обновления тега не передано ни имени, ни статуса активности. |
+| **Оценка кейсов** | `Invalid rating value` | Оценка не передана, не является числом или находится вне диапазона `1–5`. |
 | **Управление кейсами** | `Case not found` | Указанный ID кейса не найден (общая ошибка). |
 | &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров. |
 | &nbsp; | `Case with ID: X is not found` | Указанный ID кейса не найден в базе данных (вместо X будет реальный ID). |
