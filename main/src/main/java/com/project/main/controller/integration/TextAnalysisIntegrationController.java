@@ -188,7 +188,25 @@ public class TextAnalysisIntegrationController {
         return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
     }
 
-    @GetMapping("/getChatSequence/{caseId}")
+
+    @GetMapping("/solutions")
+    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @CookieValue(value = "token", required = false) String token) {
+
+
+        Long userId = sessionService.getUserIdOrThrow(token);
+        return ResponseEntity.ok(
+                solutionService.getAllSolutionsForUser(
+                        userId,
+                        page,
+                        size
+                )
+        );
+    }
+
+    @GetMapping("/solutions/{caseId}")
     public ResponseEntity<PageResponse<ChatMessageDto>> getChatSequence(
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId,

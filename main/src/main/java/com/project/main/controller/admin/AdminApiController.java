@@ -94,6 +94,21 @@ public class AdminApiController {
         }
     }
 
+    @GetMapping("/cases/{caseId}/solutions")
+    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForCase(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @PathVariable("caseId") Long caseId) {
+
+        return ResponseEntity.ok(
+                solutionService.getAllSolutionsForCase(
+                        caseId,
+                        page,
+                        size
+                )
+        );
+    }
+
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping(value = "/createCase", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResult> createCase(

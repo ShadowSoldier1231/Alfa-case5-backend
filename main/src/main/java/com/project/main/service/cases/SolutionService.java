@@ -14,8 +14,6 @@ import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
-import com.project.main.service.user.UserService;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,7 +31,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -299,5 +296,48 @@ public class SolutionService {
                 solutionPage.getTotalElements(),
                 solutionPage.getTotalPages()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ChatMessageDto> getAllSolutionsForCase(Long caseId, int page, int size) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
+
+        if (!caseRepository.existsById(caseId)) {
+            throw new NotFoundException("User not found");
+        }
+
+        if (page < 0) {
+            throw new BadRequestException("Page cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BadRequestException("Size must be between 1 and 100");
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "solution_id")
+        );
+
+        Page<Solution> solutionPage = solutionRepository.getAllSolutionsForCase(
+                caseId,
+                pageable
+        );
+
+        List<ChatMessageDto> items = solutionPage.getContent().stream()
+                .map(ChatMessageDto::from)
+                .toList();
+
+        return new PageResponse<>(
+                items,
+                solutionPage.getNumber(),
+                solutionPage.getSize(),
+                solutionPage.getTotalElements(),
+                solutionPage.getTotalPages()
+        );
+
     }
 }

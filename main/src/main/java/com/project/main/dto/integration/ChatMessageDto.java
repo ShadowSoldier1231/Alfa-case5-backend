@@ -7,7 +7,8 @@ public record ChatMessageDto(
         Long rating,
         String solutionText,
         String solutionResponse,
-        Long caseId
+        Long caseId,
+        Long userId
 ) {
     public static ChatMessageDto from(Solution solution) {
         return new ChatMessageDto(
@@ -15,7 +16,8 @@ public record ChatMessageDto(
                 solution.getRating(),
                 solution.getSolutionText(),
                 solution.getSolutionResponse(),
-                solution.getCaseId()
+                solution.getCaseId(),
+                solution.getUserId()
         );
     }
 }

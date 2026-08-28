@@ -138,5 +138,23 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
 
     @Query(value = "SELECT COUNT(*) = 1 FROM solution WHERE user_id = :userId AND case_id = :caseId", nativeQuery = true)
     boolean isFirstSolutionForCase(@Param("userId") Long userId, @Param("caseId") Long caseId);
+
+    @Query(
+            value = """
+        SELECT *
+        FROM solution
+        WHERE id = :caseId
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+        FROM solution
+        WHERE id = :caseId
+        """,
+            nativeQuery = true
+    )
+    Page<Solution> getAllSolutionsForCase(
+            @Param("caseId") Long caseId,
+            Pageable pageable
+    );
 }
 

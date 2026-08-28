@@ -859,6 +859,40 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/users/4
 }
 ```
 
+#### Решения пользователей по конкретному кейсу (`GET`)
+Возвращает пагинированный список решений (историю диалога) всех пользователей в рамках указанного кейса.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/cases/4/solutions?page=0&size=25"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "solutionId": 101,
+      "rating": 85,
+      "solutionText": "Текст первого запроса пользователя к ИИ",
+      "solutionResponse": "Текст первого ответа ИИ",
+      "caseId": 4,
+      "userId": 2
+    },
+    {
+      "solutionId": 102,
+      "rating": 92,
+      "solutionText": "Текст второго запроса",
+      "solutionResponse": "Текст второго ответа",
+      "caseId": 4,
+      "userId": 142
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
+```
+
+
 ---
 ## Геймификация и ИИ (`/api/text/v1`)
 *Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса. Для всех запросов обязательна валидная Cookie сессии пользователя.*
@@ -910,7 +944,38 @@ http://localhost:8080/api/text/v1/rateCase/1
 ### История диалога с ИИ (`GET`)
 Отдает микросервису пагинированную историю сообщений (запросы пользователя и ответы ИИ) в рамках конкретного кейса. Первая страница содержит самые старые сообщения.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/getChatSequence/1?page=0&size=25"
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/solutions/1?page=0&size=25"
+```
+**Ответ (JSON):**
+```json
+{
+  "items": [
+    {
+      "solutionId": 101,
+      "rating": 85,
+      "solutionText": "Текст первого запроса пользователя к ИИ",
+      "solutionResponse": "Текст первого ответа ИИ",
+      "caseId": 5
+    },
+    {
+      "solutionId": 102,
+      "rating": 92,
+      "solutionText": "Текст второго запроса",
+      "solutionResponse": "Текст второго ответа",
+      "caseId": 5
+    }
+  ],
+  "page": 0,
+  "size": 25,
+  "totalElements": 2,
+  "totalPages": 1
+}
+```
+
+### История всех решений
+Отдает микросервису полную пагинированную историю сообщений (запросы пользователя и ответы ИИ). Первая страница содержит самые старые сообщения.
+```bash
+curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/solutions?page=0&size=25"
 ```
 **Ответ (JSON):**
 ```json
