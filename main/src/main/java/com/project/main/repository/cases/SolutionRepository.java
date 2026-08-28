@@ -143,12 +143,12 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
             value = """
         SELECT *
         FROM solution
-        WHERE solution_id = :caseId
+        WHERE case_id = :caseId
         """,
             countQuery = """
         SELECT COUNT(*)
         FROM solution
-        WHERE solution_id = :caseId
+        WHERE case_id = :caseId
         """,
             nativeQuery = true
     )
