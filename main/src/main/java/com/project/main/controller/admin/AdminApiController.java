@@ -2,11 +2,14 @@ package com.project.main.controller.admin;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.project.main.dto.cases.CaseCreateRequest;
-import com.project.main.dto.cases.CaseUpdateRequest;
+import com.project.main.dto.cases.*;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.integration.ChatMessageDto;
+import com.project.main.dto.learing.AdminMaterialDto;
+import com.project.main.dto.learing.AdminPartialMaterialDto;
+import com.project.main.dto.learing.TheoryCreateRequest;
+import com.project.main.dto.learing.TheoryUpdateRequest;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -17,8 +20,6 @@ import com.project.main.dto.user.UserListItem;
 import com.project.main.exception.ApiException;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
-import com.project.main.dto.cases.CaseAdminDto;
-import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.common.Views;
 import com.project.main.service.cases.SolutionService;
 import com.project.main.service.user.UserService;
@@ -107,6 +108,80 @@ public class AdminApiController {
                         size
                 )
         );
+    }
+
+    @GetMapping("/cases/{caseId}/theory")
+    public ResponseEntity<AdminMaterialDto> getCaseTheory(
+            @PathVariable("caseId") Long caseId
+    ) {
+        try {
+            return ResponseEntity.ok(caseService.getAdminMaterials(caseId));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while getting admin case theory", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @GetMapping("/theory/{id}")
+    public ResponseEntity<AdminPartialMaterialDto> getTheoryMaterial(
+            @PathVariable("id") Long id
+    ) {
+        try {
+            return ResponseEntity.ok(caseService.getAdminMaterialById(id));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while getting admin theory material", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @JsonView(Views.RegisterResultId.class)
+    @PostMapping("/cases/{caseId}/theory")
+    public ResponseEntity<RegisterResult> createTheoryMaterial(
+            @PathVariable("caseId") Long caseId,
+            @RequestBody @Valid TheoryCreateRequest request,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
+
+        try {
+            Long materialId = caseService.createTheoryMaterial(caseId, request);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(new RegisterResult(true, "", materialId));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while creating theory material", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @PatchMapping("/theory/{id}")
+    public ResponseEntity<RegisterResult> updateTheoryMaterial(
+            @PathVariable("id") Long id,
+            @RequestBody @Valid TheoryUpdateRequest request,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
+
+        try {
+            caseService.updateTheoryMaterial(id, request);
+            return ResponseEntity.ok(new RegisterResult(true, "", null));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while updating theory material", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
     }
 
     @JsonView(Views.RegisterResultPartial.class)

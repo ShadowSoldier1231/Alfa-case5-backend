@@ -2,6 +2,7 @@ package com.project.main.service.cases;
 
 import com.project.main.dto.cases.*;
 import com.project.main.dto.common.PageResponse;
+import com.project.main.dto.learing.*;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -9,10 +10,12 @@ import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.cases.*;
+import com.project.main.model.learning.StudyMaterial;
 import com.project.main.repository.cases.*;
+import com.project.main.repository.learning.StudyMaterialRepository;
 import com.project.main.service.common.S3StorageService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,19 +36,22 @@ public class CaseService {
     private final S3StorageService s3StorageService;
     private final CaseCompletionRepository completionRepository;
     private final CaseRatingRepository caseRatingRepository;
+    private final  StudyMaterialRepository materialRepository;
 
     public CaseService(CaseRepository caseRepository,
                        TagRepository tagRepository,
                        CaseTagRepository caseTagRepository,
                        S3StorageService s3StorageService,
                        CaseCompletionRepository completionRepository,
-                       CaseRatingRepository caseRatingRepository) {
+                       CaseRatingRepository caseRatingRepository,
+                       StudyMaterialRepository materialRepository) {
         this.caseRepository = caseRepository;
         this.tagRepository = tagRepository;
         this.caseTagRepository = caseTagRepository;
         this.s3StorageService = s3StorageService;
         this.completionRepository = completionRepository;
         this.caseRatingRepository = caseRatingRepository;
+        this.materialRepository = materialRepository;
     }
 
 
@@ -520,6 +526,234 @@ public class CaseService {
                 tagPage.getTotalElements(),
                 tagPage.getTotalPages()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public MaterialDto getAllMaterialByCaseId(Long caseId) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        if (!caseRepository.existsActiveCaseById(caseId)) {
+            throw new NotFoundException("Case not found");
+        }
+
+        List<Object[]> materials =
+                materialRepository.findActiveByCaseIdSorted(caseId);
+
+        return new MaterialDto(
+                caseId,
+                materials.stream()
+                        .map(
+                                row -> {
+                                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
+                                    String title = row[1] != null ? (String) row[1] : null;
+                                    Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
+                                    return new MaterialDto.MaterialPart(id, title, position);
+                                }
+
+
+                        )
+                        .toList()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PartialMaterialDto getMaterialById(Long id) {
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid material ID");
+        }
+
+        StudyMaterial s = materialRepository.findActiveByIdAndActiveCase(id)
+                .orElseThrow(() -> new NotFoundException("Material not found"));
+
+        return new PartialMaterialDto(
+                s.getId(),
+                s.getCaseId(),
+                s.getTitle(),
+                s.getText(),
+                s.getPosition()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AdminMaterialDto getAdminMaterials(Long caseId) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        if (!caseRepository.existsCaseById(caseId)) {
+            throw new NotFoundException("Case not found");
+        }
+
+        List<Object[]> materials =
+                materialRepository.findAllByCaseIdOrdered(caseId);
+
+        return new AdminMaterialDto(
+                caseId,
+                materials.stream()
+                        .map(
+                                row -> {
+                                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
+                                    String title = row[1] != null ? (String) row[1] : null;
+                                    Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
+                                    Boolean active = row[3] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[3]));
+                                    return new AdminMaterialDto.AdminMaterialPart(
+                                            id, title, position, active
+                                    );
+                                }
+                        )
+                        .toList()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AdminPartialMaterialDto getAdminMaterialById(Long id) {
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid material ID");
+        }
+
+        List<Object[]> result = materialRepository.findAdminMaterialById(id);
+        if (result.isEmpty()) {
+            throw new NotFoundException("Material not found");
+        }
+
+        Object[] row = result.get(0);
+
+        Long materialId = row[0] != null ? ((Number) row[0]).longValue() : null;
+        Long caseId = row[1] != null ? ((Number) row[1]).longValue() : null;
+        String title = row[2] != null ? row[2].toString() : null;
+        Integer position = row[3] != null ? ((Number) row[3]).intValue() : null;
+        String text = row[4] != null ? row[4].toString() : null;
+        Boolean active = row[5] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[5]));
+
+        return new AdminPartialMaterialDto(materialId, caseId, title, position, text, active);
+    }
+
+    @Transactional
+    public Long createTheoryMaterial(Long caseId, TheoryCreateRequest request) {
+        if (caseId == null || caseId <= 0) {
+            throw new BadRequestException("Invalid case ID");
+        }
+
+        if (request == null) {
+            throw new BadRequestException("Invalid request");
+        }
+
+        if (request.getTitle() == null || request.getTitle().isBlank()) {
+            throw new BadRequestException("Title cannot be empty");
+        }
+
+        if (request.getTitle().length() > 255) {
+            throw new BadRequestException("Title too long (max 255)");
+        }
+
+        if (request.getPosition() == null) {
+            throw new BadRequestException("Position is required");
+        }
+
+        if (request.getPosition() < 1) {
+            throw new BadRequestException("Position must be at least 1");
+        }
+
+        if (request.getText() == null || request.getText().isBlank()) {
+            throw new BadRequestException("Text cannot be empty");
+        }
+
+        if (!caseRepository.existsCaseById(caseId)) {
+            throw new NotFoundException("Case not found");
+        }
+
+        if (materialRepository.existsByCaseIdAndPosition(caseId, request.getPosition())) {
+            throw new ConflictException("Material with this position already exists");
+        }
+
+        StudyMaterial material = new StudyMaterial(
+                caseId,
+                request.getText(),
+                request.getTitle(),
+                request.getPosition(),
+                request.getActive()
+        );
+
+        try {
+            return materialRepository.saveAndFlush(material).getId();
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Material with this position already exists");
+        }
+    }
+
+    @Transactional
+    public void updateTheoryMaterial(Long id, TheoryUpdateRequest request) {
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid material ID");
+        }
+
+        if (request == null) {
+            throw new BadRequestException("Request cannot be empty");
+        }
+
+        boolean hasTitle = request.getTitle() != null;
+        boolean hasPosition = request.getPosition() != null;
+        boolean hasText = request.getText() != null;
+        boolean hasActive = request.getActive() != null;
+
+        if (!hasTitle && !hasPosition && !hasText && !hasActive) {
+            throw new BadRequestException("No fields to update");
+        }
+
+        if (hasTitle) {
+            String title = request.getTitle().trim();
+
+            if (title.isBlank()) {
+                throw new BadRequestException("Title cannot be empty");
+            }
+
+            if (title.length() > 255) {
+                throw new BadRequestException("Title too long (max 255)");
+            }
+        }
+
+        if (hasPosition && request.getPosition() < 1) {
+            throw new BadRequestException("Position must be at least 1");
+        }
+
+        if (hasText && request.getText().isBlank()) {
+            throw new BadRequestException("Text cannot be empty");
+        }
+
+        StudyMaterial material = materialRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Material not found"));
+
+        if (hasPosition && !request.getPosition().equals(material.getPosition())) {
+            if (materialRepository.existsByCaseIdAndPositionAndIdNot(
+                    material.getCaseId(),
+                    request.getPosition(),
+                    id
+            )) {
+                throw new ConflictException("Material with this position already exists");
+            }
+
+            material.setPosition(request.getPosition());
+        }
+
+        if (hasTitle) {
+            material.setTitle(request.getTitle().trim());
+        }
+
+        if (hasText) {
+            material.setText(request.getText());
+        }
+
+        if (hasActive) {
+            material.setActive(request.getActive());
+        }
+
+        try {
+            materialRepository.saveAndFlush(material);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Material with this position already exists");
+        }
     }
 
     @Transactional(readOnly = true)

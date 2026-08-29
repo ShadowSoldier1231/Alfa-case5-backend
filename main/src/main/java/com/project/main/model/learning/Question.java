@@ -28,8 +28,8 @@ public class Question {
     public Question() {
     }
 
-    public Question(Long testId, String text, Integer position) {
-        this.quizId = testId;
+    public Question(Long quizId, String text, Integer position) {
+        this.quizId = quizId;
         this.text = text;
         this.position = position;
     }

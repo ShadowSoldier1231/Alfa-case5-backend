@@ -432,6 +432,65 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/cases/1/perfec
 
 > **Примечание:** Если администратор не заполнил поле `perfectSolution`, значение `perfectSolution` может быть `null`.
 
+---
+
+### Список разделов теории кейса (`GET`)
+
+Возвращает список активных разделов теории по указанному кейсу.  
+Используется для отображения кнопок/разделов теории без полного текста.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/cases/6/theory
+```
+
+**Ответ (JSON):**
+
+```json
+{
+  "caseId": 6,
+  "materials": [
+    {
+      "id": 12,
+      "title": "Анализ целевой аудитории",
+      "position": 1
+    },
+    {
+      "id": 13,
+      "title": "Ценностное предложение",
+      "position": 2
+    }
+  ]
+}
+```
+
+**Ответ при пустом списке материалов:**
+
+```json
+{
+  "caseId": 6,
+  "materials": []
+}
+```
+
+### Получение раздела теории по ID (`GET`)
+
+Возвращает конкретный активный раздел теории по его ID, включая полный текст.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/cases/theory/12
+```
+
+**Ответ (JSON):**
+
+```json
+{
+  "id": 12,
+  "caseId": 6,
+  "title": "Анализ целевой аудитории",
+  "position": 1,
+  "text": "Полный текст раздела теории..."
+}
+```
 
 ---
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
@@ -758,6 +817,123 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/4
 ```bash
 curl -X DELETE -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/42/tags/5
 ```
+
+### Все блоки теории по кейсу (`GET`)
+
+Возвращает все блоки теории по указанному кейсу, включая неактивные.  
+Используется в административной панели для управления теорией кейса.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases/6/theory
+```
+
+**Ответ (JSON):**
+
+```json
+{
+  "caseId": 6,
+  "materials": [
+    {
+      "id": 12,
+      "title": "Анализ целевой аудитории",
+      "position": 1,
+      "isActive": true
+    },
+    {
+      "id": 13,
+      "title": "Черновик",
+      "position": 2,
+      "isActive": false
+    }
+  ]
+}
+```
+
+**Ответ при пустом списке материалов:**
+
+```json
+{
+  "caseId": 6,
+  "materials": []
+}
+```
+
+### Получение блока теории по ID (`GET`)
+
+Возвращает блок теории по его ID, включая полный текст и флаг активности.  
+Используется в административной панели для просмотра и редактирования конкретного блока.
+
+```bash
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/theory/12
+```
+
+**Ответ (JSON):**
+```json
+{
+  "id": 12,
+  "caseId": 6,
+  "title": "Анализ целевой аудитории",
+  "position": 1,
+  "text": "Полный текст раздела теории...",
+  "isActive": true
+}
+```
+
+---
+
+### Создание раздела теории (`POST`)
+
+Создаёт новый раздел теории для указанного кейса.
+
+```bash
+curl -X POST -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+-d '{
+  "title": "Анализ терли свинки дргуг другу спинки",
+  "position": 1,
+  "text": "Полный текст...",
+  "isActive": true
+}' \
+http://localhost:8080/api/admin/v1/cases/6/theory
+```
+
+**Ответ (JSON):**
+
+При успешном создании возвращается только ID нового блока:
+
+```json
+{
+  "id": 12
+}
+```
+
+---
+
+### Обновление раздела теории по ID (`PATCH`)
+
+Частично обновляет существующий раздел теории по его ID.
+
+```bash
+curl -X PATCH -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+-d '{
+  "title": "Новое название",
+  "position": 2,
+  "text": "Обновлённый текст...",
+  "isActive": true
+}' \
+http://localhost:8080/api/admin/v1/theory/12
+```
+
+
+**Ответ (JSON):**
+
+```json
+{
+  "success": true,
+  "errorText": ""
+}
+```
+
+---
 
 ### Управление пользователями
 #### Список пользователей (`GET`)
@@ -1210,3 +1386,9 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `this case is not in your favourites` | Попытка удалить из избранного кейс, которого там нет (HTTP 400). |
 | **Предпочтения (Preferences)** | `Preferred tags list cannot exceed 15 items` | Передано больше 15 предпочитаемых тегов. |
 | &nbsp; | `One or more tags are invalid or inactive` | В запросе обновления переданы ID несуществующих или деактивированных тегов. |
+| Теория кейсов | `Invalid material ID` | Передан некорректный ID раздела теории, например `<= 0`. |
+|  | `Material not found` | Раздел теории не найден. Для публичных эндпоинтов также возвращается, если раздел неактивен или родительский кейс неактивен. |
+|  | `Material with this position already exists` | В указанном кейсе уже существует раздел теории с такой позицией. |
+|  | `Position is required` | Поле `position` не было передано при создании или обновлении раздела теории. |
+|  | `Position must be at least 1` | Позиция раздела теории должна быть не меньше `1`. |
+|  | `Text cannot be empty` | Поле `text` раздела теории не может быть пустым. |

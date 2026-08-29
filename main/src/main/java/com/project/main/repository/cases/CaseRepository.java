@@ -19,9 +19,30 @@ import java.util.Optional;
 public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
 
+    @Query(
+            value = """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM cases
+                    WHERE id = :caseId
+                )
+                """,
+            nativeQuery = true
+    )
+    boolean existsCaseById(@Param("caseId") Long caseId);
 
-
-
+    @Query(
+            value = """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM cases
+                    WHERE id = :caseId
+                      AND is_active = true
+                )
+                """,
+            nativeQuery = true
+    )
+    boolean existsActiveCaseById(@Param("caseId") Long caseId);
 
     @NotNull
     @Query(value = "SELECT * FROM cases WHERE id = :id", nativeQuery = true)

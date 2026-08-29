@@ -2,16 +2,14 @@ package com.project.main.controller.web;
 
 
 import com.project.main.dto.cases.CasePublicDto;
+import com.project.main.dto.learing.MaterialDto;
+import com.project.main.dto.learing.PartialMaterialDto;
 import com.project.main.dto.cases.PerfectSolutionResponse;
 import com.project.main.dto.common.PageResponse;
-import com.project.main.dto.common.RegisterResult;
-import com.project.main.exception.InvalidSessionException;
-import com.project.main.model.user.UserSession;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -62,4 +60,20 @@ public class CaseController {
         String solution = caseService.getPerfectSolutionOrThrow(caseId, userId);
         return ResponseEntity.ok(new PerfectSolutionResponse(caseId, solution));
     }
+
+    @GetMapping("/{caseId}/theory")
+    public ResponseEntity<MaterialDto> getMaterialForCase(
+            @PathVariable("caseId") Long caseId
+    ) {
+        return ResponseEntity.ok(caseService.getAllMaterialByCaseId(caseId));
+    }
+
+    @GetMapping("/theory/{id}")
+    public ResponseEntity<PartialMaterialDto> getMaterialById(
+            @PathVariable("id") Long id
+
+    ) {
+        return ResponseEntity.ok(caseService.getMaterialById(id));
+    }
+
 }
