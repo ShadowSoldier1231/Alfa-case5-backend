@@ -982,7 +982,6 @@ http://localhost:8080/api/admin/v1/cases/6/theory
 ```
 curl -X PUT -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
 -d '{
-  "materialId": 12,
   "title": "Итоговый тест",
   "isActive": true,
   "questions": [
@@ -1007,7 +1006,7 @@ http://localhost:8080/api/admin/v1/theory/12/quiz
   "id": 4
 }
 ```
-
+Примечание: Если по тесту уже есть попытки пользователей, обновление теста блокируется, чтобы не потерять историю ответов. В этом случае возвращается ошибка `Quiz has attempts and cannot be updated` (HTTP 409).
 ---
 
 ### Обновление раздела теории по ID (`PATCH`)
@@ -1485,7 +1484,6 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `No fields to update` | В запросе обновления тега не передано ни имени, ни статуса активности. |
 | **Оценка кейсов** | `Invalid rating value` | Оценка не передана, не является числом или находится вне диапазона `1–5`. |
 | **Управление кейсами** | `Case not found` | Указанный ID кейса не найден (общая ошибка). |
-| &nbsp; | `Кейс не найден` | Кейс не найден при инкременте счетчика просмотров. |
 | &nbsp; | `Case with ID: X is not found` | Указанный ID кейса не найден в базе данных (вместо X будет реальный ID). |
 | &nbsp; | `Case with this slug already exists` | Кейс с таким `slug` уже существует. |
 | &nbsp; | `Case is not active` | Попытка добавить неактивный кейс в избранное. |
@@ -1534,18 +1532,22 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `Position is required` | Поле `position` не было передано при создании или обновлении раздела теории. |
 | &nbsp; | `Position must be at least 1` | Позиция раздела теории должна быть не меньше `1`. |
 | &nbsp; | `Text cannot be empty` | Поле `text` раздела теории не может быть пустым. |
-| Тесты и Попытки | Quiz not found | Тест не найден, не привязан к указанной теории или деактивирован. |
-| &nbsp; | Multiple quizzes attached to this material | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |
-| &nbsp; | Invalid quiz ID | Передан некорректный ID теста (например, `<= 0`). |
-| &nbsp; | Answers cannot be empty | В запросе на отправку попытки не передан список ответов или он пуст. |
-| &nbsp; | Invalid answer format | Некорректный формат ответа (отсутствует `questionId` или `answerOptionId`). |
-| &nbsp; | Duplicate question ID in request | В рамках одной попытки передано несколько ответов на один и тот же вопрос. |
-| &nbsp; | Quiz has no active questions | Попытка пройти тест, в котором нет ни одного активного вопроса. |
-| &nbsp; | One or more questions do not belong to this quiz or are inactive | В запросе переданы ID вопросов, которые не принадлежат данному тесту или были деактивированы. |
-| &nbsp; | One or more answer options do not exist | В запросе переданы ID вариантов ответов, которых не существует в базе данных. |
-| &nbsp; | Duplicate question position: {X} | В рамках одного теста передано несколько вопросов с одинаковым `position`. |
-| &nbsp; | Duplicate option position: {Y} in question {X} | В рамках одного вопроса передано несколько вариантов ответа с одинаковым `position`. |
-| &nbsp; | At least one correct option is required for question {X} | Ни один из вариантов ответа в вопросе не помечен флагом `isCorrect: true`. |
-| &nbsp; | Title cannot be empty / Questions list cannot be empty | Ошибки стандартной Bean Validation (`@Valid`), если не переданы обязательные поля. |
-| &nbsp; | Material not found | Раздел теории с указанным ID не существует в базе данных. |
-| &nbsp; | Multiple quizzes attached to this material | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |
+| Тесты и Попытки | `Quiz not found` | Тест не найден, не привязан к теории, тест неактивен, либо связанная теория/кейс неактивны.|
+| &nbsp; | `Multiple quizzes attached to this material` | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |
+| &nbsp; | `Invalid quiz ID` | Передан некорректный ID теста (например, `<= 0`). |
+| &nbsp; | `Answers cannot be empty` | В запросе на отправку попытки не передан список ответов или он пуст. |
+| &nbsp; | `Invalid answer format` | Некорректный формат ответа (отсутствует `questionId` или `answerOptionId`). |
+| &nbsp; | `Duplicate question ID in request` | В рамках одной попытки передано несколько ответов на один и тот же вопрос. |
+| &nbsp; | `Quiz has no active questions` | Попытка пройти тест, в котором нет ни одного активного вопроса. |
+| &nbsp; | `One or more questions do not belong to this quiz or are inactive` | В запросе переданы ID вопросов, которые не принадлежат данному тесту или были деактивированы. |
+| &nbsp; | `One or more answer options do not exist` | В запросе переданы ID вариантов ответов, которых не существует в базе данных. |
+| &nbsp; | `Duplicate question position: {X}` | В рамках одного теста передано несколько вопросов с одинаковым `position`. |
+| &nbsp; | `Duplicate option position: {Y} in question {X}` | В рамках одного вопроса передано несколько вариантов ответа с одинаковым `position`. |
+| &nbsp; | `At least one correct option is required for question {X}` | Ни один из вариантов ответа в вопросе не помечен флагом `isCorrect: true`. |
+| &nbsp; | `Title cannot be empty` / `Questions list cannot be empty` | Ошибки стандартной Bean Validation (`@Valid`), если не переданы обязательные поля. |
+| &nbsp; | `Material not found` | Раздел теории с указанным ID не существует в базе данных. |
+| &nbsp; | `Multiple quizzes attached to this material` | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |
+| &nbsp; | `One or more answer options do not belong to the question` | Переданный `answerOptionId` не относится к указанному `questionId`.|
+| &nbsp; | `Quiz has attempts and cannot be updated` | Попытка обновить тест, по которому уже есть попытки пользователей (HTTP 409).|
+| &nbsp; | `Title too long (max 255)` |Название теста превышает 255 символов.|
+| &nbsp; | `Option text too long (max 1000)` |Текст варианта ответа превышает 1000 символов.|

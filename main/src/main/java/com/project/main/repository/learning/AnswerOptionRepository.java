@@ -29,4 +29,10 @@ public interface AnswerOptionRepository extends JpaRepository<AnswerOption, Long
 
     @Query(value = "SELECT id, is_correct FROM answer_option WHERE id IN (:ids)", nativeQuery = true)
     List<Object[]> findCorrectnessByIds(@Param("ids") List<Long> ids);
+
+    @Query(
+            value = "SELECT id, question_id, is_correct FROM answer_option WHERE id IN (:ids)",
+            nativeQuery = true
+    )
+    List<Object[]> findValidationDataByIds(@Param("ids") List<Long> ids);
 }

@@ -24,6 +24,7 @@ public class Solution {
     @Column(columnDefinition = "TEXT")
     private String solutionResponse;
 
+    @Column(name = "time_spent_minutes")
     private Integer timeSpentMinutes;
 
     @CreationTimestamp

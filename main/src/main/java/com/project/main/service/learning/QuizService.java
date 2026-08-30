@@ -2,6 +2,7 @@ package com.project.main.service.learning;
 
 import com.project.main.dto.learing.*;
 import com.project.main.exception.BadRequestException;
+import com.project.main.exception.ConflictException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.learning.*;
@@ -179,11 +180,8 @@ public class QuizService {
             throw new BadRequestException("Invalid quiz ID");
         }
 
-        Quiz quiz = quizRepository.findById(quizId)
+        Quiz quiz = quizRepository.findActiveQuizWithActiveMaterialById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz not found"));
-        if (!Boolean.TRUE.equals(quiz.getActive())) {
-            throw new NotFoundException("Quiz not found");
-        }
 
         if (request == null || request.getAnswers() == null || request.getAnswers().isEmpty()) {
             throw new BadRequestException("Answers cannot be empty");
@@ -211,16 +209,28 @@ public class QuizService {
             throw new BadRequestException("One or more questions do not belong to this quiz or are inactive");
         }
 
-        List<Object[]> correctnessRows = answerOptionRepository.findCorrectnessByIds(answerOptionIds);
-        Map<Long, Boolean> correctnessMap = correctnessRows.stream()
+        List<Object[]> optionRows = answerOptionRepository.findValidationDataByIds(answerOptionIds);
+
+        Map<Long, OptionValidationData> optionsById = optionRows.stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
-                        row -> (Boolean) row[1],
+                        row -> new OptionValidationData(
+                                ((Number) row[1]).longValue(),
+                                (Boolean) row[2]
+                        ),
                         (existing, replacement) -> existing
                 ));
 
-        if (correctnessMap.size() != new HashSet<>(answerOptionIds).size()) {
+        if (optionsById.size() != new HashSet<>(answerOptionIds).size()) {
             throw new BadRequestException("One or more answer options do not exist");
+        }
+
+        for (QuizSubmitRequest.UserAnswerDto ans : request.getAnswers()) {
+            OptionValidationData option = optionsById.get(ans.getAnswerOptionId());
+
+            if (option == null || !option.questionId().equals(ans.getQuestionId())) {
+                throw new BadRequestException("One or more answer options do not belong to the question");
+            }
         }
 
         QuizAttempt attempt = new QuizAttempt();
@@ -234,7 +244,9 @@ public class QuizService {
         List<UserAnswer> userAnswers = new ArrayList<>();
 
         for (QuizSubmitRequest.UserAnswerDto ans : request.getAnswers()) {
-            boolean isCorrect = Boolean.TRUE.equals(correctnessMap.get(ans.getAnswerOptionId()));
+            boolean isCorrect = Boolean.TRUE.equals(
+                    optionsById.get(ans.getAnswerOptionId()).correct()
+            );
             if (isCorrect) {
                 correctAnswers++;
             }
@@ -274,7 +286,7 @@ public class QuizService {
             throw new BadRequestException("Invalid quiz ID");
         }
 
-        if (!quizRepository.existsById(quizId)) {
+        if (quizRepository.findActiveQuizWithActiveMaterialById(quizId).isEmpty()) {
             throw new NotFoundException("Quiz not found");
         }
 
@@ -293,6 +305,10 @@ public class QuizService {
 
     @Transactional
     public Long upsertQuiz(Long materialId, QuizUpsertRequest request) {
+
+        if (materialId == null || materialId <= 0) {
+            throw new BadRequestException("Invalid material ID");
+        }
 
         if (!materialRepository.existsById(materialId)) {
             throw new NotFoundException("Material not found");
@@ -327,6 +343,11 @@ public class QuizService {
         Quiz quiz;
         if (!existingQuizzes.isEmpty()) {
             quiz = existingQuizzes.get(0);
+
+            if (attemptRepository.countByQuizId(quiz.getId()) > 0) {
+                throw new ConflictException("Quiz has attempts and cannot be updated");
+            }
+
             quiz.setTitle(request.getTitle());
             quiz.setActive(request.getIsActive());
             quizRepository.save(quiz);
@@ -364,4 +385,7 @@ public class QuizService {
         return quiz.getId();
     }
 
+
+
+    private record OptionValidationData(Long questionId, Boolean correct) {}
 }

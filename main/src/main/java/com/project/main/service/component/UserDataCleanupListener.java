@@ -5,6 +5,8 @@ import com.project.main.dto.event.UserDeletedEvent;
 import com.project.main.model.user.UserData;
 import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.SolutionRepository;
+import com.project.main.repository.learning.QuizAttemptRepository;
+import com.project.main.repository.learning.UserAnswerRepository;
 import com.project.main.repository.user.*;
 import com.project.main.service.common.S3StorageService;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,8 @@ public class UserDataCleanupListener {
     private final LeaderboardRepository leaderboardRepository;
     private final UserVerificationRepository verificationRepository;
     private final CaseCompletionRepository caseCompletionRepository;
+    private final UserAnswerRepository userAnswerRepository;
+    private final QuizAttemptRepository attemptRepository;
 
     public UserDataCleanupListener(UserDataRepository userDataRepository,
                                    S3StorageService s3StorageService,
@@ -34,7 +38,10 @@ public class UserDataCleanupListener {
                                    UserPreferenceRepository preferenceRepository,
                                    LeaderboardRepository leaderboardRepository,
                                    UserVerificationRepository verificationRepository,
-                                   CaseCompletionRepository caseCompletionRepository) {
+                                   CaseCompletionRepository caseCompletionRepository,
+                                   UserAnswerRepository userAnswerRepository,
+                                   QuizAttemptRepository attemptRepository) {
+
         this.userDataRepository = userDataRepository;
         this.s3StorageService = s3StorageService;
         this.solutionRepository = solutionRepository;
@@ -44,6 +51,8 @@ public class UserDataCleanupListener {
         this.leaderboardRepository = leaderboardRepository;
         this.verificationRepository = verificationRepository;
         this.caseCompletionRepository = caseCompletionRepository;
+        this.userAnswerRepository = userAnswerRepository;
+        this.attemptRepository = attemptRepository;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -64,5 +73,7 @@ public class UserDataCleanupListener {
         solutionRepository.deleteAllByUserId(userId);
         achievementRepository.deleteAllByUserId(userId);
         caseCompletionRepository.deleteByUserId(userId);
+        userAnswerRepository.deleteByUserId(userId);
+        attemptRepository.deleteByUserId(userId);
     }
 }

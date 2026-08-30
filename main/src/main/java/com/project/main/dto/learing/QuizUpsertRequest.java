@@ -4,11 +4,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 public class QuizUpsertRequest {
 
     @NotBlank(message = "Title cannot be empty")
+    @Size(max = 255, message = "Title too long (max 255)")
     private String title;
 
     @NotNull(message = "isActive is required")

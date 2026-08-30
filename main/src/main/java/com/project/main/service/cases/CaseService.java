@@ -312,9 +312,13 @@ public class CaseService {
     public CasePromptResponse getCasePrompt(Long id) {
         CaseEntity c = caseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Case not found"));
-        return new CasePromptResponse(c.getTitle(), c.getPromptContextEn(),c.getId());
-    }
 
+        if (!Boolean.TRUE.equals(c.getActive())) {
+            throw new NotFoundException("Case not found");
+        }
+
+        return new CasePromptResponse(c.getTitle(), c.getPromptContextEn(), c.getId());
+    }
 
     private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<CaseEntity> cases) {
         if (cases.isEmpty()) return Map.of();

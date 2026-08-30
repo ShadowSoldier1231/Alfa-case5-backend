@@ -84,8 +84,8 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
             "    SELECT 1 FROM solution s " +
             "    JOIN cases c ON s.case_id = c.id " +
             "    WHERE s.user_id = :userId " +
-            "    AND s.solved_min IS NOT NULL AND c.average_solve_min IS NOT NULL " +
-            "    AND s.solved_min < c.average_solve_min AND s.rating >= :threshold" +
+            "    AND s.time_spent_minutes IS NOT NULL AND c.average_solve_min IS NOT NULL " +
+            "    AND s.time_spent_minutes < c.average_solve_min AND s.rating >= :threshold" +
             ")", nativeQuery = true)
     boolean existsFasterThanAverageSolution(@Param("userId") Long userId, @Param("threshold") Long threshold);
 
@@ -97,7 +97,7 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
             "        SELECT MIN(solution_id) FROM solution " +
             "        WHERE user_id = :userId AND rating >= :threshold" +
             "    ) " +
-            "    AND solved_min IS NOT NULL AND solved_min < 30" +
+            "    AND time_spent_minutes IS NOT NULL AND time_spent_minutes < 30" +
             ")", nativeQuery = true)
     boolean existsFirstSolutionUnder30Min(@Param("userId") Long userId, @Param("threshold") Long threshold);
 

@@ -64,7 +64,7 @@ public class SolutionService {
     @Transactional
     public void submitSolution(Long userId, SubmitSolutionRequest request) {
 
-        if (!caseRepository.existsById(request.getCaseId())) {
+        if (!caseRepository.existsActiveCaseById(request.getCaseId())) {
             throw new NotFoundException("Case not found");
         }
 
@@ -144,8 +144,13 @@ public class SolutionService {
         if (userId == null || userId <= 0) {
             throw new BadRequestException("Invalid user ID");
         }
+
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
+        }
+
+        if (!caseRepository.existsActiveCaseById(caseId)) {
+            throw new NotFoundException("Case not found");
         }
 
         boolean isCompleted = completionRepository.existsByUserIdAndCaseId(userId, caseId);
@@ -301,11 +306,11 @@ public class SolutionService {
     @Transactional(readOnly = true)
     public PageResponse<ChatMessageDto> getAllSolutionsForCase(Long caseId, int page, int size) {
         if (caseId == null || caseId <= 0) {
-            throw new BadRequestException("Invalid user ID");
+            throw new BadRequestException("Invalid case ID");
         }
 
         if (!caseRepository.existsById(caseId)) {
-            throw new NotFoundException("User not found");
+            throw new NotFoundException("Case not found");
         }
 
         if (page < 0) {

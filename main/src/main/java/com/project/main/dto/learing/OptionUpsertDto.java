@@ -2,10 +2,12 @@ package com.project.main.dto.learing;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class OptionUpsertDto {
 
     @NotBlank(message = "Option text cannot be empty")
+    @Size(max = 1000, message = "Option text too long (max 1000)")
     private String text;
 
     @NotNull(message = "Option position is required")

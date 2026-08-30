@@ -43,4 +43,21 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     )
     Optional<Quiz> findActiveQuizByMaterialId(@Param("materialId") Long materialId);
 
+
+    @Query(
+            value = """
+                SELECT q.*
+                FROM quiz q
+                JOIN study_material sm ON sm.id = q.material_id
+                JOIN cases c ON c.id = sm.case_id
+                WHERE q.id = :quizId
+                  AND q.is_active = true
+                  AND sm.is_active = true
+                  AND c.is_active = true
+                ORDER BY q.id ASC
+                LIMIT 1
+                """,
+            nativeQuery = true
+    )
+    Optional<Quiz> findActiveQuizWithActiveMaterialById(@Param("quizId") Long quizId);
 }
