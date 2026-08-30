@@ -5,7 +5,8 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "quiz", indexes = {
         @Index(name = "idx_quiz_material_id", columnList = "material_id")
-})
+        }
+)
 public class Quiz {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

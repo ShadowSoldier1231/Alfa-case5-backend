@@ -6,10 +6,7 @@ import com.project.main.dto.cases.*;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.integration.ChatMessageDto;
-import com.project.main.dto.learing.AdminMaterialDto;
-import com.project.main.dto.learing.AdminPartialMaterialDto;
-import com.project.main.dto.learing.TheoryCreateRequest;
-import com.project.main.dto.learing.TheoryUpdateRequest;
+import com.project.main.dto.learing.*;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -22,6 +19,7 @@ import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.model.common.Views;
 import com.project.main.service.cases.SolutionService;
+import com.project.main.service.learning.QuizService;
 import com.project.main.service.user.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -45,13 +43,16 @@ public class AdminApiController {
     private final CaseService caseService;
     private final UserService userService;
     private final SolutionService solutionService;
+    private final QuizService quizService;
     private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
     public AdminApiController(CaseService caseService, UserService userService,
-                              SolutionService solutionService) {
+                              SolutionService solutionService,
+                              QuizService quizService) {
         this.caseService = caseService;
         this.userService = userService;
         this.solutionService = solutionService;
+        this.quizService = quizService;
     }
 
     @GetMapping("/cases")
@@ -134,6 +135,41 @@ public class AdminApiController {
             throw e;
         } catch (Exception e) {
             logger.error("Internal server error while getting admin theory material", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @GetMapping("/theory/{id}/quiz")
+    public ResponseEntity<AdminTheoryQuizResponse> getAdminQuizByTheoryId(
+            @PathVariable("id") Long id
+    ) {
+        try {
+            return ResponseEntity.ok(quizService.getAdminQuizByMaterialId(id));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while getting admin quiz by theory id", e);
+            throw new InternalServerErrorException("Internal server error");
+        }
+    }
+
+    @JsonView(Views.RegisterResultPartial.class)
+    @PutMapping("/theory/{id}/quiz")
+    public ResponseEntity<RegisterResult> upsertQuiz(
+            @PathVariable("id") Long materialId,
+            @RequestBody @Valid QuizUpsertRequest request,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException(getValidationErrors(bindingResult));
+        }
+        try {
+            Long quizId= quizService.upsertQuiz(materialId, request);
+            return ResponseEntity.ok(new RegisterResult(true, "", quizId));
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Internal server error while upserting quiz", e);
             throw new InternalServerErrorException("Internal server error");
         }
     }

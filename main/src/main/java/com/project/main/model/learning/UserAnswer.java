@@ -28,15 +28,21 @@ public class UserAnswer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "quiz_attempt_id")
+    private Long attemptId;
+
     public UserAnswer() {
     }
 
-    public UserAnswer(Long userId, Long questionId, Long answerOptionId) {
+    public UserAnswer(Long userId, Long questionId, Long answerOptionId, Long attemptId) {
         this.userId = userId;
         this.questionId = questionId;
         this.answerOptionId = answerOptionId;
+        this.attemptId = attemptId;
     }
 
+    public Long getAttemptId() { return attemptId; }
+    public void setAttemptId(Long attemptId) { this.attemptId = attemptId; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }

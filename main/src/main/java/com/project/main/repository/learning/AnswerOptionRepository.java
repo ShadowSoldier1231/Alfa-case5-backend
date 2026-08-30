@@ -26,4 +26,7 @@ public interface AnswerOptionRepository extends JpaRepository<AnswerOption, Long
     @Transactional
     @Query(value = "DELETE FROM answer_option WHERE question_id = :questionId", nativeQuery = true)
     void deleteByQuestionId(@Param("questionId") Long questionId);
+
+    @Query(value = "SELECT id, is_correct FROM answer_option WHERE id IN (:ids)", nativeQuery = true)
+    List<Object[]> findCorrectnessByIds(@Param("ids") List<Long> ids);
 }

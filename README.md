@@ -492,6 +492,77 @@ curl -X GET http://localhost:8080/api/v1/cases/theory/12
 }
 ```
 
+
+#### Отправка попытки решения теста (`POST`) (Требует Cookie)
+Принимает ответы пользователя на вопросы теста, сохраняет ответы, сверяет их с правильными и возвращает итоговый результат. Тест считается успешно пройденным (`isSolved: true`), если процент правильных ответов (`score`) больше или равен 70.
+
+```
+curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
+-d '{
+  "answers": [
+    {"questionId": 41, "answerOptionId": 101},
+    {"questionId": 42, "answerOptionId": 215}
+  ]
+}' \
+http://localhost:8080/api/v1/cases/quiz/4/submit
+```
+
+**Ответ (JSON):**
+```
+{
+  "attemptId": 57,
+  "correctAnswers": 7,
+  "totalQuestions": 10,
+  "score": 70,
+  "isSolved": true
+}
+```
+
+#### Получение теста по ID теории (`GET`)
+Возвращает активный тест, привязанный к активному разделу теории. Правильные ответы (`isCorrect`) намеренно не отдаются в публичном API.
+```
+curl -X GET http://localhost:8080/api/v1/cases/theory/12/quiz
+```
+**Ответ (JSON):**
+```
+{
+  "id": 4,
+  "questions": [
+    {
+      "id": 41,
+      "position": 1,
+      "text": "Что такое Spring?",
+      "options": [
+        {
+          "id": 101,
+          "position": 1,
+          "text": "Фреймворк для Java"
+        },
+        {
+          "id": 102,
+          "position": 2,
+          "text": "Время года"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Состояние прохождения теста (`GET`) (Требует Cookie)
+Возвращает статистику прохождения конкретного теста текущим пользователем: общее количество попыток и флаг успешного прохождения (если хотя бы одна попытка была успешной, т.е. `score >= 70`).
+```
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/cases/quiz/4/status
+```
+**Ответ (JSON):**
+```
+{
+  "quizId": 4,
+  "attemptsCount": 3,
+  "isSolved": true
+}
+```
+
 ---
 ## Лидерборд и Рейтинги (`/api/v1/site/leaderboard`)
 ### Топ-5 игроков лидерборда (`GET`)
@@ -906,6 +977,37 @@ http://localhost:8080/api/admin/v1/cases/6/theory
 }
 ```
 
+#### Создание или обновление теста теории (`PUT`)
+Создает новый тест для указанного раздела теории или полностью перезаписывает существующий (включая каскадное удаление старых вопросов и вариантов ответов). 
+```
+curl -X PUT -H "Cookie: token=TOKEN" -H "Content-Type: application/json" \
+-d '{
+  "materialId": 12,
+  "title": "Итоговый тест",
+  "isActive": true,
+  "questions": [
+    {
+      "text": "Что такое Spring?",
+      "position": 1,
+      "isActive": true,
+      "options": [
+        {"text": "Фреймворк", "position": 1, "isCorrect": true},
+        {"text": "Время года", "position": 2, "isCorrect": false}
+      ]
+    }
+  ]
+}' \
+http://localhost:8080/api/admin/v1/theory/12/quiz
+```
+**Ответ (JSON):**
+```
+{
+  "success": true,
+  "errorText": "",
+  "id": 4
+}
+```
+
 ---
 
 ### Обновление раздела теории по ID (`PATCH`)
@@ -930,6 +1032,46 @@ http://localhost:8080/api/admin/v1/theory/12
 {
   "success": true,
   "errorText": ""
+}
+```
+
+#### Получение теста по ID теории с правильными ответами (`GET`)
+Возвращает тест, привязанный к разделу теории. Используется в административной панели для просмотра и редактирования тестов.
+```
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/theory/12/quiz
+```
+**Ответ (JSON):**
+```
+{
+  "id": 4,
+  "materialId": 12,
+  "title": "Тест по теории",
+  "isActive": true,
+  "questions": [
+    {
+      "id": 41,
+      "quizId": 4,
+      "text": "Что такое Spring?",
+      "position": 1,
+      "isActive": true,
+      "options": [
+        {
+          "id": 101,
+          "questionId": 41,
+          "text": "Фреймворк для Java",
+          "position": 1,
+          "isCorrect": true
+        },
+        {
+          "id": 102,
+          "questionId": 41,
+          "text": "Время года",
+          "position": 2,
+          "isCorrect": false
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -1387,8 +1529,23 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | **Предпочтения (Preferences)** | `Preferred tags list cannot exceed 15 items` | Передано больше 15 предпочитаемых тегов. |
 | &nbsp; | `One or more tags are invalid or inactive` | В запросе обновления переданы ID несуществующих или деактивированных тегов. |
 | Теория кейсов | `Invalid material ID` | Передан некорректный ID раздела теории, например `<= 0`. |
-|  | `Material not found` | Раздел теории не найден. Для публичных эндпоинтов также возвращается, если раздел неактивен или родительский кейс неактивен. |
-|  | `Material with this position already exists` | В указанном кейсе уже существует раздел теории с такой позицией. |
-|  | `Position is required` | Поле `position` не было передано при создании или обновлении раздела теории. |
-|  | `Position must be at least 1` | Позиция раздела теории должна быть не меньше `1`. |
-|  | `Text cannot be empty` | Поле `text` раздела теории не может быть пустым. |
+| &nbsp; | `Material not found` | Раздел теории не найден. Для публичных эндпоинтов также возвращается, если раздел неактивен или родительский кейс неактивен. |
+| &nbsp; | `Material with this position already exists` | В указанном кейсе уже существует раздел теории с такой позицией. |
+| &nbsp; | `Position is required` | Поле `position` не было передано при создании или обновлении раздела теории. |
+| &nbsp; | `Position must be at least 1` | Позиция раздела теории должна быть не меньше `1`. |
+| &nbsp; | `Text cannot be empty` | Поле `text` раздела теории не может быть пустым. |
+| Тесты и Попытки | Quiz not found | Тест не найден, не привязан к указанной теории или деактивирован. |
+| &nbsp; | Multiple quizzes attached to this material | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |
+| &nbsp; | Invalid quiz ID | Передан некорректный ID теста (например, `<= 0`). |
+| &nbsp; | Answers cannot be empty | В запросе на отправку попытки не передан список ответов или он пуст. |
+| &nbsp; | Invalid answer format | Некорректный формат ответа (отсутствует `questionId` или `answerOptionId`). |
+| &nbsp; | Duplicate question ID in request | В рамках одной попытки передано несколько ответов на один и тот же вопрос. |
+| &nbsp; | Quiz has no active questions | Попытка пройти тест, в котором нет ни одного активного вопроса. |
+| &nbsp; | One or more questions do not belong to this quiz or are inactive | В запросе переданы ID вопросов, которые не принадлежат данному тесту или были деактивированы. |
+| &nbsp; | One or more answer options do not exist | В запросе переданы ID вариантов ответов, которых не существует в базе данных. |
+| &nbsp; | Duplicate question position: {X} | В рамках одного теста передано несколько вопросов с одинаковым `position`. |
+| &nbsp; | Duplicate option position: {Y} in question {X} | В рамках одного вопроса передано несколько вариантов ответа с одинаковым `position`. |
+| &nbsp; | At least one correct option is required for question {X} | Ни один из вариантов ответа в вопросе не помечен флагом `isCorrect: true`. |
+| &nbsp; | Title cannot be empty / Questions list cannot be empty | Ошибки стандартной Bean Validation (`@Valid`), если не переданы обязательные поля. |
+| &nbsp; | Material not found | Раздел теории с указанным ID не существует в базе данных. |
+| &nbsp; | Multiple quizzes attached to this material | Нарушение целостности данных: к одному разделу теории привязано несколько тестов (Ошибка 500). |

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
@@ -24,4 +25,22 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Transactional
     @Query(value = "DELETE FROM quiz WHERE material_id = :materialId", nativeQuery = true)
     void deleteByMaterialId(@Param("materialId") Long materialId);
+
+    @Query(
+            value = """
+                SELECT q.*
+                FROM quiz q
+                JOIN study_material sm ON sm.id = q.material_id
+                JOIN cases c ON c.id = sm.case_id
+                WHERE q.material_id = :materialId
+                  AND q.is_active = true
+                  AND sm.is_active = true
+                  AND c.is_active = true
+                ORDER BY q.id ASC
+                LIMIT 1
+                """,
+            nativeQuery = true
+    )
+    Optional<Quiz> findActiveQuizByMaterialId(@Param("materialId") Long materialId);
+
 }

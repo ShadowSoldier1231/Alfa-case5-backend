@@ -2,13 +2,13 @@ package com.project.main.controller.web;
 
 
 import com.project.main.dto.cases.CasePublicDto;
-import com.project.main.dto.learing.MaterialDto;
-import com.project.main.dto.learing.PartialMaterialDto;
+import com.project.main.dto.learing.*;
 import com.project.main.dto.cases.PerfectSolutionResponse;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 
+import com.project.main.service.learning.QuizService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +19,14 @@ public class CaseController {
 
     private final CaseService caseService;
     private final SessionService sessionService;
+    private final QuizService quizService;
 
     public CaseController(CaseService caseService,
-                          SessionService sessionService) {
+                          SessionService sessionService,
+                          QuizService quizService) {
         this.caseService = caseService;
         this.sessionService = sessionService;
+        this.quizService = quizService;
     }
 
     @GetMapping("/getAll")
@@ -76,4 +79,29 @@ public class CaseController {
         return ResponseEntity.ok(caseService.getMaterialById(id));
     }
 
+    @GetMapping("/theory/{id}/quiz")
+    public ResponseEntity<TheoryQuizResponse> getQuizByTheoryId(
+            @PathVariable("id") Long id
+    ) {
+        return ResponseEntity.ok(quizService.getQuizByMaterialId(id));
+    }
+
+    @PostMapping("/quiz/{quizId}/submit")
+    public ResponseEntity<QuizAttemptResponse> submitQuizAttempt(
+            @PathVariable("quizId") Long quizId,
+            @RequestBody QuizSubmitRequest request,
+            @CookieValue(value = "token", required = false) String token
+    ) {
+        Long userId = sessionService.getUserIdOrThrow(token);
+        return ResponseEntity.ok(quizService.submitQuizAttempt(userId, quizId, request));
+    }
+
+    @GetMapping("/quiz/{quizId}/status")
+    public ResponseEntity<QuizStatusResponse> getQuizStatus(
+            @PathVariable("quizId") Long quizId,
+            @CookieValue(value = "token", required = false) String token
+    ) {
+        Long userId = sessionService.getUserIdOrThrow(token);
+        return ResponseEntity.ok(quizService.getQuizStatus(userId, quizId));
+    }
 }
