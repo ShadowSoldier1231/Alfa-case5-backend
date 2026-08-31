@@ -96,7 +96,10 @@ public class VerificationService {
 
         UserSetup user = userRepository.findById(verification.getUserId())
                 .orElseThrow(() -> new NotFoundException("User does not exist"));
-
+        if (verification.getCreatedAt() == null || verification.getCreatedAt().isBefore(LocalDateTime.now().minusHours(1))) {
+            verificationRepository.delete(verification);
+            throw new BadRequestException("Invalid or expired verification code");
+        }
         user.setVerified(true);
         userRepository.save(user);
 

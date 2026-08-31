@@ -326,7 +326,7 @@ curl -X GET http://localhost:8080/api/v1/site/1/achievements
 
 Каждый кейс в ответе содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
 
-Если у кейса нет оценок, возвращается `0.0`.
+Если у кейса нет оценок, возвращается `null`.
 
 ```bash
 curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25"
@@ -374,7 +374,7 @@ curl -X GET "http://localhost:8080/api/v1/cases/getAll?page=0&size=25"
 
 Ответ дополнительно содержит поле `caseRating` — средний рейтинг кейса по всем пользовательским оценкам.
 
-Если у кейса нет оценок, возвращается `0.0`.
+Если у кейса нет оценок, возвращается `null`.
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/cases/1
@@ -639,7 +639,7 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/v1/site/me/favor
 
 Каждый элемент содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
 
-Если у кейса нет оценок, возвращается `0.0`.
+Если у кейса нет оценок, возвращается `null`.
 
 > **Примечание:** Параметр `sort` по умолчанию равен `added_at,desc` (сначала самые недавно добавленные). Доступные поля для сортировки: `added_at`, `title`, `views_count`, `difficulty`, `created_at`.
 
@@ -768,7 +768,7 @@ http://localhost:8080/api/v1/site/me/preferences
 
 Каждый кейс в ответе содержит поле `caseRating` — среднее арифметическое всех пользовательских оценок кейса.
 
-Если у кейса нет оценок, возвращается `0.0`.
+Если у кейса нет оценок, возвращается `null`.
 
 ```bash
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/admin/v1/cases

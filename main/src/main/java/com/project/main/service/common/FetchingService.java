@@ -14,6 +14,8 @@ import com.project.main.repository.common.CityRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.user.UserDataRepository;
 import com.project.main.repository.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +34,7 @@ public class FetchingService {
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
     private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FetchingService.class);
 
     public FetchingService(LeaderboardRepository leaderboardRepository,
                            UserDataRepository userDataRepository, CityRepository cityRepository,
@@ -204,7 +207,7 @@ public class FetchingService {
                             .firstName(safeString(actualRow[1]))
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
-                            .birthdate((LocalDate) actualRow[4])
+                            .birthdate(toLocalDate(actualRow[4]))
                             .status(parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
                             .gender(parseGender(actualRow[7]))
@@ -229,7 +232,7 @@ public class FetchingService {
                             .firstName(safeString(actualRow[1]))
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
-                            .birthdate((LocalDate) actualRow[4])
+                            .birthdate(toLocalDate(actualRow[4]))
                             .status(parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
                             .gender(parseGender(actualRow[7]))
@@ -256,6 +259,7 @@ public class FetchingService {
             }
             return outerArray;
         }
+        logger.warn("Unexpected row type: class='{}', value='{}'", row != null ? row.getClass().getName() : "null", row);
         return new Object[0];
     }
 
@@ -324,5 +328,27 @@ public class FetchingService {
         } catch (IllegalArgumentException e) {
             return GenderCode.NOT_STATED;
         }
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
+        }
+
+        return null;
     }
 }

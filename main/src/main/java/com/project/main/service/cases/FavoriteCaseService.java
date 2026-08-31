@@ -15,6 +15,8 @@ import com.project.main.model.user.UserFavoriteCase;
 import com.project.main.repository.cases.CaseRatingRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.UserFavoriteCaseRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +37,7 @@ public class FavoriteCaseService {
     private final UserFavoriteCaseRepository favoriteCaseRepository;
     private final CaseRepository caseRepository;
     private final CaseRatingRepository caseRatingRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FavoriteCaseService.class);
 
     public FavoriteCaseService(UserFavoriteCaseRepository favoriteCaseRepository,
                                CaseRepository caseRepository,
@@ -94,14 +98,19 @@ public class FavoriteCaseService {
                 .map(row -> row[0] != null ? ((Number) row[0]).longValue() : null)
                 .filter(Objects::nonNull)
                 .toList();
-        Map<Long, Double> ratingsMap = caseIds.isEmpty()
-                ? Map.of()
-                : caseRatingRepository.findAverageRatingsByCaseIds(caseIds).stream()
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
-                        row -> row[1] == null ? 0.0 : ((Number) row[1]).doubleValue(),
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, Double> ratingsMap;
+
+        if (caseIds.isEmpty()) {
+            ratingsMap = Map.of();
+        } else {
+            ratingsMap = new HashMap<>();
+
+            for (Object[] row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
+                Long caseId = ((Number) row[0]).longValue();
+                Double avg = row[1] == null ? null : ((Number) row[1]).doubleValue();
+                ratingsMap.put(caseId, avg);
+            }
+        }
 
 
         Map<Long, List<CasePublicDto.TagInfo>> tagsMap = loadTags(caseIds);
@@ -115,7 +124,7 @@ public class FavoriteCaseService {
                     String titleEn = row[3] != null ? row[3].toString() : null;
                     String description = row[4] != null ? row[4].toString() : null;
                     String fullDescription = row[5] != null ? row[5].toString() : null;
-                    Difficulty difficulty = row[6] != null ? Difficulty.valueOf(row[6].toString()) : null;
+                    Difficulty difficulty = parseDifficulty(row[6]);
 
                     Integer averageSolveMin = row[7] != null ? ((Number) row[7]).intValue() : null;
                     String pdfUrl = row[8] != null ? row[8].toString() : null;
@@ -133,7 +142,7 @@ public class FavoriteCaseService {
                             createdAt, updatedAt, addedAt, tags
                     );
 
-                    dto.setCaseRating(ratingsMap.getOrDefault(id, 0.0));
+                    dto.setCaseRating(ratingsMap.get(id));
 
                     return dto;
                 })
@@ -214,12 +223,39 @@ public class FavoriteCaseService {
         if (value == null) {
             return null;
         }
-        if (value instanceof LocalDateTime) {
-            return (LocalDateTime) value;
+
+        if (value instanceof LocalDateTime ldt) {
+            return ldt;
         }
-        if (value instanceof java.sql.Timestamp) {
-            return ((java.sql.Timestamp) value).toLocalDateTime();
+
+        if (value instanceof java.sql.Timestamp ts) {
+            return ts.toLocalDateTime();
         }
+
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate().atStartOfDay();
+        }
+
+        if (value instanceof java.time.OffsetDateTime odt) {
+            return odt.toLocalDateTime();
+        }
+
+        if (value instanceof java.time.Instant instant) {
+            return instant.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        }
+
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+        }
+
+        logger.warn(
+                "Unsupported datetime value: value='{}', class='{}'",
+                value,
+                value.getClass().getName()
+        );
+
         return null;
     }
 
@@ -236,4 +272,16 @@ public class FavoriteCaseService {
                                 Collectors.toList())));
     }
 
+    private Difficulty parseDifficulty(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return Difficulty.valueOf(value.toString().trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            logger.warn("Unknown difficulty value: '{}'", value);
+            return null;
+        }
+    }
 }

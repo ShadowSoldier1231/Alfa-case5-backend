@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -176,7 +177,7 @@ public class CaseService {
 
         Map<Long, List<CasePublicDto.TagInfo>> tags = loadTags(List.of(c));
         Double caseRating = loadRatings(List.of(c.getId()))
-                .getOrDefault(c.getId(), 0.0);
+                .get(c.getId());
 
         return CasePublicDto.from(
                 c,
@@ -226,7 +227,7 @@ public class CaseService {
                 .map(c -> CasePublicDto.from(
                         c,
                         tags.getOrDefault(c.getId(), List.of()),
-                        ratings.getOrDefault(c.getId(), 0.0)
+                        ratings.get(c.getId())
                 ))
                 .toList();
 
@@ -377,12 +378,15 @@ public class CaseService {
             return Map.of();
         }
 
-        return caseRatingRepository.findAverageRatingsByCaseIds(caseIds).stream()
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
-                        row -> row[1] == null ? 0.0 : ((Number) row[1]).doubleValue(),
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, Double> result = new HashMap<>();
+
+        for (Object[] row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
+            Long caseId = ((Number) row[0]).longValue();
+            Double avg = row[1] == null ? null : ((Number) row[1]).doubleValue();
+            result.put(caseId, avg);
+        }
+
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -435,7 +439,7 @@ public class CaseService {
                 .map(row -> {
                     Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
                     String name = row[1] != null ? row[1].toString() : null;
-                    Boolean active = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
+                    Boolean active = toBoolean(row[2]);
                     Long caseCount = row[3] != null ? ((Number) row[3]).longValue() : 0L;
 
                     return new TagListItem(id, name, active, caseCount);
@@ -601,7 +605,7 @@ public class CaseService {
                                     Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
                                     String title = row[1] != null ? (String) row[1] : null;
                                     Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
-                                    Boolean active = row[3] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[3]));
+                                    Boolean active = toBoolean(row[3]);
                                     return new AdminMaterialDto.AdminMaterialPart(
                                             id, title, position, active
                                     );
@@ -629,7 +633,7 @@ public class CaseService {
         String title = row[2] != null ? row[2].toString() : null;
         Integer position = row[3] != null ? ((Number) row[3]).intValue() : null;
         String text = row[4] != null ? row[4].toString() : null;
-        Boolean active = row[5] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[5]));
+        Boolean active = toBoolean(row[5]);
 
         return new AdminPartialMaterialDto(materialId, caseId, title, position, text, active);
     }
@@ -797,7 +801,7 @@ public class CaseService {
                 .map(c -> CaseAdminDto.from(
                         c,
                         tags.getOrDefault(c.getId(), List.of()),
-                        ratings.getOrDefault(c.getId(), 0.0)
+                        ratings.get(c.getId())
                 ))
                 .toList();
 
@@ -926,4 +930,25 @@ public class CaseService {
                 .replace("_", "!_");
     }
 
+    private Boolean toBoolean(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        if (value instanceof Number n) {
+            return n.intValue() != 0;
+        }
+
+        String s = value.toString().trim().toLowerCase();
+
+        return switch (s) {
+            case "true", "t", "1", "yes", "y" -> true;
+            case "false", "f", "0", "no", "n" -> false;
+            default -> null;
+        };
+    }
 }

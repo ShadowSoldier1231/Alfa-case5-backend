@@ -40,8 +40,8 @@ public class UserPreferenceService {
                     row -> {
                         Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
                         String name = row[1] != null ? row[1].toString() : null;
-                        Boolean isActive = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
-                        Long count = row[3] != null ? ((Number) row[3]).longValue() : null;
+                        Boolean isActive = toBoolean(row[2]);
+                        Long count = row[3] != null ? ((Number) row[3]).longValue() : 0L;
 
                                 return new TagListItem(id, name, isActive, count);
                     }
@@ -93,4 +93,26 @@ public class UserPreferenceService {
         preferenceRepository.save(preference);
     }
 
+
+    private Boolean toBoolean(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        if (value instanceof Number n) {
+            return n.intValue() != 0;
+        }
+
+        String s = value.toString().trim().toLowerCase();
+
+        return switch (s) {
+            case "true", "t", "1", "yes", "y" -> true;
+            case "false", "f", "0", "no", "n" -> false;
+            default -> null;
+        };
+    }
 }

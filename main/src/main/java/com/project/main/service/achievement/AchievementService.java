@@ -13,10 +13,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,12 +31,20 @@ public class AchievementService {
         List<Object[]> obtainedRows = achievementRepository.findObtainedAchievementsByUserId(userId);
 
 
-        Map<Long, LocalDateTime> obtainedMap = obtainedRows.stream()
-                .filter(row -> row[1] != null)
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
-                        row -> convertToLocalDateTime(row[1])
-                ));
+        Map<Long, LocalDateTime> obtainedMap = new HashMap<>();
+
+        for (Object[] row : obtainedRows) {
+            if (row[0] == null || row[1] == null) {
+                continue;
+            }
+
+            Long achievementId = ((Number) row[0]).longValue();
+            LocalDateTime obtainedAt = convertToLocalDateTime(row[1]);
+
+            if (obtainedAt != null) {
+                obtainedMap.put(achievementId, obtainedAt);
+            }
+        }
 
         return Arrays.stream(Achievement.values())
                 .map(ach -> {

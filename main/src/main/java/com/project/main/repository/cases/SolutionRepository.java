@@ -77,7 +77,7 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
             "FROM solution " +
             "WHERE user_id = :userId AND rating >= :threshold " +
             "ORDER BY solve_date DESC", nativeQuery = true)
-    List<Object[]> findDistinctSolveDatesByUserId(@Param("userId") Long userId, @Param("threshold") Long threshold);
+    List<Object> findDistinctSolveDatesByUserId(@Param("userId") Long userId, @Param("threshold") Long threshold);
 
 
     @Query(value = "SELECT EXISTS(" +

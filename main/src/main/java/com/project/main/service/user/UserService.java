@@ -434,17 +434,10 @@ public class UserService {
 
             String status = row[5] != null ? row[5].toString() : null;;
 
-            boolean isVerified = row[6] != null && (Boolean) row[6];
+            boolean isVerified = toBoolean(row[6]);
 
 
-            LocalDateTime bannedUntil = null;
-            if (row[7] != null) {
-                if (row[7] instanceof LocalDateTime) {
-                    bannedUntil = (LocalDateTime) row[7];
-                } else if (row[7] instanceof Timestamp) {
-                    bannedUntil = ((Timestamp) row[7]).toLocalDateTime();
-                }
-            }
+            LocalDateTime bannedUntil = toLocalDateTime(row[7]);
 
             return new UserListItem(id, username, email, nickName, role, status, isVerified, bannedUntil);
         }).collect(Collectors.toList());
@@ -535,5 +528,65 @@ public class UserService {
                 .replace("%", "!%")
                 .replace("_", "!_");
     }
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
 
+        if (value instanceof LocalDateTime ldt) {
+            return ldt;
+        }
+
+        if (value instanceof java.sql.Timestamp ts) {
+            return ts.toLocalDateTime();
+        }
+
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate().atStartOfDay();
+        }
+
+        if (value instanceof java.time.OffsetDateTime odt) {
+            return odt.toLocalDateTime();
+        }
+
+        if (value instanceof java.time.Instant instant) {
+            return instant.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        }
+
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+        }
+
+        logger.warn(
+                "Unsupported datetime value: value='{}', class='{}'",
+                value,
+                value.getClass().getName()
+        );
+
+        return null;
+    }
+
+    private Boolean toBoolean(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        if (value instanceof Number n) {
+            return n.intValue() != 0;
+        }
+
+        String s = value.toString().trim().toLowerCase();
+
+        return switch (s) {
+            case "true", "t", "1", "yes", "y" -> true;
+            case "false", "f", "0", "no", "n" -> false;
+            default -> null;
+        };
+    }
 }

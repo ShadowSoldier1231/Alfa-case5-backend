@@ -50,13 +50,25 @@ public class TimeAndSpeedChecker implements AchievementChecker {
     }
 
     private void checkMarathoner(Long userId) {
-        List<Object[]> rows = solutionRepository.findDistinctSolveDatesByUserId(userId, SOLVE_THRESHOLD);
+        List<Object> rows = solutionRepository.findDistinctSolveDatesByUserId(userId, SOLVE_THRESHOLD);
+
         if (rows.size() >= 3) {
             int consecutiveDays = 1;
-            LocalDate prevDate = toLocalDate(rows.get(0)[0]);
+            LocalDate prevDate = null;
 
-            for (int i = 1; i < rows.size(); i++) {
-                LocalDate currDate = toLocalDate(rows.get(i)[0]);
+            for (int i = 0; i < rows.size(); i++) {
+                LocalDate currDate = toLocalDate(rows.get(i));
+
+                if (currDate == null) {
+                    consecutiveDays = 1;
+                    prevDate = null;
+                    continue;
+                }
+
+                if (prevDate == null) {
+                    prevDate = currDate;
+                    continue;
+                }
 
                 if (prevDate.minusDays(1).equals(currDate)) {
                     consecutiveDays++;
@@ -85,10 +97,30 @@ public class TimeAndSpeedChecker implements AchievementChecker {
 
 
     private LocalDate toLocalDate(Object value) {
-        if (value == null) return LocalDate.now();
-        if (value instanceof LocalDate ld) return ld;
-        if (value instanceof Date sqlDate) return sqlDate.toLocalDate();
-        if (value instanceof java.util.Date utilDate) return utilDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-        return LocalDate.now();
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+
+        if (value instanceof Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
+        }
+
+        logger.warn(
+                "Unsupported date value for marathoner achievement: value='{}', class='{}'",
+                value,
+                value.getClass().getName()
+        );
+
+        return null;
     }
 }

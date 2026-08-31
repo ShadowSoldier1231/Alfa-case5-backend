@@ -74,9 +74,13 @@ public class SolutionService {
         if (startTimeStr != null) {
             try {
                 Instant startTime = parseTimeToInstant(startTimeStr);
-                long minutes = Duration.between(startTime, Instant.now()).toMinutes();
 
-                timeSpentMinutes = (int) Math.max(0, minutes);
+                if (startTime != null) {
+                    long minutes = Duration.between(startTime, Instant.now()).toMinutes();
+                    timeSpentMinutes = (int) Math.max(0, minutes);
+                } else {
+                    logger.warn("Start time is null for key: {}", redisKey);
+                }
             } catch (DateTimeParseException e) {
                 logger.error("Failed to parse start time from Redis for key: {}", redisKey);
             } catch (Exception e) {
@@ -134,7 +138,14 @@ public class SolutionService {
         if (Boolean.FALSE.equals(isSet)) {
             Long bestRating = solutionRepository.getMaxRatingByCaseIdAndUserId(caseId, userId);
             String existingTimeStr = redisTemplate.opsForValue().get(key);
-            return new SolvingStatusResponse(true, parseTimeToInstant(existingTimeStr), false, bestRating);
+            Instant existingTime = parseTimeToInstant(existingTimeStr);
+
+            if (existingTime == null) {
+                redisTemplate.delete(key);
+                return new SolvingStatusResponse(false, null, false, bestRating);
+            }
+
+            return new SolvingStatusResponse(true, existingTime, false, bestRating);
         }
 
         return new SolvingStatusResponse(true, Instant.now(), false, 0L);

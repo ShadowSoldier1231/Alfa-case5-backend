@@ -216,7 +216,7 @@ public class QuizService {
                         row -> ((Number) row[0]).longValue(),
                         row -> new OptionValidationData(
                                 ((Number) row[1]).longValue(),
-                                (Boolean) row[2]
+                                toBoolean(row[2])
                         ),
                         (existing, replacement) -> existing
                 ));
@@ -385,6 +385,27 @@ public class QuizService {
         return quiz.getId();
     }
 
+    private Boolean toBoolean(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        if (value instanceof Number n) {
+            return n.intValue() != 0;
+        }
+
+        String s = value.toString().trim().toLowerCase();
+
+        return switch (s) {
+            case "true", "t", "1", "yes", "y" -> true;
+            case "false", "f", "0", "no", "n" -> false;
+            default -> null;
+        };
+    }
 
 
     private record OptionValidationData(Long questionId, Boolean correct) {}
