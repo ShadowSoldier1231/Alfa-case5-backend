@@ -15,6 +15,7 @@ import com.project.main.model.user.UserFavoriteCase;
 import com.project.main.repository.cases.CaseRatingRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.UserFavoriteCaseRepository;
+import com.project.main.service.component.TypeMapperComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -37,14 +38,18 @@ public class FavoriteCaseService {
     private final UserFavoriteCaseRepository favoriteCaseRepository;
     private final CaseRepository caseRepository;
     private final CaseRatingRepository caseRatingRepository;
+    private final TypeMapperComponent typeMapper;
+
     private static final Logger logger = LoggerFactory.getLogger(FavoriteCaseService.class);
 
     public FavoriteCaseService(UserFavoriteCaseRepository favoriteCaseRepository,
                                CaseRepository caseRepository,
-                               CaseRatingRepository caseRatingRepository) {
+                               CaseRatingRepository caseRatingRepository,
+                               TypeMapperComponent typeMapper) {
         this.favoriteCaseRepository = favoriteCaseRepository;
         this.caseRepository = caseRepository;
         this.caseRatingRepository = caseRatingRepository;
+        this.typeMapper = typeMapper;
     }
 
     @Transactional
@@ -85,7 +90,7 @@ public class FavoriteCaseService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -124,16 +129,16 @@ public class FavoriteCaseService {
                     String titleEn = row[3] != null ? row[3].toString() : null;
                     String description = row[4] != null ? row[4].toString() : null;
                     String fullDescription = row[5] != null ? row[5].toString() : null;
-                    Difficulty difficulty = parseDifficulty(row[6]);
+                    Difficulty difficulty = typeMapper.parseDifficulty(row[6]);
 
                     Integer averageSolveMin = row[7] != null ? ((Number) row[7]).intValue() : null;
                     String pdfUrl = row[8] != null ? row[8].toString() : null;
                     String iconUrl = row[9] != null ? row[9].toString() : null;
                     Integer viewsCount = row[10] != null ? ((Number) row[10]).intValue() : null;
 
-                    LocalDateTime createdAt = toLocalDateTime(row[11]);
-                    LocalDateTime updatedAt = toLocalDateTime(row[12]);
-                    LocalDateTime addedAt = toLocalDateTime(row[13]);
+                    LocalDateTime createdAt = typeMapper.toLocalDateTime(row[11]);
+                    LocalDateTime updatedAt = typeMapper.toLocalDateTime(row[12]);
+                    LocalDateTime addedAt = typeMapper.toLocalDateTime(row[13]);
                     List<CasePublicDto.TagInfo> tags = tagsMap.getOrDefault(id, List.of());
 
                     FavoriteCaseDto dto = new FavoriteCaseDto(
@@ -195,70 +200,6 @@ public class FavoriteCaseService {
         return Sort.by(direction, sortColumn);
     }
 
-    private Boolean toBoolean(Object value) {
-        if (value == null) {
-            return false;
-        }
-
-        if (value instanceof Boolean b) {
-            return b;
-        }
-
-        return "true".equalsIgnoreCase(value.toString());
-    }
-
-
-    private String escapeLikeWildcards(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        return value
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_");
-    }
-
-    private LocalDateTime toLocalDateTime(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof LocalDateTime ldt) {
-            return ldt;
-        }
-
-        if (value instanceof java.sql.Timestamp ts) {
-            return ts.toLocalDateTime();
-        }
-
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate().atStartOfDay();
-        }
-
-        if (value instanceof java.time.OffsetDateTime odt) {
-            return odt.toLocalDateTime();
-        }
-
-        if (value instanceof java.time.Instant instant) {
-            return instant.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        }
-
-        if (value instanceof java.util.Date utilDate) {
-            return utilDate.toInstant()
-                    .atZone(java.time.ZoneId.systemDefault())
-                    .toLocalDateTime();
-        }
-
-        logger.warn(
-                "Unsupported datetime value: value='{}', class='{}'",
-                value,
-                value.getClass().getName()
-        );
-
-        return null;
-    }
-
     private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<Long> cases) {
         if (cases.isEmpty()) return Map.of();
         return caseRepository.findTagsByCaseIds(cases).stream()
@@ -272,16 +213,5 @@ public class FavoriteCaseService {
                                 Collectors.toList())));
     }
 
-    private Difficulty parseDifficulty(Object value) {
-        if (value == null) {
-            return null;
-        }
 
-        try {
-            return Difficulty.valueOf(value.toString().trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            logger.warn("Unknown difficulty value: '{}'", value);
-            return null;
-        }
-    }
 }

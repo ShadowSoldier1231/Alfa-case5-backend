@@ -10,7 +10,6 @@ import com.project.main.dto.auth.RegisterRequest;
 import com.project.main.dto.auth.ResendEmailRequest;
 import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserRole;
-import com.project.main.enums.UserStatus;
 import com.project.main.exception.*;
 import com.project.main.model.user.LeaderboardUser;
 import com.project.main.model.user.UserData;
@@ -22,6 +21,7 @@ import com.project.main.service.auth.VerificationRateLimitService;
 import com.project.main.service.auth.VerificationService;
 import com.project.main.service.common.FetchingService;
 import com.project.main.service.common.S3StorageService;
+import com.project.main.service.component.TypeMapperComponent;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
@@ -32,7 +32,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,6 +55,7 @@ public class UserService {
     private final ApplicationEventPublisher eventPublisher;
     private final FetchingService fetchingService;
     private final VerificationRateLimitService rateLimitService;
+    private final TypeMapperComponent typeMapper;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private static String DUMMY_HASHED_PASSWORD = "$2a$10$0MB4zN/nNgjOwWGR4vddk.2CDWaOMZAUdWAJ0p4XC9VS.9aWkW5bu";
@@ -66,7 +66,8 @@ public class UserService {
                        LeaderboardRepository leaderboardRepository, VerificationService verificationService,
                        ApplicationEventPublisher eventPublisher, S3StorageService s3StorageService,
                        FetchingService fetchingService,
-                       VerificationRateLimitService rateLimitService) {
+                       VerificationRateLimitService rateLimitService,
+                       TypeMapperComponent typeMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userDataRepository = userDataRepository;
@@ -76,6 +77,7 @@ public class UserService {
         this.s3StorageService = s3StorageService;
         this.fetchingService = fetchingService;
         this.rateLimitService = rateLimitService;
+        this.typeMapper = typeMapper;
     }
 
     @PostConstruct
@@ -412,7 +414,7 @@ public class UserService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
 
         if (searchTerm != null && searchTerm.length() > 200) {
@@ -434,10 +436,10 @@ public class UserService {
 
             String status = row[5] != null ? row[5].toString() : null;;
 
-            boolean isVerified = toBoolean(row[6]);
+            Boolean isVerified = typeMapper.toBoolean(row[6]);
 
 
-            LocalDateTime bannedUntil = toLocalDateTime(row[7]);
+            LocalDateTime bannedUntil = typeMapper.toLocalDateTime(row[7]);
 
             return new UserListItem(id, username, email, nickName, role, status, isVerified, bannedUntil);
         }).collect(Collectors.toList());
@@ -518,75 +520,5 @@ public class UserService {
 
         return Sort.by(direction, sortColumn);
     }
-    private String escapeLikeWildcards(String value) {
-        if (value == null) {
-            return null;
-        }
 
-        return value
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_");
-    }
-    private LocalDateTime toLocalDateTime(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof LocalDateTime ldt) {
-            return ldt;
-        }
-
-        if (value instanceof java.sql.Timestamp ts) {
-            return ts.toLocalDateTime();
-        }
-
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate().atStartOfDay();
-        }
-
-        if (value instanceof java.time.OffsetDateTime odt) {
-            return odt.toLocalDateTime();
-        }
-
-        if (value instanceof java.time.Instant instant) {
-            return instant.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        }
-
-        if (value instanceof java.util.Date utilDate) {
-            return utilDate.toInstant()
-                    .atZone(java.time.ZoneId.systemDefault())
-                    .toLocalDateTime();
-        }
-
-        logger.warn(
-                "Unsupported datetime value: value='{}', class='{}'",
-                value,
-                value.getClass().getName()
-        );
-
-        return null;
-    }
-
-    private Boolean toBoolean(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof Boolean b) {
-            return b;
-        }
-
-        if (value instanceof Number n) {
-            return n.intValue() != 0;
-        }
-
-        String s = value.toString().trim().toLowerCase();
-
-        return switch (s) {
-            case "true", "t", "1", "yes", "y" -> true;
-            case "false", "f", "0", "no", "n" -> false;
-            default -> null;
-        };
-    }
 }

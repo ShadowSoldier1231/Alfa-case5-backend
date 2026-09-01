@@ -11,11 +11,10 @@ import com.project.main.dto.user.ChangeParamsRequest;
 import com.project.main.dto.user.UserProfile;
 import com.project.main.exception.*;
 import com.project.main.model.common.Views;
-import com.project.main.model.user.UserSession;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.auth.VerificationRateLimitService;
 import com.project.main.service.common.FetchingService;
-import com.project.main.service.component.UserValidationService;
+import com.project.main.service.component.ControllerHelperService;
 import com.project.main.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +29,6 @@ import org.apache.commons.validator.routines.EmailValidator;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -38,21 +36,21 @@ import java.util.stream.Collectors;
 public class LoginApiController {
 
     private final UserService userService;
-    private final UserValidationService validationService;
     private final FetchingService fetchingService;
     private final SessionService sessionService;
     private final VerificationRateLimitService rateLimitService;
+    private final ControllerHelperService controllerHelper;
 
     public LoginApiController(UserService userService,
-                              UserValidationService validationService,
                               FetchingService fetchingService,
                               SessionService sessionService,
-                              VerificationRateLimitService rateLimitService) {
+                              VerificationRateLimitService rateLimitService,
+                              ControllerHelperService controllerHelper) {
         this.userService = userService;
-        this.validationService = validationService;
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
         this.rateLimitService = rateLimitService;
+        this.controllerHelper = controllerHelper;
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -62,77 +60,55 @@ public class LoginApiController {
             BindingResult bindingResult,
             @CookieValue(value = "token", required = false) String token) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         if (changeRequest.getEmail() == null || changeRequest.getEmail().isBlank()) {
             throw new BadRequestException("Email cannot be blank");
         }
 
         String lowerEmail = changeRequest.getEmail().toLowerCase();
+
         if (userService.userExistsByEmail(lowerEmail)) {
             throw new ConflictException("This email address is already taken");
         }
+
         if (!EmailValidator.getInstance(true).isValid(lowerEmail)) {
             throw new BadRequestException("This email address is invalid");
         }
 
         try {
-            userService.updateEmail(session.getUserId(), changeRequest.getEmail());
+            userService.updateEmail(userId, changeRequest.getEmail());
         } catch (NotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new InternalServerErrorException("Failed to update email");
         }
 
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
-    @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/changeparams")
     public ResponseEntity<RegisterResult> changeParams(
             @Valid @RequestBody ChangeParamsRequest changeRequest,
-            @CookieValue(value = "token", required = false) String token,
-            BindingResult bindingResult) {
+            BindingResult bindingResult,
+            @CookieValue(value = "token", required = false) String token) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         if (changeRequest.getNickName() != null) {
-            switch (validationService.checkUsername(changeRequest.getNickName())) {
-                case TOO_LONG:
-                    throw new BadRequestException("Username cannot be longer than 20 characters");
-                case TOO_SHORT:
-                    throw new BadRequestException("Username cannot be shorter than 3 characters");
-                case EMPTY:
-                    throw new BadRequestException("Username cannot be empty");
-                case SPACE:
-                    throw new BadRequestException("Username cannot contain spaces");
-                case OK:
-                    break;
-            }
+            controllerHelper.validateUsername(changeRequest.getNickName());
         }
 
         if (changeRequest.getCityId() != null && !fetchingService.cityExistsById(changeRequest.getCityId())) {
             throw new BadRequestException("Invalid city id");
         }
 
-        userService.updateUserParams(session.getUserId(), changeRequest);
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        userService.updateUserParams(userId, changeRequest);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -142,40 +118,22 @@ public class LoginApiController {
             @CookieValue(value = "token", required = false) String token,
             HttpServletResponse response) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
-        if (!userService.passwordValidator(session.getUserId(), resetPasswordRequest.getOldPassword())) {
+        if (!userService.passwordValidator(userId, resetPasswordRequest.getOldPassword())) {
             throw new InvalidCredentialsException("Incorrect password");
         }
 
-        switch (validationService.checkPassword(resetPasswordRequest.getNewPassword())) {
-            case EMPTY:
-                throw new BadRequestException("Password cannot be empty");
-            case TOO_LONG:
-                throw new BadRequestException("Password cannot be longer than 30 characters");
-            case TOO_SHORT:
-                throw new BadRequestException("Password cannot be shorter than 8 characters");
-            case NO_DIGITS:
-                throw new BadRequestException("Password must contain at least 1 digit");
-            case NO_SPECIAL_SYMBOL:
-                throw new BadRequestException("Password must contain at least 1 special character");
-            case OK:
-            default:
-                break;
-        }
+        controllerHelper.validatePassword(resetPasswordRequest.getNewPassword());
 
         String hashedPassword = userService.hashPassword(resetPasswordRequest.getNewPassword());
-        userService.updatePassword(session.getUserId(), hashedPassword);
+        userService.updatePassword(userId, hashedPassword);
+        sessionService.deleteAllSessions(userId);
 
-        sessionService.deleteAllSessions(session.getUserId());
         ResponseCookie cookie = sessionService.deleteCookie(token, false);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -184,14 +142,10 @@ public class LoginApiController {
             @RequestParam("file") MultipartFile file,
             @CookieValue(value = "token", required = false) String token) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
-        userService.saveProfilePicture(session.getUserId(), file);
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        userService.saveProfilePicture(userId, file);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
     @JsonView(Views.RegisterResultFull.class)
@@ -201,42 +155,13 @@ public class LoginApiController {
             BindingResult bindingResult,
             HttpServletRequest request) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         String clientIp = request.getRemoteAddr();
         rateLimitService.checkCanSendEmail(clientIp);
 
-        switch (validationService.checkPassword(registerRequest.getPassword())) {
-            case EMPTY:
-                throw new BadRequestException("Password cannot be empty");
-            case TOO_LONG:
-                throw new BadRequestException("Password cannot be longer than 30 characters");
-            case TOO_SHORT:
-                throw new BadRequestException("Password cannot be shorter than 8 characters");
-            case NO_DIGITS:
-                throw new BadRequestException("Password must contain at least 1 digit");
-            case NO_SPECIAL_SYMBOL:
-                throw new BadRequestException("Password must contain at least 1 special character");
-            case OK:
-            default:
-                break;
-        }
-
-        switch (validationService.checkUsername(registerRequest.getUsername())) {
-            case TOO_LONG:
-                throw new BadRequestException("Username cannot be longer than 20 characters");
-            case TOO_SHORT:
-                throw new BadRequestException("Username cannot be shorter than 3 characters");
-            case EMPTY:
-                throw new BadRequestException("Username cannot be empty");
-            case SPACE:
-                throw new BadRequestException("Username cannot contain spaces");
-            case OK:
-            default:
-                break;
-        }
+        controllerHelper.validatePassword(registerRequest.getPassword());
+        controllerHelper.validateUsername(registerRequest.getUsername());
 
         if (userService.userExistsByEmail(registerRequest.getEmail())) {
             throw new ConflictException("This email address is already taken");
@@ -276,42 +201,13 @@ public class LoginApiController {
 
         sessionService.reverseCheckCookieOrThrow(token);
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         String clientIp = request.getRemoteAddr();
         rateLimitService.checkCanSendEmail(clientIp);
 
-        switch (validationService.checkPassword(resendEmailRequest.getPassword())) {
-            case EMPTY:
-                throw new BadRequestException("Password cannot be empty");
-            case TOO_LONG:
-                throw new BadRequestException("Password cannot be longer than 30 characters");
-            case TOO_SHORT:
-                throw new BadRequestException("Password cannot be shorter than 8 characters");
-            case NO_DIGITS:
-                throw new BadRequestException("Password must contain at least 1 digit");
-            case NO_SPECIAL_SYMBOL:
-                throw new BadRequestException("Password must contain at least 1 special character");
-            case OK:
-            default:
-                break;
-        }
-
-        switch (validationService.checkUsername(resendEmailRequest.getUsername())) {
-            case TOO_LONG:
-                throw new BadRequestException("Username cannot be longer than 20 characters");
-            case TOO_SHORT:
-                throw new BadRequestException("Username cannot be shorter than 3 characters");
-            case EMPTY:
-                throw new BadRequestException("Username cannot be empty");
-            case SPACE:
-                throw new BadRequestException("Username cannot contain spaces");
-            case OK:
-            default:
-                break;
-        }
+        controllerHelper.validatePassword(resendEmailRequest.getPassword());
+        controllerHelper.validateUsername(resendEmailRequest.getUsername());
 
         if (!EmailValidator.getInstance(true).isValid(resendEmailRequest.getEmail())) {
             throw new BadRequestException("This email address is invalid");
@@ -337,9 +233,7 @@ public class LoginApiController {
             BindingResult bindingResult,
             HttpServletRequest httpRequest) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         String clientIp = httpRequest.getRemoteAddr();
         rateLimitService.checkCanSendEmail(clientIp);
@@ -356,9 +250,7 @@ public class LoginApiController {
             BindingResult bindingResult,
             HttpServletRequest httpRequest) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         String clientIp = httpRequest.getRemoteAddr();
         rateLimitService.checkCanSendEmail(clientIp);
@@ -375,21 +267,12 @@ public class LoginApiController {
             BindingResult bindingResult,
             HttpServletRequest httpRequest) {
 
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         String clientIp = httpRequest.getRemoteAddr();
         rateLimitService.checkCanAttemptPasswordReset(clientIp);
 
-        switch (validationService.checkPassword(request.getNewPassword())) {
-            case EMPTY: throw new BadRequestException("Password cannot be empty");
-            case TOO_LONG: throw new BadRequestException("Password cannot be longer than 30 characters");
-            case TOO_SHORT: throw new BadRequestException("Password cannot be shorter than 8 characters");
-            case NO_DIGITS: throw new BadRequestException("Password must contain at least 1 digit");
-            case NO_SPECIAL_SYMBOL: throw new BadRequestException("Password must contain at least 1 special character");
-            case OK: default: break;
-        }
+        controllerHelper.validatePassword(request.getNewPassword());
 
         String hashedPassword = userService.hashPassword(request.getNewPassword());
 
@@ -458,17 +341,14 @@ public class LoginApiController {
     public ResponseEntity<UserProfile> getProfile(
             @CookieValue(value = "token", required = false) String token) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        Long userId = sessionPair.getRight().getUserId();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         if (userId == null || userId <= 0L) {
             throw new BadRequestException("Invalid user ID");
         }
 
         UserProfile profile = fetchingService.getMyProfile(userId);
+
         if (profile == null) {
             throw new NotFoundException("Profile not found");
         }
@@ -481,11 +361,7 @@ public class LoginApiController {
     public ResponseEntity<RegisterResult> getUserId(
             @CookieValue(value = "token", required = false) String token) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        Long userId = sessionPair.getRight().getUserId();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         return ResponseEntity.ok(new RegisterResult(userId));
     }
@@ -524,11 +400,6 @@ public class LoginApiController {
         }
     }
 
-    private String getValidationErrors(BindingResult bindingResult) {
-        return bindingResult.getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-    }
 }
 
 

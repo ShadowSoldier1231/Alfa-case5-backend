@@ -14,6 +14,7 @@ import com.project.main.repository.cases.CaseCompletionRepository;
 import com.project.main.repository.cases.CaseRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.cases.SolutionRepository;
+import com.project.main.service.component.TypeMapperComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -27,8 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -42,6 +41,7 @@ public class SolutionService {
     private final CaseRepository caseRepository;
     private final StringRedisTemplate redisTemplate;
     private final CaseCompletionRepository completionRepository;
+    private final TypeMapperComponent typeMapper;
 
     private static final Logger logger = LoggerFactory.getLogger(SolutionService.class);
 
@@ -52,13 +52,15 @@ public class SolutionService {
                            ApplicationEventPublisher eventPublisher,
                            CaseRepository caseRepository,
                            StringRedisTemplate redisTemplate,
-                            CaseCompletionRepository caseCompletionRepository) {
+                            CaseCompletionRepository caseCompletionRepository,
+                           TypeMapperComponent typeMapper) {
         this.solutionRepository = solutionRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.eventPublisher = eventPublisher;
         this.caseRepository = caseRepository;
         this.redisTemplate = redisTemplate;
         this.completionRepository = caseCompletionRepository;
+        this.typeMapper = typeMapper;
     }
 
     @Transactional
@@ -73,7 +75,7 @@ public class SolutionService {
         String startTimeStr = redisTemplate.opsForValue().get(redisKey);
         if (startTimeStr != null) {
             try {
-                Instant startTime = parseTimeToInstant(startTimeStr);
+                Instant startTime = typeMapper.parseTimeToInstant(startTimeStr);
 
                 if (startTime != null) {
                     long minutes = Duration.between(startTime, Instant.now()).toMinutes();
@@ -138,7 +140,7 @@ public class SolutionService {
         if (Boolean.FALSE.equals(isSet)) {
             Long bestRating = solutionRepository.getMaxRatingByCaseIdAndUserId(caseId, userId);
             String existingTimeStr = redisTemplate.opsForValue().get(key);
-            Instant existingTime = parseTimeToInstant(existingTimeStr);
+            Instant existingTime = typeMapper.parseTimeToInstant(existingTimeStr);
 
             if (existingTime == null) {
                 redisTemplate.delete(key);
@@ -171,7 +173,7 @@ public class SolutionService {
         String timeStr = redisTemplate.opsForValue().get(key);
 
         if (timeStr != null) {
-            return new SolvingStatusResponse(true, parseTimeToInstant(timeStr), isCompleted, bestRating);
+            return new SolvingStatusResponse(true, typeMapper.parseTimeToInstant(timeStr), isCompleted, bestRating);
         }
 
         return new SolvingStatusResponse(false, null, isCompleted, bestRating);
@@ -259,17 +261,7 @@ public class SolutionService {
         );
     }
 
-    private Instant parseTimeToInstant(String timeStr) {
-        try {
-            return Instant.parse(timeStr);
-        } catch (DateTimeParseException e) {
-            return LocalDateTime.parse(timeStr).atZone(ZoneOffset.UTC).toInstant();
-        }catch (Exception e) {
-            logger.error("Error when parsing Instant: {}", timeStr);
-            return null;
-        }
 
-    }
 
     @Transactional(readOnly = true)
     public PageResponse<ChatMessageDto> getAllSolutionsForUser(Long userId, int page, int size) {

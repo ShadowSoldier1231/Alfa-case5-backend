@@ -14,6 +14,7 @@ import com.project.main.model.learning.StudyMaterial;
 import com.project.main.repository.cases.*;
 import com.project.main.repository.learning.StudyMaterialRepository;
 import com.project.main.service.common.S3StorageService;
+import com.project.main.service.component.TypeMapperComponent;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class CaseService {
     private final CaseCompletionRepository completionRepository;
     private final CaseRatingRepository caseRatingRepository;
     private final  StudyMaterialRepository materialRepository;
+    private final TypeMapperComponent typeMapper;
 
     public CaseService(CaseRepository caseRepository,
                        TagRepository tagRepository,
@@ -45,7 +47,8 @@ public class CaseService {
                        S3StorageService s3StorageService,
                        CaseCompletionRepository completionRepository,
                        CaseRatingRepository caseRatingRepository,
-                       StudyMaterialRepository materialRepository) {
+                       StudyMaterialRepository materialRepository,
+                       TypeMapperComponent typeMapper) {
         this.caseRepository = caseRepository;
         this.tagRepository = tagRepository;
         this.caseTagRepository = caseTagRepository;
@@ -53,6 +56,7 @@ public class CaseService {
         this.completionRepository = completionRepository;
         this.caseRatingRepository = caseRatingRepository;
         this.materialRepository = materialRepository;
+        this.typeMapper = typeMapper;
     }
 
 
@@ -203,7 +207,7 @@ public class CaseService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -427,7 +431,7 @@ public class CaseService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -439,7 +443,7 @@ public class CaseService {
                 .map(row -> {
                     Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
                     String name = row[1] != null ? row[1].toString() : null;
-                    Boolean active = toBoolean(row[2]);
+                    Boolean active = typeMapper.toBoolean(row[2]);
                     Long caseCount = row[3] != null ? ((Number) row[3]).longValue() : 0L;
 
                     return new TagListItem(id, name, active, caseCount);
@@ -509,7 +513,7 @@ public class CaseService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -605,7 +609,7 @@ public class CaseService {
                                     Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
                                     String title = row[1] != null ? (String) row[1] : null;
                                     Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
-                                    Boolean active = toBoolean(row[3]);
+                                    Boolean active = typeMapper.toBoolean(row[3]);
                                     return new AdminMaterialDto.AdminMaterialPart(
                                             id, title, position, active
                                     );
@@ -633,7 +637,7 @@ public class CaseService {
         String title = row[2] != null ? row[2].toString() : null;
         Integer position = row[3] != null ? ((Number) row[3]).intValue() : null;
         String text = row[4] != null ? row[4].toString() : null;
-        Boolean active = toBoolean(row[5]);
+        Boolean active = typeMapper.toBoolean(row[5]);
 
         return new AdminPartialMaterialDto(materialId, caseId, title, position, text, active);
     }
@@ -777,7 +781,7 @@ public class CaseService {
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
-            searchTerm = escapeLikeWildcards(search.trim());
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -917,38 +921,4 @@ public class CaseService {
         return Sort.by(direction, sortColumn);
     }
 
-
-
-    private String escapeLikeWildcards(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        return value
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_");
-    }
-
-    private Boolean toBoolean(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof Boolean b) {
-            return b;
-        }
-
-        if (value instanceof Number n) {
-            return n.intValue() != 0;
-        }
-
-        String s = value.toString().trim().toLowerCase();
-
-        return switch (s) {
-            case "true", "t", "1", "yes", "y" -> true;
-            case "false", "f", "0", "no", "n" -> false;
-            default -> null;
-        };
-    }
 }

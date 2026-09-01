@@ -11,8 +11,6 @@ import com.project.main.dto.integration.ChatMessageDto;
 import com.project.main.dto.integration.SolvingStatusResponse;
 import com.project.main.dto.integration.SubmitSolutionRequest;
 import com.project.main.exception.BadRequestException;
-import com.project.main.exception.InvalidSessionException;
-import com.project.main.model.user.UserSession;
 import com.project.main.model.common.Views;
 
 import com.project.main.service.auth.SessionService;
@@ -20,7 +18,6 @@ import com.project.main.service.cases.CaseService;
 import com.project.main.service.cases.SolutionService;
 import com.project.main.service.user.UserModerationService;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -48,47 +45,35 @@ public class TextAnalysisIntegrationController {
     @JsonView(Views.RegisterResultPartial.class)
     @GetMapping("/checkCookie")
     public ResponseEntity<RegisterResult> checkCookie(@CookieValue(value = "token", required = false) String token) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
 
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
+        sessionService.checkCookieOrThrow(token);
 
-        return ResponseEntity.ok(sessionPair.getLeft());
+        return ResponseEntity.ok(new RegisterResult(true, ""));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/processViolation")
     public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
                                                            HttpServletResponse response) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
-        String banReason = moderationService.addWarning(session.getUserId());
+        String banReason = moderationService.addWarning(userId);
 
         if (banReason != null) {
-            sessionService.deleteAllSessions(session.getUserId());
+            sessionService.deleteAllSessions(userId);
             ResponseCookie cookie = sessionService.deleteCookie(token, false);
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-            return ResponseEntity.ok(new RegisterResult(false, banReason, session.getUserId()));
+            return ResponseEntity.ok(new RegisterResult(false, banReason, userId));
         }
 
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
     public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token,
                                                    @RequestBody SubmitSolutionRequest request) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
         if (request.getRating() == null || request.getRating() < 0 || request.getRating() > 100) {
             throw new BadRequestException("Invalid rating value");
         }
@@ -100,8 +85,8 @@ public class TextAnalysisIntegrationController {
             throw new BadRequestException("Invalid request");
         }
 
-        solutionService.submitSolution(session.getUserId(), request);
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        solutionService.submitSolution(userId, request);
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
     @PostMapping("/startSolving/{caseId}")
@@ -109,16 +94,10 @@ public class TextAnalysisIntegrationController {
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId
     ) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         SolvingStatusResponse response = solutionService.startSolving(
-                session.getUserId(),
+                userId,
                 caseId
         );
 
@@ -130,17 +109,13 @@ public class TextAnalysisIntegrationController {
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
+        Long userId = sessionService.getUserIdOrThrow(token);
 
-        UserSession session = sessionPair.getRight();
         if (caseId == null || caseId <= 0) {
             throw new BadRequestException("Invalid case ID");
         }
 
-        SolvingStatusResponse response = solutionService.getSolvingStatus(session.getUserId(), caseId);
+        SolvingStatusResponse response = solutionService.getSolvingStatus(userId, caseId);
         return ResponseEntity.ok(response);
     }
 
@@ -149,16 +124,10 @@ public class TextAnalysisIntegrationController {
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId
     ) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
+        Long userId = sessionService.getUserIdOrThrow(token);
 
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
-
-        SolvingStatusResponse response =  solutionService.finishSolving(
-                session.getUserId(),
+        SolvingStatusResponse response = solutionService.finishSolving(
+                userId,
                 caseId
         );
 
@@ -173,19 +142,13 @@ public class TextAnalysisIntegrationController {
             @PathVariable Long caseId,
             @RequestBody(required = false) RateCaseRequest request
     ) {
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         Long rating = request != null ? request.getRating() : null;
 
-        caseService.rateCase(session.getUserId(), caseId, rating);
+        caseService.rateCase(userId, caseId, rating);
 
-        return ResponseEntity.ok(new RegisterResult(true, "", session.getUserId()));
+        return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
 
@@ -213,22 +176,12 @@ public class TextAnalysisIntegrationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
 
-        if (token == null) {
-            throw new InvalidSessionException("Please login first", token);
-        }
-
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         return ResponseEntity.ok(
                 solutionService.getChatSequence(
                         caseId,
-                        session.getUserId(),
+                        userId,
                         page,
                         size
                 )

@@ -13,12 +13,12 @@ public class UserListItem {
     private String status;
 
     @JsonProperty("isVerified")
-    private boolean isVerified;
+    private Boolean isVerified;
 
     private LocalDateTime bannedUntil;
 
     public UserListItem(Long id, String username, String email, String nickName,
-                             String role, String status, boolean isVerified, LocalDateTime bannedUntil) {
+                             String role, String status, Boolean isVerified, LocalDateTime bannedUntil) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -35,7 +35,7 @@ public class UserListItem {
     public String getNickName() { return nickName; }
     public String getRole() { return role; }
     public String getStatus() { return status; }
-    public boolean isVerified() { return isVerified; }
+    public Boolean isVerified() { return isVerified; }
     public LocalDateTime getBannedUntil() { return bannedUntil; }
 
     public void setEmail(String email) {
@@ -66,7 +66,7 @@ public class UserListItem {
         this.username = username;
     }
 
-    public void setVerified(boolean verified) {
+    public void setVerified(Boolean verified) {
         isVerified = verified;
     }
 }

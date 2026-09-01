@@ -15,10 +15,10 @@ import com.project.main.dto.user.AdminUserUpdateRequest;
 import com.project.main.dto.user.UserDetailsResponse;
 import com.project.main.dto.user.UserListItem;
 import com.project.main.exception.ApiException;
-import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.model.common.Views;
 import com.project.main.service.cases.SolutionService;
+import com.project.main.service.component.ControllerHelperService;
 import com.project.main.service.learning.QuizService;
 import com.project.main.service.user.UserService;
 import jakarta.validation.Valid;
@@ -34,8 +34,6 @@ import org.springframework.http.MediaType;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/admin/v1")
 public class AdminApiController {
@@ -44,15 +42,18 @@ public class AdminApiController {
     private final UserService userService;
     private final SolutionService solutionService;
     private final QuizService quizService;
+    private final ControllerHelperService controllerHelper;
     private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
     public AdminApiController(CaseService caseService, UserService userService,
                               SolutionService solutionService,
-                              QuizService quizService) {
+                              QuizService quizService,
+                              ControllerHelperService controllerHelper) {
         this.caseService = caseService;
         this.userService = userService;
         this.solutionService = solutionService;
         this.quizService = quizService;
+        this.controllerHelper = controllerHelper;
     }
 
     @GetMapping("/cases")
@@ -81,9 +82,7 @@ public class AdminApiController {
             @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             caseService.updateCase(id, req, pdfFile, iconFile);
@@ -160,9 +159,7 @@ public class AdminApiController {
             @RequestBody @Valid QuizUpsertRequest request,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
         try {
             Long quizId= quizService.upsertQuiz(materialId, request);
             return ResponseEntity.ok(new RegisterResult(true, "", quizId));
@@ -181,9 +178,7 @@ public class AdminApiController {
             @RequestBody @Valid TheoryCreateRequest request,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             Long materialId = caseService.createTheoryMaterial(caseId, request);
@@ -205,9 +200,7 @@ public class AdminApiController {
             @RequestBody @Valid TheoryUpdateRequest request,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             caseService.updateTheoryMaterial(id, request);
@@ -228,9 +221,7 @@ public class AdminApiController {
             @RequestPart(value = "pdfFile", required = false) MultipartFile pdfFile,
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             Long caseId = caseService.createCase(request, pdfFile, iconFile);
@@ -266,9 +257,7 @@ public class AdminApiController {
             @RequestBody @Valid AdminUserCreateRequest req,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             String hashedPassword = userService.hashPassword(req.getPassword());
@@ -350,9 +339,7 @@ public class AdminApiController {
             @RequestBody @Valid AdminUserUpdateRequest req,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             userService.updateAdminUser(id, req);
@@ -371,9 +358,7 @@ public class AdminApiController {
             @RequestBody @Valid TagCreateRequest request,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             Long newTagId = caseService.createTag(request);
@@ -421,9 +406,7 @@ public class AdminApiController {
             @RequestBody @Valid TagUpdateRequest request,
             BindingResult bindingResult
     ) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(getValidationErrors(bindingResult));
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         try {
             caseService.updateTag(id, request);
@@ -482,13 +465,5 @@ public class AdminApiController {
         }
     }
 
-
-
-
-    private String getValidationErrors(BindingResult bindingResult) {
-        return bindingResult.getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-    }
 
 }

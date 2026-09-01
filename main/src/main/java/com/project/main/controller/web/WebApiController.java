@@ -13,25 +13,21 @@ import com.project.main.dto.user.UserPreferenceDto;
 import com.project.main.dto.user.UserPreferenceUpdateRequest;
 import com.project.main.dto.user.UserProfile;
 import com.project.main.exception.BadRequestException;
-import com.project.main.exception.InvalidSessionException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.common.City;
-
-import com.project.main.model.user.UserSession;
 import com.project.main.model.common.Views;
 
 import com.project.main.service.achievement.AchievementService;
 import com.project.main.service.cases.FavoriteCaseService;
 import com.project.main.service.common.FetchingService;
 import com.project.main.service.auth.SessionService;
+import com.project.main.service.component.ControllerHelperService;
 import com.project.main.service.user.UserPreferenceService;
 import jakarta.validation.Valid;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/site")
@@ -42,17 +38,20 @@ public class WebApiController {
     private final SessionService sessionService;
     private final UserPreferenceService preferenceService;
     private final AchievementService achievementService;
+    private final ControllerHelperService controllerHelper;
 
     public WebApiController(FetchingService fetchingService,
                             SessionService sessionService,
                             FavoriteCaseService favoriteCaseService,
                             UserPreferenceService preferenceService,
-                            AchievementService achievementService) {
+                            AchievementService achievementService,
+                            ControllerHelperService controllerHelper) {
         this.fetchingService = fetchingService;
         this.sessionService = sessionService;
         this.favoriteCaseService = favoriteCaseService;
         this.preferenceService = preferenceService;
         this.achievementService = achievementService;
+        this.controllerHelper = controllerHelper;
     }
 
     @GetMapping("/user/{id}/city")
@@ -93,13 +92,7 @@ public class WebApiController {
     public ResponseEntity<LeaderboardInfo> getMyGlobalPlace(
             @CookieValue(value = "token", required = false) String token) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
-        Long userId = session.getUserId();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         LeaderboardInfo info = fetchingService.getGlobalPlacementInfo(userId);
         return ResponseEntity.ok(info);
@@ -110,13 +103,7 @@ public class WebApiController {
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId) {
 
-        Pair<RegisterResult, UserSession> sessionPair = sessionService.checkCookie(token);
-        if (!sessionPair.getLeft().getSuccess()) {
-            throw new InvalidSessionException(sessionPair.getLeft().getErrorText(), token);
-        }
-
-        UserSession session = sessionPair.getRight();
-        Long userId = session.getUserId();
+        Long userId = sessionService.getUserIdOrThrow(token);
 
         LeaderboardInfo info = fetchingService.getLocalPlacementInfo(userId, caseId);
         return ResponseEntity.ok(info);
@@ -216,13 +203,7 @@ public class WebApiController {
     public ResponseEntity<RegisterResult> updatePreferences(@CookieValue(value = "token", required = false) String token,
                                                             @RequestBody @Valid UserPreferenceUpdateRequest request,
                                                             BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            throw new BadRequestException(
-                    bindingResult.getFieldErrors().stream()
-                            .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                            .collect(Collectors.joining("; "))
-            );
-        }
+        controllerHelper.validateBindingResult(bindingResult);
 
         Long userId = sessionService.getUserIdOrThrow(token);
         preferenceService.updatePreferences(request, userId);

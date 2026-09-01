@@ -5,8 +5,6 @@ import com.project.main.dto.leaderboard.LeaderboardInfo;
 import com.project.main.dto.leaderboard.LeaderboardTopUser;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.user.UserProfile;
-import com.project.main.enums.GenderCode;
-import com.project.main.enums.UserStatus;
 import com.project.main.exception.BadRequestException;
 import com.project.main.model.common.City;
 import com.project.main.model.user.LeaderboardUser;
@@ -14,6 +12,7 @@ import com.project.main.repository.common.CityRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.user.UserDataRepository;
 import com.project.main.repository.user.UserRepository;
+import com.project.main.service.component.TypeMapperComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -21,8 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,17 +31,19 @@ public class FetchingService {
     private final LeaderboardRepository leaderboardRepository;
     private final UserDataRepository userDataRepository;
     private final UserRepository userRepository;
+    private final TypeMapperComponent typeMapper;
     private static final Logger logger = LoggerFactory.getLogger(FetchingService.class);
 
     public FetchingService(LeaderboardRepository leaderboardRepository,
-                           UserDataRepository userDataRepository, CityRepository cityRepository,
-                           UserRepository userRepository) {
-
-
+                           UserDataRepository userDataRepository,
+                           CityRepository cityRepository,
+                           UserRepository userRepository,
+                           TypeMapperComponent typeMapper) {
         this.userDataRepository = userDataRepository;
         this.leaderboardRepository = leaderboardRepository;
         this.cityRepository = cityRepository;
         this.userRepository = userRepository;
+        this.typeMapper = typeMapper;
     }
 
 
@@ -64,7 +63,7 @@ public class FetchingService {
     public PageResponse<City> searchCities(String cityName, int page, int size, String sort) {
         validatePagination(page, size);
 
-        String searchTerm = cityName == null ? "" : escapeLikeWildcards(cityName.trim());
+        String searchTerm = cityName == null ? "" : typeMapper.escapeLikeWildcards(cityName.trim());
 
         if (searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
@@ -102,7 +101,7 @@ public class FetchingService {
 
         String searchTerm = null;
         if (search != null && !search.isBlank()) {
-            searchTerm = search.trim();
+            searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
 
         Pageable pageable = PageRequest.of(page, size, buildCitySort(sort));
@@ -207,10 +206,10 @@ public class FetchingService {
                             .firstName(safeString(actualRow[1]))
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
-                            .birthdate(toLocalDate(actualRow[4]))
-                            .status(parseStatus(actualRow[5]))
+                            .birthdate(typeMapper.toLocalDate(actualRow[4]))
+                            .status(typeMapper.parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
-                            .gender(parseGender(actualRow[7]))
+                            .gender(typeMapper.parseGender(actualRow[7]))
                             .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
                             .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
                             .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
@@ -232,10 +231,10 @@ public class FetchingService {
                             .firstName(safeString(actualRow[1]))
                             .lastName(safeString(actualRow[2]))
                             .middleName(safeString(actualRow[3]))
-                            .birthdate(toLocalDate(actualRow[4]))
-                            .status(parseStatus(actualRow[5]))
+                            .birthdate(typeMapper.toLocalDate(actualRow[4]))
+                            .status(typeMapper.parseStatus(actualRow[5]))
                             .nickName(safeString(actualRow[6]))
-                            .gender(parseGender(actualRow[7]))
+                            .gender(typeMapper.parseGender(actualRow[7]))
                             .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
                             .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
                             .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
@@ -300,55 +299,7 @@ public class FetchingService {
 
         return Sort.by(direction, sortColumn);
     }
+    
 
-    private String escapeLikeWildcards(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        return value
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_");
-    }
-
-    private UserStatus parseStatus(Object value) {
-        if (value == null) return null;
-        try {
-            return UserStatus.valueOf(value.toString());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private GenderCode parseGender(Object value) {
-        if (value == null) return GenderCode.NOT_STATED;
-        try {
-            return GenderCode.valueOf(value.toString());
-        } catch (IllegalArgumentException e) {
-            return GenderCode.NOT_STATED;
-        }
-    }
-
-    private LocalDate toLocalDate(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof LocalDate localDate) {
-            return localDate;
-        }
-
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-
-        if (value instanceof java.util.Date utilDate) {
-            return utilDate.toInstant()
-                    .atZone(java.time.ZoneId.systemDefault())
-                    .toLocalDate();
-        }
-
-        return null;
-    }
+    
 }
