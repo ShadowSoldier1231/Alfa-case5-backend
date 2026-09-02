@@ -88,7 +88,7 @@ public class WebApiController {
         return ResponseEntity.ok(fetchingService.getTop5LeaderboardByCase(caseId));
     }
 
-    @GetMapping("/leaderboard/global/my-place")
+    @GetMapping("/leaderboard/global/myPlace")
     public ResponseEntity<LeaderboardInfo> getMyGlobalPlace(
             @CookieValue(value = "token", required = false) String token) {
 
@@ -98,7 +98,7 @@ public class WebApiController {
         return ResponseEntity.ok(info);
     }
 
-    @GetMapping("/leaderboard/local/my-place/{caseId}")
+    @GetMapping("/leaderboard/local/myPlace/{caseId}")
     public ResponseEntity<LeaderboardInfo> getMyLocalPlace(
             @CookieValue(value = "token", required = false) String token,
             @PathVariable Long caseId) {

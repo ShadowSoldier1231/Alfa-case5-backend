@@ -54,7 +54,7 @@ public class LoginApiController {
     }
 
     @JsonView(Views.RegisterResultPartial.class)
-    @PostMapping("/changeemail")
+    @PostMapping("/changeEmail")
     public ResponseEntity<RegisterResult> changeEmail(
             @Valid @RequestBody ChangeEmailRequest changeRequest,
             BindingResult bindingResult,
@@ -89,7 +89,7 @@ public class LoginApiController {
         return ResponseEntity.ok(new RegisterResult(true, "", userId));
     }
 
-    @PostMapping("/changeparams")
+    @PostMapping("/changeParams")
     public ResponseEntity<RegisterResult> changeParams(
             @Valid @RequestBody ChangeParamsRequest changeRequest,
             BindingResult bindingResult,
@@ -112,7 +112,7 @@ public class LoginApiController {
     }
 
     @JsonView(Views.RegisterResultPartial.class)
-    @PostMapping("/resetpassword")
+    @PostMapping("/resetPassword")
     public ResponseEntity<RegisterResult> resetPassword(
             @RequestBody ResetPasswordRequest resetPasswordRequest,
             @CookieValue(value = "token", required = false) String token,

@@ -162,7 +162,7 @@ http://localhost:8080/api/v1/auth/forgotPassword/confirm
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"oldPassword":"tea_1teaaaa","newPassword":"teaFFan13"}' \
-http://localhost:8080/api/v1/auth/resetpassword
+http://localhost:8080/api/v1/auth/resetPassword
 ```
 
 ### Изменение личных данных (`POST`) *(Требует Cookie)*
@@ -170,14 +170,14 @@ http://localhost:8080/api/v1/auth/resetpassword
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"firstName":"111","lastName":"kvq","middleName":"someOtherName","birthdate":"16.01.2000","cityId":"15","status":"UNDERGRADUATE","nickName":"newNick"}' \
-http://localhost:8080/api/v1/auth/changeparams
+http://localhost:8080/api/v1/auth/changeParams
 ```
 
 ### Смена Email (`POST`) *(Требует Cookie)*
 ```bash
 curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
 -d '{"email":"test@gmail.com"}' \
-http://localhost:8080/api/v1/auth/changeemail
+http://localhost:8080/api/v1/auth/changeEmail
 ```
 
 ### Установка аватара (`POST`) *(Требует Cookie)*
@@ -603,7 +603,7 @@ curl -X GET http://localhost:8080/api/v1/site/leaderboard/case/1/top5
 ### Мое место в глобальном рейтинге (`GET`) *(Требует Cookie)*
 Возвращает текущее место авторизованного пользователя в общем зачете и общее количество верифицированных участников. Если у пользователя 0 очков, `placement` будет равен `0`.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/global/my-place
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/global/myPlace
 ```
 **Ответ (JSON):**
 ```json
@@ -616,7 +616,7 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboa
 ### Мое место в рейтинге по кейсу (`GET`) *(Требует Cookie)*
 Возвращает место авторизованного пользователя в рейтинге по конкретному кейсу и общее количество участников в глобальном зачете.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/local/my-place/1
+curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/site/leaderboard/local/myPlace/1
 ```
 **Ответ (JSON):**
 ```json
