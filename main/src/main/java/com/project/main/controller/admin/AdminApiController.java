@@ -96,7 +96,7 @@ public class AdminApiController {
     }
 
     @GetMapping("/cases/{caseId}/solutions")
-    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForCase(
+    public ResponseEntity<PageResponse<ChatMessageDto>> getAllSolutionsForCase(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size,
             @PathVariable("caseId") Long caseId) {
@@ -301,7 +301,7 @@ public class AdminApiController {
     }
 
     @GetMapping("/users/{userId}/solutions/case/{caseId}")
-    public ResponseEntity<PageResponse<ChatMessageDto>> getSolutionsForCase(
+    public ResponseEntity<PageResponse<ChatMessageDto>> getUserSolutionsForCase(
             @PathVariable("caseId") Long caseId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size,
