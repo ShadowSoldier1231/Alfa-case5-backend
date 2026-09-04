@@ -17,7 +17,9 @@ import com.project.main.model.common.Views;
 import com.project.main.service.auth.SessionService;
 import com.project.main.service.cases.CaseService;
 import com.project.main.service.cases.SolutionService;
+import com.project.main.service.component.MicroserviceValidationComponent;
 import com.project.main.service.user.UserModerationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -34,13 +36,20 @@ public class TextAnalysisIntegrationController {
     private final SessionService sessionService;
     private final CaseService caseService;
     private final SolutionService solutionService;
+    private final MicroserviceValidationComponent microserviceValidator;
 
-    public TextAnalysisIntegrationController(UserModerationService moderationService, SolutionService solutionService,
-                                             CaseService caseService, SessionService sessionService) {
+    public TextAnalysisIntegrationController(
+            UserModerationService moderationService,
+            SolutionService solutionService,
+            CaseService caseService,
+            SessionService sessionService,
+            MicroserviceValidationComponent microserviceValidator
+    ) {
         this.moderationService = moderationService;
         this.solutionService = solutionService;
         this.sessionService = sessionService;
         this.caseService = caseService;
+        this.microserviceValidator = microserviceValidator;
     }
 
     @JsonView(Views.RegisterResultPartial.class)
@@ -54,8 +63,13 @@ public class TextAnalysisIntegrationController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/processViolation")
-    public ResponseEntity<RegisterResult> processViolation(@CookieValue(value = "token", required = false) String token,
-                                                           HttpServletResponse response) {
+    public ResponseEntity<RegisterResult> processViolation(
+            @CookieValue(value = "token", required = false) String token,
+            HttpServletResponse response,
+            HttpServletRequest httpRequest
+    ) {
+        microserviceValidator.validate(httpRequest);
+
         Long userId = sessionService.getUserIdOrThrow(token);
 
         String banReason = moderationService.addWarning(userId);
@@ -72,8 +86,13 @@ public class TextAnalysisIntegrationController {
 
     @JsonView(Views.RegisterResultPartial.class)
     @PostMapping("/addScore")
-    public ResponseEntity<RegisterResult> addScore(@CookieValue(value = "token", required = false) String token,
-                                                   @RequestBody SubmitSolutionRequest request) {
+    public ResponseEntity<RegisterResult> addScore(
+            @CookieValue(value = "token", required = false) String token,
+            @RequestBody SubmitSolutionRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        microserviceValidator.validate(httpRequest);
+
         Long userId = sessionService.getUserIdOrThrow(token);
         if (request.getRating() == null || request.getRating() < 0 || request.getRating() > 100) {
             throw new BadRequestException("Invalid rating value");
@@ -193,8 +212,10 @@ public class TextAnalysisIntegrationController {
     @GetMapping("/cases/{id}/perfectSolution")
     public ResponseEntity<PerfectSolutionResponse> fetchPerfectSolution(
             @PathVariable("id") Long caseId,
-            @CookieValue(value = "token", required = false) String token) {
-
+            @CookieValue(value = "token", required = false) String token,
+            HttpServletRequest httpRequest
+    ) {
+        microserviceValidator.validate(httpRequest);
         sessionService.checkCookieOrThrow(token);
         String solution = caseService.getPerfectSolution(caseId);
         return ResponseEntity.ok(new PerfectSolutionResponse(caseId, solution));
@@ -203,7 +224,9 @@ public class TextAnalysisIntegrationController {
     @GetMapping("/cases/{id}/prompt")
     public ResponseEntity<CasePromptResponse> getCasePrompt(
             @CookieValue(value = "token", required = false) String token,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        microserviceValidator.validate(httpRequest);
 
         sessionService.checkCookieOrThrow(token);
         CasePromptResponse prompt = caseService.getCasePrompt(id);

@@ -56,8 +56,10 @@ curl -X GET http://localhost:8080/health/live
 ---
 ## Безопасность и доступ
 - **`/api/v1/**`** — **Доступно всем**. Авторизация не требуется (кроме операций с личными данными, где проверяется Cookie).
-- **`/api/text/v1/**`** — **Требует Cookie**. На уровне Spring Security эндпоинты открыты (`permitAll`), но контроллеры вручную проверяют наличие и валидность заголовка `Cookie: token=ТОКЕН`.
+- **`/api/text/v1/**`** — Требует Cookie. На уровне Spring Security эндпоинты открыты (`permitAll`), но контроллеры вручную проверяют наличие и валидность заголовка `Cookie: token=ТОКЕН`.
 - **`/api/admin/**`** — **Только администраторы**. Доступ строго ограничен ролью `ADMIN`. При отсутствии прав возвращается стандартизированный JSON-ответ с HTTP 403.
+
+Для части интеграционных эндпоинтов дополнительно требуется служебный заголовок `SECRET-HEADER`. Он предназначен только для серверного интеграционного микросервиса и не должен использоваться браузером или передаваться во фронтенд.
 
 ---
 ## Профиль и Аутентификация (`/api/v1/auth`)
@@ -1238,7 +1240,20 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/cases/4
 
 ---
 ## Геймификация и ИИ (`/api/text/v1`)
-*Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса. Для всех запросов обязательна валидная Cookie сессии пользователя.*
+Эндпоинты для интеграции с микросервисом ИИ и геймификации. Внешний микросервис обращается к этим методам для синхронизации игрового прогресса.
+
+Для всех запросов раздела обязательна валидная Cookie-сессия пользователя.
+
+Для следующих методов дополнительно требуется служебный заголовок `SECRET-HEADER`:
+
+- `POST /api/text/v1/processViolation`
+- `POST /api/text/v1/addScore`
+- `GET /api/text/v1/cases/{id}/perfectSolution`
+- `GET /api/text/v1/cases/{id}/prompt`
+
+Если `SECRET-HEADER` отсутствует, пуст или содержит неверное значение, запрос блокируется с ошибкой `Invalid integration credentials`.
+
+`SECRET-HEADER` — это документационное название защищённого интеграционного заголовка. Фактическое имя и значение заголовка задаются на стороне инфраструктуры и не должны попадать во фронтенд, публичную документацию или клиентский код.
 
 ### Проверка сессии (`GET`)
 Вызывается микросервисом для проверки валидности текущей сессии пользователя.
@@ -1246,12 +1261,18 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/admin/v1/cases/4
 curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/checkCookie
 ```
 
-### Сохранение решения (`POST`)
+### Сохранение решения (`POST`) (Требует Cookie + `SECRET-HEADER`)
 Принимает от микросервиса данные о решении кейса и обновляет суммарный рейтинг (score) игрока на основном сервере.
+
+Эндпоинт дополнительно защищён служебным заголовком `SECRET-HEADER`.
+
 ```bash
-curl -X POST -H "Content-Type: application/json" -H "Cookie: token=TOKEN" \
--d '{"caseId": 4, "rating": 100, "solutionText": "текст запроса", "solutionResponse": "ответ ИИ"}' \
-http://localhost:8080/api/text/v1/addScore
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=TOKEN" \
+  -H "SECRET-HEADER: <integration-secret>" \
+  -d '{"caseId": 4, "rating": 100, "solutionText": "текст запроса", "solutionResponse": "ответ ИИ"}' \
+  http://localhost:8080/api/text/v1/addScore
 ```
 > **Ограничения:** `rating` должен быть от `0` до `100`. `caseId`, `solutionText` и `solutionResponse` обязательны и не могут быть пустыми.
 
@@ -1346,16 +1367,28 @@ curl -X GET -H "Cookie: token=TOKEN" "http://localhost:8080/api/text/v1/solution
 }
 ```
 
-### Обработка нарушений (`POST`)
+### Обработка нарушений (`POST`)  
+Обработка нарушений (`POST`) (Требует Cookie + `SECRET-HEADER`)
+
 Микросервис сообщает о токсичном поведении пользователя. Запрос увеличивает счетчик предупреждений; при достижении лимита удаляет аккаунт.
+
+Эндпоинт дополнительно защищён служебным заголовком `SECRET-HEADER`.
 ```bash
-curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/processViolation
+curl -X POST \
+  -H "Cookie: token=TOKEN" \
+  -H "SECRET-HEADER: <integration-secret>" \
+  http://localhost:8080/api/text/v1/processViolation
 ```
 
-### Получение промпта (контекста) кейса (`GET`) *(Требует Cookie)*
+### Получение промпта (контекста) кейса (`GET`) (Требует Cookie + `SECRET-HEADER`)
 Возвращает ID, название и контекстный промпт (инструкции для ИИ) для указанного кейса. Используется микросервисом ИИ для инициализации диалога.
+
+Эндпоинт дополнительно защищён служебным заголовком `SECRET-HEADER`.
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/prompt
+curl -X GET \
+  -H "Cookie: token=TOKEN" \
+  -H "SECRET-HEADER: <integration-secret>" \
+  http://localhost:8080/api/text/v1/cases/1/prompt
 ```
 **Ответ (JSON) при успехе:**
 ```json
@@ -1366,27 +1399,29 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/p
 }
 ```
 
-### Получение идеального решения микросервисом (`GET`) *(Требует Cookie)*
+### Получение идеального решения кейса интеграционным сервисом (`GET`) (Требует Cookie + `SECRET-HEADER`)
+Возвращает `caseId` и `perfectSolution` для указанного кейса.
 
-Возвращает `caseId` и `perfectSolution`.
+Эндпоинт предназначен для интеграционного микросервиса и дополнительно защищён служебным заголовком `SECRET-HEADER`.
 
 Если кейс не найден или скрыт (`isActive = false`), возвращается ошибка `Case not found`.
 
+Если `SECRET-HEADER` отсутствует, пуст или содержит неверное значение, возвращается ошибка `Invalid integration credentials`.
+
 ```bash
-curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/cases/1/perfectSolution
+curl -X GET \
+  -H "Cookie: token=TOKEN" \
+  -H "SECRET-HEADER: <integration-secret>" \
+  http://localhost:8080/api/text/v1/cases/1/perfectSolution
 ```
-
 **Ответ (JSON):**
-
 ```json
 {
   "caseId": 1,
   "perfectSolution": "Текст идеального решения"
 }
 ```
-
-> **Примечание:** Если администратор не заполнил поле `perfectSolution`, значение `perfectSolution` может быть `null`.
-
+Примечание: Если администратор не заполнил поле `perfectSolution`, значение `perfectSolution` может быть `null`.
 
 
 ### Начало решения кейса (`POST`) *(Требует Cookie)*
@@ -1554,6 +1589,7 @@ curl -X POST -H "Cookie: token=TOKEN" http://localhost:8080/api/text/v1/finishSo
 | &nbsp; | `Prompt context too long (max 2000)` | Промпт превышает 2000 символов. |
 | **Интеграция ИИ** | `Invalid rating value` | Рейтинг отсутствует, меньше 0 или больше 100. |
 | &nbsp; | `Invalid case ID` | Некорректный ID кейса в истории диалога. |
+| &nbsp; | Invalid integration credentials | HTTP 401. Для защищённого интеграционного эндпоинта отсутствует, пуст или неверен `SECRET-HEADER`. |
 | **Системные / Маршрутизация** | `Resource not found` | **HTTP 404.** Запрос к несуществующему URL-адресу (эндпоинту). |
 | &nbsp; | `Method not allowed` | **HTTP 405.** Использован неверный HTTP-метод для существующего URL. |
 | **Пагинация и Сортировка** | `Page cannot be negative` | Номер страницы не может быть меньше нуля. |
