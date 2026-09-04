@@ -42,9 +42,17 @@ public class HealthController {
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
-                "status", "UP",
+                "status", UP,
                 "timestamp", LocalDateTime.now().toString(),
                 "database", cachedDbStatus.get()
+        ));
+    }
+
+    @GetMapping("/health/live")
+    public ResponseEntity<Map<String, Object>> live() {
+        return ResponseEntity.ok(Map.of(
+                "status", UP,
+                "timestamp", LocalDateTime.now().toString()
         ));
     }
 
