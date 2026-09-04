@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 
 
 import com.project.main.dto.cases.CasePromptResponse;
+import com.project.main.dto.cases.PerfectSolutionResponse;
 import com.project.main.dto.cases.RateCaseRequest;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
@@ -186,6 +187,17 @@ public class TextAnalysisIntegrationController {
                         size
                 )
         );
+    }
+
+
+    @GetMapping("/cases/{id}/perfectSolution")
+    public ResponseEntity<PerfectSolutionResponse> fetchPerfectSolution(
+            @PathVariable("id") Long caseId,
+            @CookieValue(value = "token", required = false) String token) {
+
+        sessionService.checkCookieOrThrow(token);
+        String solution = caseService.getPerfectSolution(caseId);
+        return ResponseEntity.ok(new PerfectSolutionResponse(caseId, solution));
     }
 
     @GetMapping("/cases/{id}/prompt")

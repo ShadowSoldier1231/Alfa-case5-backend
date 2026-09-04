@@ -59,7 +59,7 @@ public class SecurityConfig {
                 .addFilterBefore(sessionFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/**").permitAll()
-                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/health", "/health/ready").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/text/v1/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

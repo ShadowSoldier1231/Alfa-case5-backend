@@ -300,6 +300,18 @@ public class CaseService {
     }
 
     @Transactional(readOnly = true)
+    public String getPerfectSolution(Long caseId) {
+
+        CaseEntity c = caseRepository.findById(caseId)
+                .orElseThrow(() -> new NotFoundException("Case not found"));
+
+        if (!Boolean.TRUE.equals(c.getActive())) {
+            throw new NotFoundException("Case not found");
+        }
+        return c.getPerfectSolution();
+    }
+
+    @Transactional(readOnly = true)
     public String getPerfectSolutionOrThrow(Long caseId, Long userId){
 
         CaseEntity c = caseRepository.findById(caseId)
