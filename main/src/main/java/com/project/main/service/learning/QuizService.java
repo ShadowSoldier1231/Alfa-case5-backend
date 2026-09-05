@@ -294,17 +294,19 @@ public class QuizService {
             throw new NotFoundException("Quiz not found");
         }
 
-        Object[] result = attemptRepository.getQuizStatusByUserAndQuiz(userId, quizId);
-
+        List<Object[]> results = attemptRepository.getQuizStatusByUserAndQuiz(userId, quizId);
 
         Integer attemptsCount = 0;
         Boolean isSolved = false;
         Integer score = 0;
 
-        if(result != null && result.length >=3){
-            attemptsCount =  result[0] != null ? ((Number) result[0]).intValue() : 0;
-            isSolved = typeMapper.toBoolean(result[1]);
-            score = result[2] != null ? ((Number) result[2]).intValue() : 0;
+        if (results != null && !results.isEmpty()) {
+            Object[] row = results.get(0);
+            if (row != null && row.length >= 3) {
+                attemptsCount = row[0] != null ? ((Number) row[0]).intValue() : 0;
+                isSolved = typeMapper.toBoolean(row[1]);
+                score = row[2] != null ? ((Number) row[2]).intValue() : 0;
+            }
         }
 
         return new QuizStatusResponse(quizId, attemptsCount, isSolved, score);
