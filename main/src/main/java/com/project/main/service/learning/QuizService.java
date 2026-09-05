@@ -296,15 +296,18 @@ public class QuizService {
 
         Object[] result = attemptRepository.getQuizStatusByUserAndQuiz(userId, quizId);
 
-        int attemptsCount = 0;
-        boolean isSolved = false;
 
-        if (result != null && result.length >= 2 && result[0] != null) {
-            attemptsCount = ((Number) result[0]).intValue();
-            isSolved = ((Number) result[1]).intValue() == 1;
+        Integer attemptsCount = 0;
+        Boolean isSolved = false;
+        Integer score = 0;
+
+        if(result != null && result.length >=3){
+            attemptsCount =  result[0] != null ? ((Number) result[0]).intValue() : 0;
+            isSolved = typeMapper.toBoolean(result[1]);
+            score = result[2] != null ? ((Number) result[2]).intValue() : 0;
         }
 
-        return new QuizStatusResponse(quizId, attemptsCount, isSolved);
+        return new QuizStatusResponse(quizId, attemptsCount, isSolved, score);
     }
 
     @Transactional

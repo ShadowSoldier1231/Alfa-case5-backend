@@ -13,7 +13,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
 
     @Query(value = """
         SELECT COUNT(*) AS attempts_count,
-               COALESCE(MAX(CASE WHEN is_solved = true THEN 1 ELSE 0 END), 0) AS is_solved
+               COALESCE(MAX(CASE WHEN is_solved = true THEN 1 ELSE 0 END), 0) AS is_solved,
+               COALESCE(MAX(score), 0) AS max_score
         FROM quiz_attempt
         WHERE user_id = :userId AND quiz_id = :quizId
         """, nativeQuery = true)
