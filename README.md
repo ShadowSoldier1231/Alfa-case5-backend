@@ -587,7 +587,8 @@ curl -X GET -H "Cookie: token=TOKEN" http://localhost:8080/api/v1/cases/quiz/4/s
 {
   "quizId": 4,
   "attemptsCount": 3,
-  "isSolved": true
+  "isSolved": true,
+  "rating": 50
 }
 ```
 
