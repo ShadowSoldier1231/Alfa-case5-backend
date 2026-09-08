@@ -9,12 +9,11 @@ import com.project.main.exception.BadRequestException;
 import com.project.main.model.common.City;
 import com.project.main.model.user.LeaderboardUser;
 import com.project.main.repository.common.CityRepository;
+import com.project.main.repository.projection.LeaderboardTopRow;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.user.UserDataRepository;
 import com.project.main.repository.user.UserRepository;
 import com.project.main.service.component.TypeMapperComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +31,6 @@ public class FetchingService {
     private final UserDataRepository userDataRepository;
     private final UserRepository userRepository;
     private final TypeMapperComponent typeMapper;
-    private static final Logger logger = LoggerFactory.getLogger(FetchingService.class);
 
     public FetchingService(LeaderboardRepository leaderboardRepository,
                            UserDataRepository userDataRepository,
@@ -92,8 +90,8 @@ public class FetchingService {
         );
     }
 
-    public boolean userExistsById(Long userId){
-        return userId > 0 ? userRepository.existsUserById(userId) : false;
+    public boolean userExistsById(Long userId) {
+        return userId != null && userId > 0 && userRepository.existsUserById(userId);
     }
 
     public PageResponse<City> getAllCities(int page, int size, String search, String sort) {
@@ -120,13 +118,12 @@ public class FetchingService {
     public LeaderboardInfo getGlobalPlacementInfo(Long userId) {
 
         LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
+        Long score = userEntry != null ? userEntry.getScore() : null;
 
-        if (userEntry == null || userEntry.getScore() == 0) {
-
+        if (score == null || score == 0L) {
             Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
             return new LeaderboardInfo(0L, total);
         }
-
 
         Long placement = leaderboardRepository.getGlobalUserPlacement(userId);
         Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
@@ -137,9 +134,9 @@ public class FetchingService {
     public LeaderboardInfo getLocalPlacementInfo(Long userId, Long caseId) {
 
         LeaderboardUser userEntry = leaderboardRepository.findById(userId).orElse(null);
+        Long score = userEntry != null ? userEntry.getScore() : null;
 
-        if (userEntry == null || userEntry.getScore() == 0) {
-
+        if (score == null || score == 0L) {
             Long total = leaderboardRepository.getTotalVerifiedUsersInLeaderboard();
             return new LeaderboardInfo(0L, total);
         }
@@ -152,42 +149,35 @@ public class FetchingService {
     }
 
     public List<LeaderboardTopUser> getTop5Leaderboard() {
-        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardData();
+        List<LeaderboardTopRow> rows = leaderboardRepository.findTop5LeaderboardData();
         return buildTop5Result(rows);
     }
 
     public List<LeaderboardTopUser> getTop5LeaderboardByCase(Long caseId) {
-        List<Object[]> rows = leaderboardRepository.findTop5LeaderboardDataByCaseId(caseId);
+        List<LeaderboardTopRow> rows = leaderboardRepository.findTop5LeaderboardDataByCaseId(caseId);
         return buildTop5Result(rows);
     }
 
 
-    private List<LeaderboardTopUser> buildTop5Result(List<Object[]> rows) {
+    private List<LeaderboardTopUser> buildTop5Result(List<LeaderboardTopRow> rows) {
         List<LeaderboardTopUser> result = new ArrayList<>();
         long currentPlacement = 1;
 
-        for (Object row : rows) {
-            Object[] actualRow = unwrapRow(row);
-
-            if (actualRow.length < 6) {
-                continue;
-            }
-
-            Long uId = ((Number) actualRow[0]).longValue();
-            Long score = ((Number) actualRow[1]).longValue();
-            String firstName = safeString(actualRow[2]);
-            String nickName = safeString(actualRow[3]);
-            String cityName = safeString(actualRow[4]);
-            String avatarKey = safeString(actualRow[5]);
-
+        for (LeaderboardTopRow row : rows) {
             result.add(new LeaderboardTopUser(
-                    uId,
+                    row.getUser_id(),
                     currentPlacement++,
-                    score,
-                    (firstName != null && !firstName.isEmpty()) ? firstName : "Unknown",
-                    (nickName != null && !nickName.isEmpty()) ? nickName : "Unknown",
-                    (cityName != null && !cityName.isEmpty()) ? cityName : "not_set",
-                    avatarKey
+                    row.getScore(),
+                    row.getFirst_name() != null && !row.getFirst_name().isEmpty()
+                            ? row.getFirst_name()
+                            : "Unknown",
+                    row.getNick_name() != null && !row.getNick_name().isEmpty()
+                            ? row.getNick_name()
+                            : "Unknown",
+                    row.getCity_name() != null && !row.getCity_name().isEmpty()
+                            ? row.getCity_name()
+                            : "not_set",
+                    row.getAvatar_url()
             ));
         }
 
@@ -197,73 +187,47 @@ public class FetchingService {
 
     public UserProfile getBaseProfile(Long userId) {
         return userDataRepository.findProfileData(userId)
-                .map(row -> {
-                    Object[] actualRow = unwrapRow(row);
-                    if (actualRow.length < 13) return null;
-
-                    return UserProfile.builder()
-                            .id(((Number) actualRow[0]).longValue())
-                            .firstName(safeString(actualRow[1]))
-                            .lastName(safeString(actualRow[2]))
-                            .middleName(safeString(actualRow[3]))
-                            .birthdate(typeMapper.toLocalDate(actualRow[4]))
-                            .status(typeMapper.parseStatus(actualRow[5]))
-                            .nickName(safeString(actualRow[6]))
-                            .gender(typeMapper.parseGender(actualRow[7]))
-                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
-                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
-                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
-                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
-                            .avatarUrl(safeString(actualRow[12]))
-                            .build();
-                })
+                .map(row -> UserProfile.builder()
+                        .id(row.getId())
+                        .firstName(row.getFirst_name())
+                        .lastName(row.getLast_name())
+                        .middleName(row.getMiddle_name())
+                        .birthdate(row.getBirthdate())
+                        .status(typeMapper.parseStatus(row.getStatus()))
+                        .nickName(row.getNick_name())
+                        .gender(typeMapper.parseGender(row.getGender()))
+                        .score(row.getScore() != null ? row.getScore() : 0L)
+                        .placement(row.getPlacement() != null ? row.getPlacement() : 0L)
+                        .cityName(row.getCity_name() != null ? row.getCity_name() : "not_set")
+                        .regionName(row.getRegion_name() != null ? row.getRegion_name() : "not_set")
+                        .avatarUrl(row.getAvatar_url())
+                        .build())
                 .orElse(null);
     }
 
     public UserProfile getMyProfile(Long userId) {
         return userDataRepository.findFullProfileData(userId)
-                .map(row -> {
-                    Object[] actualRow = unwrapRow(row);
-                    if (actualRow.length < 14) return null;
-
-                    return UserProfile.builder()
-                            .id(((Number) actualRow[0]).longValue())
-                            .firstName(safeString(actualRow[1]))
-                            .lastName(safeString(actualRow[2]))
-                            .middleName(safeString(actualRow[3]))
-                            .birthdate(typeMapper.toLocalDate(actualRow[4]))
-                            .status(typeMapper.parseStatus(actualRow[5]))
-                            .nickName(safeString(actualRow[6]))
-                            .gender(typeMapper.parseGender(actualRow[7]))
-                            .score(actualRow[8] != null ? ((Number) actualRow[8]).longValue() : 0L)
-                            .placement(actualRow[9] != null ? ((Number) actualRow[9]).longValue() : 0L)
-                            .cityName(actualRow[10] != null ? safeString(actualRow[10]) : "not_set")
-                            .regionName(actualRow[11] != null ? safeString(actualRow[11]) : "not_set")
-                            .email(safeString(actualRow[12]))
-                            .avatarUrl(safeString(actualRow[13]))
-                            .build();
-                })
+                .map(row -> UserProfile.builder()
+                        .id(row.getId())
+                        .firstName(row.getFirst_name())
+                        .lastName(row.getLast_name())
+                        .middleName(row.getMiddle_name())
+                        .birthdate(row.getBirthdate())
+                        .status(typeMapper.parseStatus(row.getStatus()))
+                        .nickName(row.getNick_name())
+                        .gender(typeMapper.parseGender(row.getGender()))
+                        .score(row.getScore() != null ? row.getScore() : 0L)
+                        .placement(row.getPlacement() != null ? row.getPlacement() : 0L)
+                        .cityName(row.getCity_name() != null ? row.getCity_name() : "not_set")
+                        .regionName(row.getRegion_name() != null ? row.getRegion_name() : "not_set")
+                        .email(row.getEmail())
+                        .avatarUrl(row.getAvatar_url())
+                        .build())
                 .orElse(null);
     }
 
     public City getCityByUserId(long id) {
         return userDataRepository.findCityByUserId(id).orElse(null);
-    }
-
-
-    private Object[] unwrapRow(Object row) {
-        if (row instanceof Object[] outerArray) {
-            if (outerArray.length == 1 && outerArray[0] instanceof Object[] innerArray) {
-                return innerArray;
-            }
-            return outerArray;
-        }
-        logger.warn("Unexpected row type: class='{}', value='{}'", row != null ? row.getClass().getName() : "null", row);
-        return new Object[0];
-    }
-
-    private String safeString(Object obj) {
-        return obj != null ? obj.toString() : null;
     }
 
     private void validatePagination(int page, int size) {

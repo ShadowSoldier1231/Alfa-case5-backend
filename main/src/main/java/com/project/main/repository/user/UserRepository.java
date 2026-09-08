@@ -2,6 +2,7 @@ package com.project.main.repository.user;
 
 
 import com.project.main.model.user.UserSetup;
+import com.project.main.repository.projection.AdminUserRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,21 +25,45 @@ public interface UserRepository extends JpaRepository<UserSetup, Long> {
     @Query(value = "SELECT EXISTS(SELECT 1 FROM user_setup WHERE id = :userId)", nativeQuery = true)
     boolean existsUserById(@Param("userId") Long userId);
 
-    @Query(value = "SELECT u.id, u.username, u.email, d.nick_name, u.role, d.status, u.is_verified, u.banned_until " +
-            "FROM user_setup u " +
-            "LEFT JOIN user_data d ON u.id = d.id " +
-            "WHERE (:search IS NULL OR :search = '' OR " +
-            "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
-            "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!')",
-            countQuery = "SELECT COUNT(u.id) FROM user_setup u " +
-                    "LEFT JOIN user_data d ON u.id = d.id " +
-                    "WHERE (:search IS NULL OR :search = '' OR " +
-                    "LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
-                    "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!' OR " +
-                    "LOWER(d.nick_name) LIKE LOWER(CONCAT('%', :search, '%')) ESCAPE '!')",
-            nativeQuery = true)
-    Page<Object[]> findUsersForAdmin(@Param("search") String search, Pageable pageable);
+    @Query(
+            value = """
+                SELECT
+                    u.id AS id,
+                    u.username AS username,
+                    u.email AS email,
+                    d.nick_name AS nick_name,
+                    u.role AS role,
+                    d.status AS status,
+                    u.is_verified AS is_verified,
+                    u.banned_until AS banned_until
+                FROM user_setup u
+                LEFT JOIN user_data d ON u.id = d.id
+                    WHERE (
+                        CAST(:search AS text) IS NULL
+                        OR CAST(:search AS text) = ''
+                        OR LOWER(u.username) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                        OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                        OR LOWER(d.nick_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                    )
+                """,
+            countQuery = """
+                SELECT COUNT(u.id)
+                FROM user_setup u
+                LEFT JOIN user_data d ON u.id = d.id
+                    WHERE (
+                        CAST(:search AS text) IS NULL
+                        OR CAST(:search AS text) = ''
+                        OR LOWER(u.username) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                        OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                        OR LOWER(d.nick_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')) ESCAPE '!'
+                    )
+                """,
+            nativeQuery = true
+    )
+    Page<AdminUserRow> findUsersForAdmin(
+            @Param("search") String search,
+            Pageable pageable
+    );
 
 
     @Query(value = "SELECT * FROM user_setup WHERE email = :email", nativeQuery = true)

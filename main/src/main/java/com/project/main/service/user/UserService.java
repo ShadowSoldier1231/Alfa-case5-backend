@@ -14,6 +14,7 @@ import com.project.main.exception.*;
 import com.project.main.model.user.LeaderboardUser;
 import com.project.main.model.user.UserData;
 import com.project.main.model.user.UserSetup;
+import com.project.main.repository.projection.AdminUserRow;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.repository.user.UserDataRepository;
 import com.project.main.repository.user.UserRepository;
@@ -26,6 +27,7 @@ import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalDateTime;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -33,7 +35,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
@@ -152,6 +153,11 @@ public class UserService {
     }
 
     public boolean passwordValidator(Long id, String password) {
+        if (password == null) {
+            performDummyCheck();
+            return false;
+        }
+
         UserSetup user = userRepository.findById(id).orElse(null);
         if (user == null) {
             performDummyCheck();
@@ -289,6 +295,11 @@ public class UserService {
         if (req.getIsVerified() != null) user.setVerified(req.getIsVerified());
         if (req.getEmail() != null) {
             String lowerEmail = req.getEmail().toLowerCase();
+
+            if (!EmailValidator.getInstance(true).isValid(lowerEmail)) {
+                throw new BadRequestException("Invalid email format");
+            }
+
             if (!lowerEmail.equals(user.getEmail()) && userRepository.existsByEmail(lowerEmail)) {
                 throw new ConflictException("Email is already taken");
             }
@@ -422,27 +433,21 @@ public class UserService {
         }
 
 
-        Page<Object[]> userPage = userRepository.findUsersForAdmin(searchTerm, pageable);
+        Page<AdminUserRow> userPage = userRepository.findUsersForAdmin(searchTerm, pageable);
 
 
-        List<UserListItem> items = userPage.getContent().stream().map(row -> {
-            Long id = ((Number) row[0]).longValue();
-            String username = (String) row[1];
-            String email = (String) row[2];
-            String nickName = (String) row[3];
-
-
-            String role = row[4] != null ? row[4].toString() : null;
-
-            String status = row[5] != null ? row[5].toString() : null;;
-
-            Boolean isVerified = typeMapper.toBoolean(row[6]);
-
-
-            LocalDateTime bannedUntil = typeMapper.toLocalDateTime(row[7]);
-
-            return new UserListItem(id, username, email, nickName, role, status, isVerified, bannedUntil);
-        }).collect(Collectors.toList());
+        List<UserListItem> items = userPage.getContent().stream()
+                .map(row -> new UserListItem(
+                        row.getId(),
+                        row.getUsername(),
+                        row.getEmail(),
+                        row.getNick_name(),
+                        row.getRole(),
+                        row.getStatus(),
+                        row.getIs_verified(),
+                        row.getBanned_until()
+                ))
+                .toList();
 
         return new PageResponse<>(
                 items,

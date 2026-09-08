@@ -2,8 +2,8 @@ package com.project.main.service.achievement;
 
 import com.project.main.dto.achievement.AchievementDto;
 import com.project.main.enums.Achievement;
+import com.project.main.repository.projection.ObtainedAchievementRow;
 import com.project.main.repository.user.AchievementRepository;
-import com.project.main.service.component.TypeMapperComponent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,32 +14,24 @@ import java.util.*;
 public class AchievementService {
 
     private final AchievementRepository achievementRepository;
-    private final TypeMapperComponent typeMapper;
 
-    public AchievementService(AchievementRepository achievementRepository,
-                              TypeMapperComponent typeMapper) {
+    public AchievementService(AchievementRepository achievementRepository) {
         this.achievementRepository = achievementRepository;
-        this.typeMapper = typeMapper;
     }
 
     @Transactional(readOnly = true)
     public List<AchievementDto> getAchievementsForUser(Long userId) {
-        List<Object[]> obtainedRows = achievementRepository.findObtainedAchievementsByUserId(userId);
-
+        List<ObtainedAchievementRow> obtainedRows =
+                achievementRepository.findObtainedAchievementsByUserId(userId);
 
         Map<Long, LocalDateTime> obtainedMap = new HashMap<>();
 
-        for (Object[] row : obtainedRows) {
-            if (row[0] == null || row[1] == null) {
+        for (ObtainedAchievementRow row : obtainedRows) {
+            if (row.getAchievement_id() == null || row.getObtained_at() == null) {
                 continue;
             }
 
-            Long achievementId = ((Number) row[0]).longValue();
-            LocalDateTime obtainedAt = typeMapper.toLocalDateTime(row[1]);
-
-            if (obtainedAt != null) {
-                obtainedMap.put(achievementId, obtainedAt);
-            }
+            obtainedMap.put(row.getAchievement_id(), row.getObtained_at());
         }
 
         return Arrays.stream(Achievement.values())
@@ -56,6 +48,4 @@ public class AchievementService {
                 })
                 .toList();
     }
-
-
 }

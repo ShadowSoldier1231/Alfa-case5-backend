@@ -6,7 +6,6 @@ import com.project.main.dto.event.SolutionSubmittedEvent;
 import com.project.main.enums.Achievement;
 
 import com.project.main.model.user.UserAchievement;
-import com.project.main.repository.cases.SolutionRepository;
 import com.project.main.repository.user.AchievementRepository;
 import com.project.main.repository.user.LeaderboardRepository;
 import com.project.main.service.achievement.AchievementChecker;
@@ -16,7 +15,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 
 @Component
 public class LeaderboardChecker implements AchievementChecker {

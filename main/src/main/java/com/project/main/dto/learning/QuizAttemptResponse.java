@@ -1,4 +1,4 @@
-package com.project.main.dto.learing;
+package com.project.main.dto.learning;
 
 public record QuizAttemptResponse(
         Long attemptId,

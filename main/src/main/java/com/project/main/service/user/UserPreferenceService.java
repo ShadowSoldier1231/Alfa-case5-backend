@@ -7,8 +7,8 @@ import com.project.main.dto.user.UserPreferenceUpdateRequest;
 import com.project.main.exception.BadRequestException;
 import com.project.main.model.user.UserPreference;
 import com.project.main.repository.cases.TagRepository;
+import com.project.main.repository.projection.TagWithCountRow;
 import com.project.main.repository.user.UserPreferenceRepository;
-import com.project.main.service.component.TypeMapperComponent;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +21,11 @@ public class UserPreferenceService {
 
     private final UserPreferenceRepository preferenceRepository;
     private final TagRepository tagRepository;
-    private final TypeMapperComponent typeMapper;
 
     public UserPreferenceService(UserPreferenceRepository preferenceRepository,
-                                 TagRepository tagRepository,
-                                 TypeMapperComponent typeMapper){
+                                 TagRepository tagRepository){
         this.preferenceRepository = preferenceRepository;
         this.tagRepository = tagRepository;
-        this.typeMapper = typeMapper;
 
     }
 
@@ -40,16 +37,16 @@ public class UserPreferenceService {
         }
         UserPreferenceDto result = new UserPreferenceDto(preference.getPreferredDifficulty(), Collections.emptyList(), userId);
         if(preference.getPreferredTagIds() != null && !preference.getPreferredTagIds().isEmpty()){
-            List<TagListItem> tags = tagRepository.findTagsWithCaseCountByIds(preference.getPreferredTagIds()).stream().map(
-                    row -> {
-                        Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
-                        String name = row[1] != null ? row[1].toString() : null;
-                        Boolean isActive = typeMapper.toBoolean(row[2]);
-                        Long count = row[3] != null ? ((Number) row[3]).longValue() : 0L;
-
-                                return new TagListItem(id, name, isActive, count);
-                    }
-            ).toList();
+            List<TagListItem> tags = tagRepository
+                    .findTagsWithCaseCountByIds(preference.getPreferredTagIds())
+                    .stream()
+                    .map(row -> new TagListItem(
+                            row.getId(),
+                            row.getName(),
+                            row.getIs_active(),
+                            row.getCase_count()
+                    ))
+                    .toList();
             result.setPreferredTags(tags);
         }
         return  result;
@@ -59,15 +56,14 @@ public class UserPreferenceService {
     public void updatePreferences(UserPreferenceUpdateRequest request, Long userId) {
 
         if (request.getPreferredTags() != null && !request.getPreferredTags().isEmpty()) {
-            List<Object[]> tags = tagRepository.findTagsWithCaseCountByIds(request.getPreferredTags());
+            List<TagWithCountRow> tags = tagRepository.findTagsWithCaseCountByIds(request.getPreferredTags());
 
             if (tags.size() != request.getPreferredTags().size()) {
                 throw new BadRequestException("One or more tags are invalid or inactive");
             }
 
-            for (Object[] row : tags) {
-                boolean isActive = row[2] instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(row[2]));
-                if (!isActive) {
+            for (TagWithCountRow row : tags) {
+                if (!Boolean.TRUE.equals(row.getIs_active())) {
                     throw new BadRequestException("One or more tags are invalid or inactive");
                 }
             }

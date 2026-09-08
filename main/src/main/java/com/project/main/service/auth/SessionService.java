@@ -3,14 +3,11 @@ package com.project.main.service.auth;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.event.UserDeletedEvent;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.InvalidSessionException;
 import com.project.main.model.user.UserSession;
 import com.project.main.repository.user.UserSessionRepository;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -55,15 +52,6 @@ public class SessionService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleUserDeleted(UserDeletedEvent event) {
         sessionRepository.deleteByUserId(event.userId());
-    }
-
-    public Pair<RegisterResult, UserSession> checkCookie(String token) {
-        if (token == null) return Pair.of(new RegisterResult(false, "Please login first"), null);
-        UserSession session = sessionRepository.findByToken(token).orElse(null);
-        if (session == null || session.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return Pair.of(new RegisterResult(false, "Session expired"), null);
-        }
-        return Pair.of(new RegisterResult(true, ""), session);
     }
 
     public void checkCookieOrThrow(String token) {

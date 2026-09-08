@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.util.HtmlUtils;
+
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -45,12 +47,12 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("{\"success\":false,\"errorText\":\"Unauthorized: " + authException.getMessage() + "\"}");
+                            response.getWriter().write("{\"success\":false,\"errorText\":\"Unauthorized: " + HtmlUtils.htmlEscape(authException.getMessage()) + "\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.getWriter().write("{\"success\":false,\"errorText\":\"Access Denied: " + accessDeniedException.getMessage() + "\"}");
+                            response.getWriter().write("{\"success\":false,\"errorText\":\"Access Denied: " + HtmlUtils.htmlEscape(accessDeniedException.getMessage()) + "\"}");
                         })
                 )
                 .sessionManagement(session -> session

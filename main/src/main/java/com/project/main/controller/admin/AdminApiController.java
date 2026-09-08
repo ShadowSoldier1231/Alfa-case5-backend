@@ -6,7 +6,7 @@ import com.project.main.dto.cases.*;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.dto.common.RegisterResult;
 import com.project.main.dto.integration.ChatMessageDto;
-import com.project.main.dto.learing.*;
+import com.project.main.dto.learning.*;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -225,7 +225,7 @@ public class AdminApiController {
 
         try {
             Long caseId = caseService.createCase(request, pdfFile, iconFile);
-            return ResponseEntity.ok(new RegisterResult(true, "", caseId));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResult(true, "", caseId));
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

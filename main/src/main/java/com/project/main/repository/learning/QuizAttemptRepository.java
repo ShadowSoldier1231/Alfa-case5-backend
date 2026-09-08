@@ -1,6 +1,7 @@
 package com.project.main.repository.learning;
 
 import com.project.main.model.learning.QuizAttempt;
+import com.project.main.repository.projection.QuizStatusRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
@@ -13,14 +14,22 @@ import java.util.List;
 @Repository
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> {
 
-    @Query(value = """
-    SELECT COUNT(*) AS attempts_count,
-           COALESCE(MAX(CASE WHEN is_solved = true THEN 1 ELSE 0 END), 0) AS is_solved,
-           COALESCE(MAX(score), 0) AS max_score
-    FROM quiz_attempt
-    WHERE user_id = :userId AND quiz_id = :quizId
-    """, nativeQuery = true)
-    List<Object[]> getQuizStatusByUserAndQuiz(@Param("userId") Long userId, @Param("quizId") Long quizId);
+    @Query(
+            value = """
+                SELECT
+                    CAST(COUNT(*) AS integer) AS attempts_count,
+                    CAST(COALESCE(MAX(CASE WHEN is_solved = true THEN 1 ELSE 0 END), 0) AS integer) AS is_solved,
+                    CAST(COALESCE(MAX(score), 0) AS integer) AS max_score
+                FROM quiz_attempt
+                WHERE user_id = :userId
+                  AND quiz_id = :quizId
+                """,
+            nativeQuery = true
+    )
+    QuizStatusRow getQuizStatusByUserAndQuiz(
+            @Param("userId") Long userId,
+            @Param("quizId") Long quizId
+    );
 
     @Query(
             value = "SELECT COUNT(*) FROM quiz_attempt WHERE quiz_id = :quizId",

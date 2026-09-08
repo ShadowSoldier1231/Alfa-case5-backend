@@ -1,4 +1,4 @@
-package com.project.main.dto.learing;
+package com.project.main.dto.learning;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;

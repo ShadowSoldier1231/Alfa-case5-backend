@@ -1,6 +1,7 @@
 package com.project.main.repository.user;
 
 import com.project.main.model.user.LeaderboardUser;
+import com.project.main.repository.projection.LeaderboardTopRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,38 +13,60 @@ import java.util.List;
 @Repository
 public interface LeaderboardRepository extends JpaRepository<LeaderboardUser, Long> {
 
-    @Modifying
-    @Query(value = "UPDATE leaderboard_user SET score = :score WHERE user_id = :userId", nativeQuery = true)
-    void updateScore(@Param("userId") Long userId, @Param("score") Long score);
+    @Query(
+            value = """
+                SELECT
+                    l.user_id AS user_id,
+                    l.score AS score,
+                    u.first_name AS first_name,
+                    u.nick_name AS nick_name,
+                    c.city_name AS city_name,
+                    u.avatar_url AS avatar_url
+                FROM leaderboard_user l
+                JOIN user_data u ON l.user_id = u.id
+                JOIN user_setup us ON l.user_id = us.id
+                LEFT JOIN city c ON u.city_id = c.id
+                WHERE us.is_verified = true
+                ORDER BY l.score DESC, l.user_id ASC
+                LIMIT 5
+                """,
+            nativeQuery = true
+    )
+    List<LeaderboardTopRow> findTop5LeaderboardData();
 
-    @Query(value = "SELECT l.user_id, l.score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
-            "FROM leaderboard_user l " +
-            "JOIN user_data u ON l.user_id = u.id " +
-            "JOIN user_setup us ON l.user_id = us.id " +
-            "LEFT JOIN city c ON u.city_id = c.id " +
-            "WHERE us.is_verified = true " +
-            "ORDER BY l.score DESC, l.user_id ASC " +
-            "LIMIT 5", nativeQuery = true)
-    List<Object[]> findTop5LeaderboardData();
-
-    List<LeaderboardUser> findTop5ByOrderByScoreDescUserIdAsc();
 
 
     @Modifying
     @Query(value = "UPDATE leaderboard_user SET score = (SELECT COALESCE(SUM(max_rating), 0) FROM (SELECT MAX(rating) as max_rating FROM solution WHERE user_id = :userId GROUP BY case_id) as sub) WHERE user_id = :userId", nativeQuery = true)
     void recalculateAndSetScore(@Param("userId") Long userId);
 
-    @Query(value = "SELECT l.user_id, MAX(s.rating) as case_score, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
-            "FROM leaderboard_user l " +
-            "JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId " +
-            "JOIN user_data u ON l.user_id = u.id " +
-            "JOIN user_setup us ON l.user_id = us.id " +
-            "LEFT JOIN city c ON u.city_id = c.id " +
-            "WHERE us.is_verified = true " +
-            "GROUP BY l.user_id, u.first_name, u.nick_name, c.city_name, u.avatar_url " +
-            "ORDER BY case_score DESC, l.user_id ASC " +
-            "LIMIT 5", nativeQuery = true)
-    List<Object[]> findTop5LeaderboardDataByCaseId(@Param("caseId") Long caseId);
+    @Query(
+            value = """
+                SELECT
+                    l.user_id AS user_id,
+                    MAX(s.rating) AS score,
+                    u.first_name AS first_name,
+                    u.nick_name AS nick_name,
+                    c.city_name AS city_name,
+                    u.avatar_url AS avatar_url
+                FROM leaderboard_user l
+                JOIN solution s ON l.user_id = s.user_id AND s.case_id = :caseId
+                JOIN user_data u ON l.user_id = u.id
+                JOIN user_setup us ON l.user_id = us.id
+                LEFT JOIN city c ON u.city_id = c.id
+                WHERE us.is_verified = true
+                GROUP BY
+                    l.user_id,
+                    u.first_name,
+                    u.nick_name,
+                    c.city_name,
+                    u.avatar_url
+                ORDER BY score DESC, l.user_id ASC
+                LIMIT 5
+                """,
+            nativeQuery = true
+    )
+    List<LeaderboardTopRow> findTop5LeaderboardDataByCaseId(@Param("caseId") Long caseId);
 
 
     @Query(value = "SELECT COUNT(*) + 1 FROM (" +

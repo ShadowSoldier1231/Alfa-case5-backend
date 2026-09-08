@@ -1,6 +1,7 @@
 package com.project.main.repository.cases;
 
 import com.project.main.model.cases.CaseEntity;
+import com.project.main.repository.projection.CaseTagRow;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,13 +58,27 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
 
 
-    @Query(value = "SELECT ct.case_id, t.id, t.name, " +
-            "(SELECT COUNT(*) FROM case_tags ct2 WHERE ct2.tag_id = t.id) " +
-            "FROM case_tags ct " +
-            "JOIN tags t ON t.id = ct.tag_id " +
-            "WHERE ct.case_id IN (:caseIds) " +
-            "ORDER BY t.id ASC", nativeQuery = true)
-    List<Object[]> findTagsByCaseIds(@Param("caseIds") List<Long> caseIds);
+    @Query(
+            value = """
+                SELECT
+                    ct.case_id AS case_id,
+                    t.id AS tag_id,
+                    t.name AS tag_name,
+                    CAST(
+                        (
+                            SELECT COUNT(*)
+                            FROM case_tags ct2
+                            WHERE ct2.tag_id = t.id
+                        ) AS bigint
+                    ) AS tag_case_count
+                FROM case_tags ct
+                JOIN tags t ON t.id = ct.tag_id
+                WHERE ct.case_id IN (:caseIds)
+                ORDER BY t.id ASC
+                """,
+            nativeQuery = true
+    )
+    List<CaseTagRow> findTagsByCaseIds(@Param("caseIds") List<Long> caseIds);
 
 
 

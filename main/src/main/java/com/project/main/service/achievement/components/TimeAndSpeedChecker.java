@@ -4,9 +4,9 @@ import com.project.main.dto.event.SolutionSubmittedEvent;
 import com.project.main.enums.Achievement;
 import com.project.main.model.user.UserAchievement;
 import com.project.main.repository.cases.SolutionRepository;
+import com.project.main.repository.projection.SolveDateRow;
 import com.project.main.repository.user.AchievementRepository;
 import com.project.main.service.achievement.AchievementChecker;
-import com.project.main.service.component.TypeMapperComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -22,15 +22,12 @@ public class TimeAndSpeedChecker implements AchievementChecker {
     private static final Logger logger = LoggerFactory.getLogger(TimeAndSpeedChecker.class);
     private final AchievementRepository achievementRepository;
     private final SolutionRepository solutionRepository;
-    private final TypeMapperComponent typeMapper;
 
     private static final Long SOLVE_THRESHOLD = 70L;
 
-    public TimeAndSpeedChecker(AchievementRepository achievementRepository, SolutionRepository solutionRepository,
-                               TypeMapperComponent typeMapper) {
+    public TimeAndSpeedChecker(AchievementRepository achievementRepository, SolutionRepository solutionRepository) {
         this.achievementRepository = achievementRepository;
         this.solutionRepository = solutionRepository;
-        this.typeMapper = typeMapper;
     }
 
     @Override
@@ -52,14 +49,14 @@ public class TimeAndSpeedChecker implements AchievementChecker {
     }
 
     private void checkMarathoner(Long userId) {
-        List<Object> rows = solutionRepository.findDistinctSolveDatesByUserId(userId, SOLVE_THRESHOLD);
+        List<SolveDateRow> rows = solutionRepository.findDistinctSolveDatesByUserId(userId, SOLVE_THRESHOLD);
 
         if (rows.size() >= 3) {
             int consecutiveDays = 1;
             LocalDate prevDate = null;
 
             for (int i = 0; i < rows.size(); i++) {
-                LocalDate currDate = typeMapper.toLocalDate(rows.get(i));
+                LocalDate currDate = rows.get(i).getSolve_date();
 
                 if (currDate == null) {
                     consecutiveDays = 1;

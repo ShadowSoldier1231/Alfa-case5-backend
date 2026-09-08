@@ -26,27 +26,6 @@ public class TypeMapperComponent {
                 .replace("_", "!_");
     }
 
-    public Boolean toBoolean(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof Boolean b) {
-            return b;
-        }
-
-        if (value instanceof Number n) {
-            return n.intValue() != 0;
-        }
-
-        String s = value.toString().trim().toLowerCase();
-
-        return switch (s) {
-            case "true", "t", "1", "yes", "y" -> true;
-            case "false", "f", "0", "no", "n" -> false;
-            default -> null;
-        };
-    }
 
     public Instant parseTimeToInstant(String timeStr) {
         if (timeStr == null || timeStr.isBlank()) {
@@ -64,74 +43,6 @@ public class TypeMapperComponent {
             logger.error("Error when parsing Instant: {}", timeStr, e);
             return null;
         }
-    }
-
-    public LocalDateTime toLocalDateTime(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof LocalDateTime ldt) {
-            return ldt;
-        }
-
-        if (value instanceof java.sql.Timestamp ts) {
-            return ts.toLocalDateTime();
-        }
-
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate().atStartOfDay();
-        }
-
-        if (value instanceof OffsetDateTime odt) {
-            return odt.toLocalDateTime();
-        }
-
-        if (value instanceof Instant instant) {
-            return instant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-        }
-
-        if (value instanceof java.util.Date utilDate) {
-            return utilDate.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
-        }
-
-        logger.warn(
-                "Unsupported datetime value: value='{}', class='{}'",
-                value,
-                value.getClass().getName()
-        );
-
-        return null;
-    }
-
-    public LocalDate toLocalDate(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof LocalDate localDate) {
-            return localDate;
-        }
-
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-
-        if (value instanceof java.util.Date utilDate) {
-            return utilDate.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
-        }
-
-        logger.warn(
-                "Unsupported date value: value='{}', class='{}'",
-                value,
-                value.getClass().getName()
-        );
-
-        return null;
     }
 
 

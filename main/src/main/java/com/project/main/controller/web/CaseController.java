@@ -2,7 +2,7 @@ package com.project.main.controller.web;
 
 
 import com.project.main.dto.cases.CasePublicDto;
-import com.project.main.dto.learing.*;
+import com.project.main.dto.learning.*;
 import com.project.main.dto.cases.PerfectSolutionResponse;
 import com.project.main.dto.common.PageResponse;
 import com.project.main.service.auth.SessionService;

@@ -152,7 +152,7 @@ public class WebApiController {
         }
 
         if (!fetchingService.userExistsById(userId)) {
-            throw new NotFoundException("Invalid user ID");
+            throw new NotFoundException("Profile not found");
         }
 
         List<AchievementDto> achievements = achievementService.getAchievementsForUser(userId);

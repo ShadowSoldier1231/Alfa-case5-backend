@@ -23,6 +23,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateConsumer {
@@ -120,7 +121,7 @@ public class TelegramAuthBot implements SpringLongPollingBot, LongPollingUpdateC
         System.out.println("Остановка потоков Telegram Bot...");
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {

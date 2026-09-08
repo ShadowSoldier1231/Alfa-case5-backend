@@ -2,6 +2,7 @@ package com.project.main.repository.cases;
 
 
 import com.project.main.model.cases.Solution;
+import com.project.main.repository.projection.SolveDateRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,17 +16,6 @@ import java.util.List;
 
 @Repository
 public interface SolutionRepository extends JpaRepository<Solution, Long> {
-
-    @Query(value = "SELECT SUM(max_rating) FROM (" +
-            "  SELECT MAX(rating) as max_rating " +
-            "  FROM solution " +
-            "  WHERE user_id = :userId " +
-            "  GROUP BY case_id" +
-            ") as subquery",
-            nativeQuery = true)
-    Long getSumOfMaxRatingsByUserId(@Param("userId") Long userId);
-
-    List<Solution> findByCaseIdAndUserIdOrderBySolutionIdAsc(Long caseId, Long userId);
 
     @Transactional
     void deleteAllByUserId( Long userId);
@@ -73,11 +63,20 @@ public interface SolutionRepository extends JpaRepository<Solution, Long> {
             Pageable pageable
     );
 
-    @Query(value = "SELECT DISTINCT DATE(created_at) as solve_date " +
-            "FROM solution " +
-            "WHERE user_id = :userId AND rating >= :threshold " +
-            "ORDER BY solve_date DESC", nativeQuery = true)
-    List<Object> findDistinctSolveDatesByUserId(@Param("userId") Long userId, @Param("threshold") Long threshold);
+    @Query(
+            value = """
+                SELECT DISTINCT DATE(created_at) AS solve_date
+                FROM solution
+                WHERE user_id = :userId
+                  AND rating >= :threshold
+                ORDER BY solve_date DESC
+                """,
+            nativeQuery = true
+    )
+    List<SolveDateRow> findDistinctSolveDatesByUserId(
+            @Param("userId") Long userId,
+            @Param("threshold") Long threshold
+    );
 
 
     @Query(value = "SELECT EXISTS(" +

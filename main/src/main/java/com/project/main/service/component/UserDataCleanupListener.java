@@ -4,6 +4,7 @@ package com.project.main.service.component;
 import com.project.main.dto.event.UserDeletedEvent;
 import com.project.main.model.user.UserData;
 import com.project.main.repository.cases.CaseCompletionRepository;
+import com.project.main.repository.cases.CaseRatingRepository;
 import com.project.main.repository.cases.SolutionRepository;
 import com.project.main.repository.learning.QuizAttemptRepository;
 import com.project.main.repository.learning.UserAnswerRepository;
@@ -29,6 +30,7 @@ public class UserDataCleanupListener {
     private final CaseCompletionRepository caseCompletionRepository;
     private final UserAnswerRepository userAnswerRepository;
     private final QuizAttemptRepository attemptRepository;
+    private final CaseRatingRepository caseRatingRepository;
 
     public UserDataCleanupListener(UserDataRepository userDataRepository,
                                    S3StorageService s3StorageService,
@@ -40,7 +42,8 @@ public class UserDataCleanupListener {
                                    UserVerificationRepository verificationRepository,
                                    CaseCompletionRepository caseCompletionRepository,
                                    UserAnswerRepository userAnswerRepository,
-                                   QuizAttemptRepository attemptRepository) {
+                                   QuizAttemptRepository attemptRepository,
+                                   CaseRatingRepository caseRatingRepository) {
 
         this.userDataRepository = userDataRepository;
         this.s3StorageService = s3StorageService;
@@ -53,6 +56,7 @@ public class UserDataCleanupListener {
         this.caseCompletionRepository = caseCompletionRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.attemptRepository = attemptRepository;
+        this.caseRatingRepository = caseRatingRepository;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -74,6 +78,7 @@ public class UserDataCleanupListener {
         achievementRepository.deleteAllByUserId(userId);
         caseCompletionRepository.deleteByUserId(userId);
         userAnswerRepository.deleteByUserId(userId);
+        caseRatingRepository.deleteByUserId(userId);
         attemptRepository.deleteByUserId(userId);
     }
 }

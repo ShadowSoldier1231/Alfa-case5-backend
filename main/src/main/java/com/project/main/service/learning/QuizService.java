@@ -1,13 +1,14 @@
 package com.project.main.service.learning;
 
-import com.project.main.dto.learing.*;
+import com.project.main.dto.learning.*;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.InternalServerErrorException;
 import com.project.main.exception.NotFoundException;
 import com.project.main.model.learning.*;
 import com.project.main.repository.learning.*;
-import com.project.main.service.component.TypeMapperComponent;
+import com.project.main.repository.projection.OptionValidationRow;
+import com.project.main.repository.projection.QuizStatusRow;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,22 +24,19 @@ public class QuizService {
     private final AnswerOptionRepository answerOptionRepository;
     private final QuizAttemptRepository attemptRepository;
     private final UserAnswerRepository userAnswerRepository;
-    private final TypeMapperComponent typeMapper;
 
     public QuizService(StudyMaterialRepository materialRepository,
                        QuizRepository quizRepository,
                        QuestionRepository questionRepository,
                        AnswerOptionRepository answerOptionRepository,
                        QuizAttemptRepository attemptRepository,
-                       UserAnswerRepository userAnswerRepository,
-                       TypeMapperComponent typeMapper) {
+                       UserAnswerRepository userAnswerRepository) {
         this.materialRepository = materialRepository;
         this.quizRepository = quizRepository;
         this.questionRepository = questionRepository;
         this.answerOptionRepository = answerOptionRepository;
         this.attemptRepository = attemptRepository;
         this.userAnswerRepository = userAnswerRepository;
-        this.typeMapper = typeMapper;
     }
 
     @Transactional(readOnly = true)
@@ -213,14 +211,15 @@ public class QuizService {
             throw new BadRequestException("One or more questions do not belong to this quiz or are inactive");
         }
 
-        List<Object[]> optionRows = answerOptionRepository.findValidationDataByIds(answerOptionIds);
+        List<OptionValidationRow> optionRows =
+                answerOptionRepository.findValidationDataByIds(answerOptionIds);
 
         Map<Long, OptionValidationData> optionsById = optionRows.stream()
                 .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
+                        OptionValidationRow::getId,
                         row -> new OptionValidationData(
-                                ((Number) row[1]).longValue(),
-                                typeMapper.toBoolean(row[2])
+                                row.getQuestion_id(),
+                                row.getIs_correct()
                         ),
                         (existing, replacement) -> existing
                 ));
@@ -294,20 +293,17 @@ public class QuizService {
             throw new NotFoundException("Quiz not found");
         }
 
-        List<Object[]> results = attemptRepository.getQuizStatusByUserAndQuiz(userId, quizId);
+        QuizStatusRow row = attemptRepository.getQuizStatusByUserAndQuiz(userId, quizId);
 
-        Integer attemptsCount = 0;
-        Boolean isSolved = false;
-        Integer score = 0;
+        Integer attemptsCount = row != null && row.getAttempts_count() != null
+                ? row.getAttempts_count()
+                : 0;
 
-        if (results != null && !results.isEmpty()) {
-            Object[] row = results.get(0);
-            if (row != null && row.length >= 3) {
-                attemptsCount = row[0] != null ? ((Number) row[0]).intValue() : 0;
-                isSolved = typeMapper.toBoolean(row[1]);
-                score = row[2] != null ? ((Number) row[2]).intValue() : 0;
-            }
-        }
+        Boolean isSolved = row != null && row.getIs_solved() != null && row.getIs_solved() != 0;
+
+        Integer score = row != null && row.getMax_score() != null
+                ? row.getMax_score()
+                : 0;
 
         return new QuizStatusResponse(quizId, attemptsCount, isSolved, score);
     }

@@ -1,6 +1,9 @@
 package com.project.main.repository.learning;
 
 import com.project.main.model.learning.StudyMaterial;
+import com.project.main.repository.projection.AdminMaterialFullRow;
+import com.project.main.repository.projection.AdminMaterialSummaryRow;
+import com.project.main.repository.projection.MaterialSummaryRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,39 +21,35 @@ public interface StudyMaterialRepository extends JpaRepository<StudyMaterial, Lo
 
     @Query(
             value = """
-                    SELECT sm.id AS id,
-                           sm.title AS title,
-                           sm.position AS position
-                    FROM study_material sm
-                    WHERE sm.case_id = :caseId
-                      AND sm.is_active = true
-                    ORDER BY sm.position ASC, sm.id ASC
-                    """,
+                SELECT
+                    sm.id AS id,
+                    sm.title AS title,
+                    sm.position AS position
+                FROM study_material sm
+                WHERE sm.case_id = :caseId
+                  AND sm.is_active = true
+                ORDER BY sm.position ASC, sm.id ASC
+                """,
             nativeQuery = true
     )
-    List<Object[]> findActiveByCaseIdSorted(@Param("caseId") Long caseId);
+    List<MaterialSummaryRow> findActiveByCaseIdSorted(@Param("caseId") Long caseId);
 
-
-    @Query(
-            value = "SELECT * FROM study_material sm WHERE sm.id = :id AND sm.is_active = true LIMIT 1",
-            nativeQuery = true
-    )
-    Optional<StudyMaterial> findActiveById(@Param("id") Long id);
 
 
     @Query(
             value = """
-                SELECT sm.id AS id,
-                       sm.title AS title,
-                       sm.position AS position,
-                       sm.is_active AS active
+                SELECT
+                    sm.id AS id,
+                    sm.title AS title,
+                    sm.position AS position,
+                    sm.is_active AS active
                 FROM study_material sm
                 WHERE sm.case_id = :caseId
                 ORDER BY sm.position ASC, sm.id ASC
                 """,
             nativeQuery = true
     )
-    List<Object[]> findAllByCaseIdOrdered(@Param("caseId") Long caseId);
+    List<AdminMaterialSummaryRow> findAllByCaseIdOrdered(@Param("caseId") Long caseId);
 
 
     @Query(
@@ -70,19 +69,20 @@ public interface StudyMaterialRepository extends JpaRepository<StudyMaterial, Lo
 
     @Query(
             value = """
-                SELECT sm.id,
-                       sm.case_id,
-                       sm.title,
-                       sm.position,
-                       sm.text,
-                       sm.is_active
+                SELECT
+                    sm.id AS id,
+                    sm.case_id AS case_id,
+                    sm.title AS title,
+                    sm.position AS position,
+                    sm.text AS text,
+                    sm.is_active AS active
                 FROM study_material sm
                 WHERE sm.id = :id
                 LIMIT 1
                 """,
             nativeQuery = true
     )
-    List<Object[]> findAdminMaterialById(@Param("id") Long id);
+    List<AdminMaterialFullRow> findAdminMaterialById(@Param("id") Long id);
 
     @Query(
             value = """
@@ -118,20 +118,5 @@ public interface StudyMaterialRepository extends JpaRepository<StudyMaterial, Lo
             @Param("materialId") Long materialId
     );
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Transactional
-    @Query(
-            value = "UPDATE study_material SET is_active = false WHERE case_id = :caseId",
-            nativeQuery = true
-    )
-    void deactivateByCaseId(@Param("caseId") Long caseId);
 
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Transactional
-    @Query(
-            value = "DELETE FROM study_material WHERE case_id = :caseId",
-            nativeQuery = true
-    )
-    void deleteByCaseId(@Param("caseId") Long caseId);
 }

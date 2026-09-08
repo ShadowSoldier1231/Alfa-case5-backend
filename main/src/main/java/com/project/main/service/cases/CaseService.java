@@ -2,7 +2,7 @@ package com.project.main.service.cases;
 
 import com.project.main.dto.cases.*;
 import com.project.main.dto.common.PageResponse;
-import com.project.main.dto.learing.*;
+import com.project.main.dto.learning.*;
 import com.project.main.dto.tags.TagCreateRequest;
 import com.project.main.dto.tags.TagListItem;
 import com.project.main.dto.tags.TagUpdateRequest;
@@ -13,6 +13,7 @@ import com.project.main.model.cases.*;
 import com.project.main.model.learning.StudyMaterial;
 import com.project.main.repository.cases.*;
 import com.project.main.repository.learning.StudyMaterialRepository;
+import com.project.main.repository.projection.*;
 import com.project.main.service.common.S3StorageService;
 import com.project.main.service.component.TypeMapperComponent;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -338,17 +339,26 @@ public class CaseService {
     }
 
     private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<CaseEntity> cases) {
-        if (cases.isEmpty()) return Map.of();
-        List<Long> ids = cases.stream().map(CaseEntity::getId).toList();
+        if (cases.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> ids = cases.stream()
+                .map(CaseEntity::getId)
+                .toList();
+
         return caseRepository.findTagsByCaseIds(ids).stream()
                 .collect(Collectors.groupingBy(
-                        row -> ((Number) row[0]).longValue(),
+                        CaseTagRow::getCase_id,
                         Collectors.mapping(
                                 row -> new CasePublicDto.TagInfo(
-                                        ((Number) row[1]).longValue(),
-                                        (String) row[2],
-                                        ((Number) row[3]).longValue()),
-                                Collectors.toList())));
+                                        row.getTag_id(),
+                                        row.getTag_name(),
+                                        row.getTag_case_count()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
     }
 
 
@@ -396,10 +406,8 @@ public class CaseService {
 
         Map<Long, Double> result = new HashMap<>();
 
-        for (Object[] row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
-            Long caseId = ((Number) row[0]).longValue();
-            Double avg = row[1] == null ? null : ((Number) row[1]).doubleValue();
-            result.put(caseId, avg);
+        for (CaseAverageRatingRow row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
+            result.put(row.getCase_id(), row.getAvg_rating());
         }
 
         return result;
@@ -449,17 +457,15 @@ public class CaseService {
             throw new BadRequestException("Search query is too long");
         }
 
-        Page<Object[]> tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
+        Page<AdminTagRow> tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
 
         List<TagListItem> items = tagPage.getContent().stream()
-                .map(row -> {
-                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
-                    String name = row[1] != null ? row[1].toString() : null;
-                    Boolean active = typeMapper.toBoolean(row[2]);
-                    Long caseCount = row[3] != null ? ((Number) row[3]).longValue() : 0L;
-
-                    return new TagListItem(id, name, active, caseCount);
-                })
+                .map(row -> new TagListItem(
+                        row.getId(),
+                        row.getName(),
+                        row.getIs_active(),
+                        row.getCase_count()
+                ))
                 .toList();
 
         return new PageResponse<>(
@@ -533,13 +539,13 @@ public class CaseService {
 
         Pageable pageable = PageRequest.of(page, size, buildPublicTagSort(sort));
 
-        Page<Object[]> tagPage = tagRepository.findPublicTagsWithCaseCount(searchTerm, pageable);
+        Page<PublicTagRow> tagPage = tagRepository.findPublicTagsWithCaseCount(searchTerm, pageable);
 
         List<CasePublicDto.TagInfo> items = tagPage.getContent().stream()
                 .map(row -> new CasePublicDto.TagInfo(
-                        ((Number) row[0]).longValue(),
-                        (String) row[1],
-                        ((Number) row[2]).longValue()
+                        row.getId(),
+                        row.getName(),
+                        row.getCase_count()
                 ))
                 .toList();
 
@@ -562,7 +568,7 @@ public class CaseService {
             throw new NotFoundException("Case not found");
         }
 
-        List<Object[]> materials =
+        List<MaterialSummaryRow> materials =
                 materialRepository.findActiveByCaseIdSorted(caseId);
 
         return new MaterialDto(
@@ -570,9 +576,9 @@ public class CaseService {
                 materials.stream()
                         .map(
                                 row -> {
-                                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
-                                    String title = row[1] != null ? (String) row[1] : null;
-                                    Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
+                                    Long id = row.getId();
+                                    String title = row.getTitle();
+                                    Integer position = row.getPosition();
                                     return new MaterialDto.MaterialPart(id, title, position);
                                 }
 
@@ -610,25 +616,18 @@ public class CaseService {
             throw new NotFoundException("Case not found");
         }
 
-        List<Object[]> materials =
-                materialRepository.findAllByCaseIdOrdered(caseId);
+        List<AdminMaterialDto.AdminMaterialPart> materials = materialRepository
+                .findAllByCaseIdOrdered(caseId)
+                .stream()
+                .map(row -> new AdminMaterialDto.AdminMaterialPart(
+                        row.getId(),
+                        row.getTitle(),
+                        row.getPosition(),
+                        row.getActive()
+                ))
+                .toList();
 
-        return new AdminMaterialDto(
-                caseId,
-                materials.stream()
-                        .map(
-                                row -> {
-                                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
-                                    String title = row[1] != null ? (String) row[1] : null;
-                                    Integer position = row[2] != null ? ((Number) row[2]).intValue() : null;
-                                    Boolean active = typeMapper.toBoolean(row[3]);
-                                    return new AdminMaterialDto.AdminMaterialPart(
-                                            id, title, position, active
-                                    );
-                                }
-                        )
-                        .toList()
-        );
+        return new AdminMaterialDto(caseId, materials);
     }
 
     @Transactional(readOnly = true)
@@ -637,21 +636,22 @@ public class CaseService {
             throw new BadRequestException("Invalid material ID");
         }
 
-        List<Object[]> result = materialRepository.findAdminMaterialById(id);
+        List<AdminMaterialFullRow> result = materialRepository.findAdminMaterialById(id);
+
         if (result.isEmpty()) {
             throw new NotFoundException("Material not found");
         }
 
-        Object[] row = result.get(0);
+        AdminMaterialFullRow row = result.get(0);
 
-        Long materialId = row[0] != null ? ((Number) row[0]).longValue() : null;
-        Long caseId = row[1] != null ? ((Number) row[1]).longValue() : null;
-        String title = row[2] != null ? row[2].toString() : null;
-        Integer position = row[3] != null ? ((Number) row[3]).intValue() : null;
-        String text = row[4] != null ? row[4].toString() : null;
-        Boolean active = typeMapper.toBoolean(row[5]);
-
-        return new AdminPartialMaterialDto(materialId, caseId, title, position, text, active);
+        return new AdminPartialMaterialDto(
+                row.getId(),
+                row.getCase_id(),
+                row.getTitle(),
+                row.getPosition(),
+                row.getText(),
+                row.getActive()
+        );
     }
 
     @Transactional

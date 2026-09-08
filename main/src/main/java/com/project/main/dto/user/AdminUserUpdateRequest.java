@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import com.project.main.enums.*;
 import java.time.LocalDateTime;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 
 public class AdminUserUpdateRequest {
 

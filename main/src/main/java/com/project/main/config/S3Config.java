@@ -96,7 +96,7 @@ public class S3Config {
 
             System.out.println("Download policy successfully applied to bucket: '" + bucketName + "'");
         } catch (Exception e) {
-            System.err.println("Could not apply download polity to bucket: '" + bucketName + "'. Error: " + e.getMessage());
+            System.err.println("Could not apply download policy to bucket: '" + bucketName + "'. Error: " + e.getMessage());
         }
     }
 }

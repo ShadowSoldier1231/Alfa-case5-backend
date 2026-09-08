@@ -5,8 +5,6 @@ package com.project.main.service.cases;
 import com.project.main.dto.cases.CasePublicDto;
 import com.project.main.dto.cases.FavoriteCaseDto;
 import com.project.main.dto.common.PageResponse;
-
-import com.project.main.enums.Difficulty;
 import com.project.main.exception.BadRequestException;
 import com.project.main.exception.ConflictException;
 import com.project.main.exception.NotFoundException;
@@ -14,10 +12,11 @@ import com.project.main.model.cases.CaseEntity;
 import com.project.main.model.user.UserFavoriteCase;
 import com.project.main.repository.cases.CaseRatingRepository;
 import com.project.main.repository.cases.CaseRepository;
+import com.project.main.repository.projection.CaseAverageRatingRow;
+import com.project.main.repository.projection.CaseTagRow;
+import com.project.main.repository.projection.FavoriteCaseRow;
 import com.project.main.repository.user.UserFavoriteCaseRepository;
 import com.project.main.service.component.TypeMapperComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +24,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +37,6 @@ public class FavoriteCaseService {
     private final CaseRepository caseRepository;
     private final CaseRatingRepository caseRatingRepository;
     private final TypeMapperComponent typeMapper;
-
-    private static final Logger logger = LoggerFactory.getLogger(FavoriteCaseService.class);
 
     public FavoriteCaseService(UserFavoriteCaseRepository favoriteCaseRepository,
                                CaseRepository caseRepository,
@@ -78,7 +74,7 @@ public class FavoriteCaseService {
     }
 
 
-    public PageResponse<FavoriteCaseDto> getFavorites(Long userId, int page, int size, String search, String sort){
+    public PageResponse<FavoriteCaseDto> getFavorites(Long userId, int page, int size, String search, String sort) {
         if (page < 0) {
             throw new BadRequestException("Page cannot be negative");
         }
@@ -88,85 +84,69 @@ public class FavoriteCaseService {
         }
 
         String searchTerm = null;
-
         if (search != null && !search.isBlank()) {
             searchTerm = typeMapper.escapeLikeWildcards(search.trim());
         }
+
         if (searchTerm != null && searchTerm.length() > 200) {
             throw new BadRequestException("Search query is too long");
         }
-        Pageable pageable = PageRequest.of(page, size, buildCaseSort(sort));
-        Page<Object[]> favoritesPage = favoriteCaseRepository.findFavoriteCases(searchTerm, userId, pageable);
 
+        Pageable pageable = PageRequest.of(page, size, buildCaseSort(sort));
+
+        Page<FavoriteCaseRow> favoritesPage =
+                favoriteCaseRepository.findFavoriteCases(searchTerm, userId, pageable);
 
         List<Long> caseIds = favoritesPage.getContent().stream()
-                .map(row -> row[0] != null ? ((Number) row[0]).longValue() : null)
+                .map(FavoriteCaseRow::getId)
                 .filter(Objects::nonNull)
+                .distinct()
                 .toList();
-        Map<Long, Double> ratingsMap;
 
-        if (caseIds.isEmpty()) {
-            ratingsMap = Map.of();
-        } else {
-            ratingsMap = new HashMap<>();
-
-            for (Object[] row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
-                Long caseId = ((Number) row[0]).longValue();
-                Double avg = row[1] == null ? null : ((Number) row[1]).doubleValue();
-                ratingsMap.put(caseId, avg);
-            }
-        }
-
-
+        Map<Long, Double> ratingsMap = loadRatings(caseIds);
         Map<Long, List<CasePublicDto.TagInfo>> tagsMap = loadTags(caseIds);
-
 
         List<FavoriteCaseDto> items = favoritesPage.getContent().stream()
                 .map(row -> {
-                    Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
-                    String slug = row[1] != null ? row[1].toString() : null;
-                    String title = row[2] != null ? row[2].toString() : null;
-                    String titleEn = row[3] != null ? row[3].toString() : null;
-                    String description = row[4] != null ? row[4].toString() : null;
-                    String fullDescription = row[5] != null ? row[5].toString() : null;
-                    Difficulty difficulty = typeMapper.parseDifficulty(row[6]);
-
-                    Integer averageSolveMin = row[7] != null ? ((Number) row[7]).intValue() : null;
-                    String pdfUrl = row[8] != null ? row[8].toString() : null;
-                    String iconUrl = row[9] != null ? row[9].toString() : null;
-                    Integer viewsCount = row[10] != null ? ((Number) row[10]).intValue() : null;
-
-                    LocalDateTime createdAt = typeMapper.toLocalDateTime(row[11]);
-                    LocalDateTime updatedAt = typeMapper.toLocalDateTime(row[12]);
-                    LocalDateTime addedAt = typeMapper.toLocalDateTime(row[13]);
-                    List<CasePublicDto.TagInfo> tags = tagsMap.getOrDefault(id, List.of());
+                    List<CasePublicDto.TagInfo> tags =
+                            tagsMap.getOrDefault(row.getId(), List.of());
 
                     FavoriteCaseDto dto = new FavoriteCaseDto(
-                            id, slug, title, titleEn, description, fullDescription,
-                            difficulty, averageSolveMin, pdfUrl, iconUrl, viewsCount,
-                            createdAt, updatedAt, addedAt, tags
+                            row.getId(),
+                            row.getSlug(),
+                            row.getTitle(),
+                            row.getTitle_en(),
+                            row.getDescription(),
+                            row.getFull_description(),
+                            typeMapper.parseDifficulty(row.getDifficulty()),
+                            row.getAverage_solve_min(),
+                            row.getPdf_url(),
+                            row.getIcon_url(),
+                            row.getViews_count(),
+                            row.getCreated_at(),
+                            row.getUpdated_at(),
+                            row.getAdded_at(),
+                            tags
                     );
 
-                    dto.setCaseRating(ratingsMap.get(id));
+                    dto.setCaseRating(ratingsMap.get(row.getId()));
 
                     return dto;
                 })
                 .toList();
 
-
-                    return new PageResponse<>(
+        return new PageResponse<>(
                 items,
                 favoritesPage.getNumber(),
                 favoritesPage.getSize(),
                 favoritesPage.getTotalElements(),
                 favoritesPage.getTotalPages()
         );
-
     }
 
 
     private Sort buildCaseSort(String sort) {
-        Sort sortBy = Sort.by(Sort.Direction.DESC, "created_at");
+        Sort sortBy = Sort.by(Sort.Direction.DESC, "added_at");
 
         if (sort == null || sort.isBlank()) {
             return sortBy;
@@ -200,18 +180,40 @@ public class FavoriteCaseService {
         return Sort.by(direction, sortColumn);
     }
 
-    private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<Long> cases) {
-        if (cases.isEmpty()) return Map.of();
-        return caseRepository.findTagsByCaseIds(cases).stream()
+    private Map<Long, List<CasePublicDto.TagInfo>> loadTags(List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return caseRepository.findTagsByCaseIds(caseIds).stream()
+                .filter(row -> row.getCase_id() != null && row.getTag_id() != null)
                 .collect(Collectors.groupingBy(
-                        row -> ((Number) row[0]).longValue(),
+                        CaseTagRow::getCase_id,
                         Collectors.mapping(
                                 row -> new CasePublicDto.TagInfo(
-                                        ((Number) row[1]).longValue(),
-                                        (String) row[2],
-                                        ((Number) row[3]).longValue()),
-                                Collectors.toList())));
+                                        row.getTag_id(),
+                                        row.getTag_name(),
+                                        row.getTag_case_count()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
     }
 
+    private Map<Long, Double> loadRatings(List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Double> result = new HashMap<>();
+
+        for (CaseAverageRatingRow row : caseRatingRepository.findAverageRatingsByCaseIds(caseIds)) {
+            if (row.getCase_id() != null) {
+                result.put(row.getCase_id(), row.getAvg_rating());
+            }
+        }
+
+        return result;
+    }
 
 }

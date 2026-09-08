@@ -20,8 +20,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query(value = "SELECT * FROM question WHERE quiz_id = :quizId ORDER BY position ASC", nativeQuery = true)
     List<Question> findAllByQuizId(@Param("quizId") Long quizId);
 
-    @Query(value = "SELECT COALESCE(MAX(position), 0) FROM question WHERE quiz_id = :quizId", nativeQuery = true)
-    int getMaxPositionByQuizId(@Param("quizId") Long quizId);
 
     @Modifying
     @Transactional

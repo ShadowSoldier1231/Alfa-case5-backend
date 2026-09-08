@@ -15,9 +15,9 @@ public class RegisterResult{
     @JsonView(Views.RegisterResultId.class)
     private Long id;
 
-    public RegisterResult(boolean success, String ErrorText, Long id){
+    public RegisterResult(boolean success, String errorText, Long id){
         this.success = success;
-        this.errorText = ErrorText;
+        this.errorText = errorText;
         this.id = id;
     }
     public RegisterResult(Long id){

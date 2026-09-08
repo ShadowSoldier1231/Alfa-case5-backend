@@ -13,13 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface CityRepository extends JpaRepository<City, Long> {
-    boolean existsByCityName(String cityName);
 
-    Optional<City> findByCityName(String cityName);
-
-    boolean existsByRegionName(String regionName);
-
-    List<City> findAllByCityName(String cityName);
 
 
     @Query(
@@ -64,7 +58,6 @@ public interface CityRepository extends JpaRepository<City, Long> {
             Pageable pageable
     );
 
-    List<City> findByCityNameContainingIgnoreCase(String cityName);
 }
 
 
