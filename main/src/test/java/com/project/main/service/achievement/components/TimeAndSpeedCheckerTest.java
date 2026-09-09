@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -43,10 +44,11 @@ class TimeAndSpeedCheckerTest {
     @Test
     void quickStartIsAwardedWhenFirstSolutionTookLessThan30Minutes() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, 25);
-        when(solutionRepository.existsFirstSolutionUnder30Min(USER_ID, THRESHOLD)).thenReturn(true);
-        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of());
-        when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.QUICK_START.getId()))
+
+        Mockito.lenient().when(solutionRepository.existsFirstSolutionUnder30Min(USER_ID, THRESHOLD)).thenReturn(true);
+        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of());
+        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.QUICK_START.getId()))
                 .thenReturn(false);
 
         checker().checkAndAward(USER_ID, event);
@@ -60,12 +62,13 @@ class TimeAndSpeedCheckerTest {
     @Test
     void marathonerIsAwardedForThreeConsecutiveDays() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, null);
-        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
+
+        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
                 row(LocalDate.of(2026, 1, 3)),
                 row(LocalDate.of(2026, 1, 2)),
-                row(LocalDate.of(2026, 1, 1)))); // запрос отдаёт даты по убыванию
-        when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.MARATHONER.getId()))
+                row(LocalDate.of(2026, 1, 1))));
+        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.MARATHONER.getId()))
                 .thenReturn(false);
 
         checker().checkAndAward(USER_ID, event);
@@ -78,14 +81,17 @@ class TimeAndSpeedCheckerTest {
     @Test
     void nothingIsAwardedWhenSolveDaysHaveGaps() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, null);
-        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
+
+        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
                 row(LocalDate.of(2026, 1, 5)),
                 row(LocalDate.of(2026, 1, 3)),
-                row(LocalDate.of(2026, 1, 1)))); // разрывы дней
+                row(LocalDate.of(2026, 1, 1))));
+        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(Mockito.anyLong(), Mockito.anyLong()))
+                .thenReturn(false);
 
         checker().checkAndAward(USER_ID, event);
 
-        verify(achievementRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(achievementRepository, never()).save(Mockito.any());
     }
 }
