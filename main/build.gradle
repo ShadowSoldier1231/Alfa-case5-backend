@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '4.0.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.graalvm.buildtools.native' version '0.9.28'
+    id 'jacoco'
 }
 
 group = 'com.project'
@@ -50,10 +51,17 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.21.3')
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation  'org.springframework.boot:spring-boot-starter-data-jpa-test'
+
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 tasks.withType(JavaCompile) {
 	options.compilerArgs << '-parameters'
