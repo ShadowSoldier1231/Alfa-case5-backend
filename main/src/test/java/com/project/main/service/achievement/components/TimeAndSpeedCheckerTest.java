@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -45,10 +44,10 @@ class TimeAndSpeedCheckerTest {
     void quickStartIsAwardedWhenFirstSolutionTookLessThan30Minutes() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, 25);
 
-        Mockito.lenient().when(solutionRepository.existsFirstSolutionUnder30Min(USER_ID, THRESHOLD)).thenReturn(true);
-        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of());
-        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.QUICK_START.getId()))
+        when(solutionRepository.existsFirstSolutionUnder30Min(USER_ID, THRESHOLD)).thenReturn(true);
+        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of());
+        when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.QUICK_START.getId()))
                 .thenReturn(false);
 
         checker().checkAndAward(USER_ID, event);
@@ -63,12 +62,14 @@ class TimeAndSpeedCheckerTest {
     void marathonerIsAwardedForThreeConsecutiveDays() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, null);
 
-        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
-                row(LocalDate.of(2026, 1, 3)),
-                row(LocalDate.of(2026, 1, 2)),
-                row(LocalDate.of(2026, 1, 1))));
-        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.MARATHONER.getId()))
+        SolveDateRow r1 = row(LocalDate.of(2026, 1, 3));
+        SolveDateRow r2 = row(LocalDate.of(2026, 1, 2));
+        SolveDateRow r3 = row(LocalDate.of(2026, 1, 1));
+
+        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD))
+                .thenReturn(List.of(r1, r2, r3));
+        when(achievementRepository.existsByUserIdAndAchievementId(USER_ID, Achievement.MARATHONER.getId()))
                 .thenReturn(false);
 
         checker().checkAndAward(USER_ID, event);
@@ -82,16 +83,16 @@ class TimeAndSpeedCheckerTest {
     void nothingIsAwardedWhenSolveDaysHaveGaps() {
         SolutionSubmittedEvent event = new SolutionSubmittedEvent(USER_ID, 4L, 80L, null);
 
-        Mockito.lenient().when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
-        Mockito.lenient().when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD)).thenReturn(List.of(
-                row(LocalDate.of(2026, 1, 5)),
-                row(LocalDate.of(2026, 1, 3)),
-                row(LocalDate.of(2026, 1, 1))));
-        Mockito.lenient().when(achievementRepository.existsByUserIdAndAchievementId(Mockito.anyLong(), Mockito.anyLong()))
-                .thenReturn(false);
+        SolveDateRow r1 = row(LocalDate.of(2026, 1, 5));
+        SolveDateRow r2 = row(LocalDate.of(2026, 1, 3));
+        SolveDateRow r3 = row(LocalDate.of(2026, 1, 1));
+
+        when(solutionRepository.existsFasterThanAverageSolution(USER_ID, THRESHOLD)).thenReturn(false);
+        when(solutionRepository.findDistinctSolveDatesByUserId(USER_ID, THRESHOLD))
+                .thenReturn(List.of(r1, r2, r3));
 
         checker().checkAndAward(USER_ID, event);
 
-        verify(achievementRepository, never()).save(Mockito.any());
+        verify(achievementRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }
