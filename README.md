@@ -2,6 +2,161 @@
 
 # Alfa-case5-backend
 
+## Установка и запуск проекта
+
+### Требования
+
+Для работы проекта необходимы следующие компоненты:
+
+- **Docker** (версия 20.10 или выше)
+- **Docker Compose** (версия 2.0 или выше)
+- **Git**
+
+#### Установка Docker и Docker Compose
+
+**Linux (Ubuntu/Debian):**
+```bash
+# Установка Docker
+sudo apt-get update
+sudo apt-get install docker.io
+
+# Добавление пользователя в группу docker (чтобы не использовать sudo)
+sudo usermod -aG docker $USER
+
+# Перезагрузите систему или выйдите и войдите заново
+
+# Установка Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Проверка установки
+docker --version
+docker-compose --version
+```
+
+**Windows/macOS:**
+Установите [Docker Desktop](https://www.docker.com/products/docker-desktop/), который включает Docker и Docker Compose.
+
+### Клонирование репозитория
+
+```bash
+git clone https://github.com/ShadowSoldier1231/Alfa-case5-backend/tree/main
+cd Alfa-case5-backend/main
+```
+
+### Настройка переменных окружения
+
+Скопируйте файл `.env.example` в `.env` в корневой директории проекта (рядом с `docker-compose.yml`):
+
+```bash
+cp .env.example .env
+```
+
+Все необходимые переменные окружения уже перечислены в `.env.example` с комментариями. Ниже описаны важные моменты для настройки:
+
+#### Telegram Bot
+
+Получите токен у [@BotFather](https://t.me/BotFather) в Telegram и укажите его в `TELEGRAM_BOT_TOKEN`.
+
+**Прокси для Telegram (опционально):**
+Если требуется прокси для доступа к Telegram API, приложение поддерживает только протокол **Socks5**. Настройте переменные:
+- `APP_PROXY_ENABLED=true`
+- `APP_PROXY_HOST=ваш_socks5_хост`
+- `APP_PROXY_PORT=порт`
+
+Если прокси не нужен, оставьте `APP_PROXY_ENABLED=false`.
+
+#### Email для верификации
+
+Приложение использует **Mail.ru** для отправки писем с кодами верификации:
+
+```env
+EMAIL_ADDRESS=ваш_email@mail.ru
+EMAIL_PASSWORD=пароль_от_почты
+```
+
+**Важно:** В настройках почтового ящика Mail.ru должен быть включен доступ по SMTP (настройки безопасности ящика).
+
+#### JWT Secret
+
+`JWT_SECRET` должен быть случайной строкой длиной не менее 32 символов для безопасности.
+
+#### Адрес фронтенда
+
+`WEBSITE_ADDRESS` — URL вашего фронтенд-приложения (например, `http://localhost:3000`). Используется для настройки CORS.
+
+#### Интеграция с ML-микросервисом
+
+`ML_SERVICE_TOKEN` и `ML_SERVICE_HEADER` — секретные данные для интеграции с микросервисом анализа решений.
+
+### Запуск проекта
+
+```bash
+# Сборка и запуск всех сервисов
+docker-compose up --build -d
+
+# Просмотр логов (опционально)
+docker-compose logs -f app
+```
+
+Первый запуск может занять несколько минут (сборка образа, загрузка зависимостей Gradle, инициализация базы данных).
+
+### Проверка работоспособности
+
+После запуска проверьте статус сервисов:
+
+```bash
+# Проверка здоровья приложения
+curl http://localhost:999/health
+
+# Ожидаемый ответ:
+# {
+#   "status": "UP",
+#   "timestamp": "2026-09-09T12:00:00.123",
+#   "database": "UP"
+# }
+
+# Проверка готовности к обработке запросов
+curl http://localhost:999/health/ready
+```
+
+### Доступные сервисы
+
+После успешного запуска доступны следующие сервисы:
+
+| Сервис | URL | Описание |
+|--------|-----|----------|
+| **API приложения** | `http://localhost:999` | Основной REST API (Spring Boot) |
+| **PostgreSQL** | `localhost:5433` | База данных (логин и пароль в .env) |
+| **MinIO Console** | `http://localhost:9001` | Веб-интерфейс S3-хранилища (логин и пароль в .env) |
+| **Redis** | `localhost:6379` | Кэш и сессии |
+| **Nginx (Storage)** | `http://localhost:2479/storage/` | Прокси для статических файлов из MinIO |
+
+### Остановка проекта
+
+```bash
+# Остановка всех сервисов
+docker-compose down
+
+# Остановка с удалением volumes (удаляет все данные БД и файлы)
+docker-compose down -v
+```
+
+### Решение проблем
+
+**Ошибка "port is already allocated":**
+Один из портов (999, 5433, 9001, 6379, 2479) уже занят. Измените порты в `docker-compose.yml` или остановите конфликтующие сервисы.
+
+**Ошибка подключения к Telegram Bot:**
+Убедитесь, что `TELEGRAM_BOT_TOKEN` корректен. Если требуется прокси, настройте `APP_PROXY_ENABLED=true` и убедитесь, что используете протокол **Socks5**.
+
+**Ошибка отправки Email:**
+Проверьте `EMAIL_ADDRESS` и `EMAIL_PASSWORD`. Убедитесь, что используете почту **Mail.ru** и в настройках ящика включен доступ по SMTP.
+
+**Приложение не запускается:**
+Просмотрите логи: `docker-compose logs app`. Убедитесь, что все переменные окружения в `.env` заполнены корректно.
+
+
 # Документация API
 
 Спецификация серверных эндпоинтов приложения.

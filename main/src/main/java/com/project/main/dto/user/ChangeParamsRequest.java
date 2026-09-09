@@ -1,6 +1,7 @@
 package com.project.main.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.project.main.enums.GenderCode;
 import com.project.main.enums.UserStatus;
 import java.time.LocalDate;
 
@@ -16,9 +17,18 @@ public class ChangeParamsRequest {
     private Long cityId;
     private UserStatus status;
     private String nickName;
+    GenderCode gender;
 
     public ChangeParamsRequest(){
 
+    }
+
+    public GenderCode getGender() {
+        return gender;
+    }
+
+    public void setGender(GenderCode gender) {
+        this.gender = gender;
     }
 
     public String getNickName() {

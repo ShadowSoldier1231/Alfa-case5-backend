@@ -329,6 +329,7 @@ public class UserService {
         if (changeRequest.getStatus() != null) realUser.setStatus(changeRequest.getStatus());
         if (changeRequest.getNickName() != null) realUser.setNickName(changeRequest.getNickName());
         if(changeRequest.getMiddleName() != null) realUser.setMiddleName(changeRequest.getMiddleName());
+        if(changeRequest.getGender() != null) realUser.setGender(changeRequest.getGender());
         if (changeRequest.getFirstName() != null && !changeRequest.getFirstName().isEmpty()) realUser.setFirstName(changeRequest.getFirstName());
         if (changeRequest.getLastName() != null && !changeRequest.getLastName().isEmpty()) realUser.setLastName(changeRequest.getLastName());
 
