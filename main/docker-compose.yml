@@ -104,6 +104,7 @@ services:
         condition: service_healthy
       redis:
           condition: service_healthy
+    image: ghcr.io/shadowsoldier1231/alfa-case5-backend:latest
     environment:
       PROXY_ENABLED: ${APP_PROXY_ENABLED}
       PROXY_HOST: ${APP_PROXY_HOST}
