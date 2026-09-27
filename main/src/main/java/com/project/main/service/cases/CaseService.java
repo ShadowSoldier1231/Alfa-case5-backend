@@ -423,31 +423,6 @@ public class CaseService {
             throw new BadRequestException("Size must be between 1 and 100");
         }
 
-        Sort sortBy = Sort.by(Sort.Direction.DESC, "created_at");
-
-        if (sort != null && !sort.isBlank()) {
-            String[] sortParts = sort.split(",");
-            String property = sortParts[0].trim();
-
-            Sort.Direction direction = Sort.Direction.ASC;
-            if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
-                direction = Sort.Direction.DESC;
-            }
-
-            String sortColumn = switch (property.toLowerCase()) {
-                case "id" -> "id";
-                case "name" -> "name";
-                case "active" -> "is_active";
-                case "casecount", "case_count", "casescount", "cases_count" -> "case_count";
-                case "createdat", "created_at" -> "created_at";
-                default -> "created_at";
-            };
-
-            sortBy = Sort.by(direction, sortColumn);
-        }
-
-        Pageable pageable = PageRequest.of(page, size, sortBy);
-
         String searchTerm = null;
 
         if (search != null && !search.isBlank()) {
@@ -457,7 +432,22 @@ public class CaseService {
             throw new BadRequestException("Search query is too long");
         }
 
-        Page<AdminTagRow> tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
+        String sortProperty = getSortProperty(sort);
+        boolean useCaseCountSort = sort != null && !sort.isBlank() && isCaseCountSortProperty(sortProperty);
+
+        Page<AdminTagRow> tagPage;
+
+        if (useCaseCountSort) {
+            Sort.Direction direction = getSortDirection(sort, Sort.Direction.DESC);
+            Pageable pageable = PageRequest.of(page, size);
+
+            tagPage = direction == Sort.Direction.ASC
+                    ? tagRepository.findAdminTagsWithCaseCountOrderedByCaseCountAsc(searchTerm, pageable)
+                    : tagRepository.findAdminTagsWithCaseCountOrderedByCaseCountDesc(searchTerm, pageable);
+        } else {
+            Pageable pageable = PageRequest.of(page, size, buildAdminTagSort(sort));
+            tagPage = tagRepository.findAdminTagsWithCaseCount(searchTerm, pageable);
+        }
 
         List<TagListItem> items = tagPage.getContent().stream()
                 .map(row -> new TagListItem(
@@ -476,6 +466,7 @@ public class CaseService {
                 tagPage.getTotalPages()
         );
     }
+
     @Transactional
     public void updateTag(Long tagId, TagUpdateRequest request) {
         if (request == null) {
@@ -537,9 +528,22 @@ public class CaseService {
             throw new BadRequestException("Search query is too long");
         }
 
-        Pageable pageable = PageRequest.of(page, size, buildPublicTagSort(sort));
+        String sortProperty = getSortProperty(sort);
+        boolean useCaseCountSort = sort == null || sort.isBlank() || isCaseCountSortProperty(sortProperty);
 
-        Page<PublicTagRow> tagPage = tagRepository.findPublicTagsWithCaseCount(searchTerm, pageable);
+        Page<PublicTagRow> tagPage;
+
+        if (useCaseCountSort) {
+            Sort.Direction direction = getSortDirection(sort, Sort.Direction.DESC);
+            Pageable pageable = PageRequest.of(page, size);
+
+            tagPage = direction == Sort.Direction.ASC
+                    ? tagRepository.findPublicTagsWithCaseCountOrderedByCaseCountAsc(searchTerm, pageable)
+                    : tagRepository.findPublicTagsWithCaseCountOrderedByCaseCountDesc(searchTerm, pageable);
+        } else {
+            Pageable pageable = PageRequest.of(page, size, buildPublicTagSort(sort));
+            tagPage = tagRepository.findPublicTagsWithCaseCount(searchTerm, pageable);
+        }
 
         List<CasePublicDto.TagInfo> items = tagPage.getContent().stream()
                 .map(row -> new CasePublicDto.TagInfo(
@@ -836,29 +840,61 @@ public class CaseService {
 
 
 
-    private Sort buildPublicTagSort(String sort) {
-        Sort sortBy = Sort.by(
-                Sort.Order.desc("case_count"),
-                Sort.Order.asc("name")
-        );
-
+    private String getSortProperty(String sort) {
         if (sort == null || sort.isBlank()) {
-            return sortBy;
+            return "";
+        }
+
+        return sort.split(",")[0].trim().toLowerCase();
+    }
+
+    private Sort.Direction getSortDirection(String sort, Sort.Direction defaultDirection) {
+        if (sort == null || sort.isBlank()) {
+            return defaultDirection;
         }
 
         String[] sortParts = sort.split(",");
-        String property = sortParts[0].trim();
 
-        Sort.Direction direction = Sort.Direction.ASC;
-        if (sortParts.length > 1 && "desc".equalsIgnoreCase(sortParts[1].trim())) {
-            direction = Sort.Direction.DESC;
+        if (sortParts.length < 2) {
+            return defaultDirection;
         }
 
-        String sortColumn = switch (property.toLowerCase()) {
+        String direction = sortParts[1].trim().toLowerCase();
+
+        if ("desc".equals(direction)) {
+            return Sort.Direction.DESC;
+        }
+
+        if ("asc".equals(direction)) {
+            return Sort.Direction.ASC;
+        }
+
+        return defaultDirection;
+    }
+
+    private boolean isCaseCountSortProperty(String property) {
+        if (property == null || property.isBlank()) {
+            return false;
+        }
+
+        return switch (property.toLowerCase()) {
+            case "count",
+                 "casecount",
+                 "case_count",
+                 "casescount",
+                 "cases_count" -> true;
+            default -> false;
+        };
+    }
+
+    private Sort buildPublicTagSort(String sort) {
+        String property = getSortProperty(sort);
+        Sort.Direction direction = getSortDirection(sort, Sort.Direction.ASC);
+
+        String sortColumn = switch (property) {
             case "id" -> "id";
             case "name" -> "name";
-            case "count", "casecount", "case_count", "casescount", "cases_count" -> "case_count";
-            default -> "case_count";
+            default -> "name";
         };
 
         Sort result = Sort.by(direction, sortColumn);
@@ -868,6 +904,25 @@ public class CaseService {
         }
 
         return result;
+    }
+
+    private Sort buildAdminTagSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, "created_at");
+        }
+
+        String property = getSortProperty(sort);
+        Sort.Direction direction = getSortDirection(sort, Sort.Direction.ASC);
+
+        String sortColumn = switch (property) {
+            case "id" -> "id";
+            case "name" -> "name";
+            case "active", "isactive", "is_active" -> "is_active";
+            case "createdat", "created_at" -> "created_at";
+            default -> "created_at";
+        };
+
+        return Sort.by(direction, sortColumn);
     }
 
     private Sort buildPublicCaseSort(String sort) {
