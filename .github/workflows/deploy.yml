@@ -94,8 +94,4 @@ jobs:
           command_timeout: 10m
           script: |
             set GIT_TERMINAL_PROMPT=0
-            cd /d C:\Users\user\Desktop\AlphaBackend\main
-            git pull origin main
-            docker compose pull app
-            docker compose up -d app
-            docker image prune -f
+            cd /d C:\Users\user\Desktop\AlphaBackend\main && git pull origin main && docker compose pull app && docker compose up -d app && docker image prune -f
