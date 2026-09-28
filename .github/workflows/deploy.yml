@@ -92,15 +92,6 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 10m
+          script_stop: true
           script: |
-            echo [DEPLOY] Starting deployment...
-            cd /d C:\Users\user\Desktop\AlphaBackend\main || (echo [ERROR] Failed to cd into AlphaBackend\main && exit /b 1)
-            echo [DEPLOY] Directory OK: %CD%
-            git pull origin main || (echo [ERROR] Git pull failed && exit /b 1)
-            echo [DEPLOY] Git pull OK
-            docker compose pull app || (echo [ERROR] Docker compose pull failed && exit /b 1)
-            echo [DEPLOY] Image pulled OK
-            docker compose up -d app || (echo [ERROR] Docker compose up failed && exit /b 1)
-            echo [DEPLOY] App restarted OK
-            docker image prune -f || (echo [WARNING] Image prune failed, continuing...)
-            echo [DEPLOY] Deployment finished successfully
+            echo [DEPLOY] Starting && cd /d C:\Users\user\Desktop\AlphaBackend\main && echo [DEPLOY] CD OK %CD% && git pull origin main && echo [DEPLOY] Git OK && docker compose pull app && echo [DEPLOY] Pull OK && docker compose up -d app && echo [DEPLOY] Up OK && docker image prune -f && echo [DEPLOY] Done
