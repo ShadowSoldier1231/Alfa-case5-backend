@@ -6,4 +6,9 @@ public class NotFoundException extends ApiException {
     public NotFoundException(String message) {
         super(message, HttpStatus.NOT_FOUND);
     }
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
+
 }

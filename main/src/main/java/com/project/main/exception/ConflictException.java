@@ -6,4 +6,10 @@ public class ConflictException extends ApiException {
     public ConflictException(String message) {
         super(message, HttpStatus.CONFLICT);
     }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
+
 }

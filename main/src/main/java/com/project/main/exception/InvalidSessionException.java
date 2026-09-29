@@ -16,4 +16,10 @@ public class InvalidSessionException extends ApiException {
     public void setToken(String token) {
         this.token = token;
     }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
+
 }

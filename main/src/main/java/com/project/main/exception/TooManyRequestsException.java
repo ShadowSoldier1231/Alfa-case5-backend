@@ -6,4 +6,8 @@ public class TooManyRequestsException extends ApiException {
     public TooManyRequestsException(String message) {
         super(message, HttpStatus.TOO_MANY_REQUESTS);
     }
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
 }
