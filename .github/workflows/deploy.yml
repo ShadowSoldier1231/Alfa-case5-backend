@@ -93,6 +93,4 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 10m
           script: |
-            set GIT_TERMINAL_PROMPT=0
-            docker version >nul 2>&1 || (echo [DEPLOY] Docker engine is down, attempting to start Docker Desktop... && (docker desktop start >nul 2>&1 || start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe") && timeout /t 90 /nobreak >nul)
-            cd /d C:\Users\user\Desktop\AlphaBackend\main && echo [DEPLOY] CD OK %CD% && git pull origin main && echo [DEPLOY] Git OK && docker compose pull app && echo [DEPLOY] Pull OK && docker compose up -d && echo [DEPLOY] Stack up OK && docker compose ps && docker image prune -f && echo [DEPLOY] Done
+            cmd /c "set GIT_TERMINAL_PROMPT=0& docker version >nul 2>&1 || (echo [DEPLOY] Docker engine down, trying to start Docker Desktop& docker desktop start >nul 2>&1& ping -n 61 127.0.0.1 >nul)& cd /d C:\Users\user\Desktop\AlphaBackend\main && echo [DEPLOY] CD OK && git pull origin main && echo [DEPLOY] Git OK && docker compose pull app && echo [DEPLOY] Pull OK && docker compose up -d && echo [DEPLOY] Stack up OK && docker compose ps && docker image prune -f && echo [DEPLOY] Done"
